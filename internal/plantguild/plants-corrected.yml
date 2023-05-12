@@ -1,0 +1,1538 @@
+plants:
+    - name: Aubergine
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Weiße Bohnen
+      badCompanions:
+        - Paprika
+        - Tomaten
+    - name: Basilikum
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Gurken
+        - Melonen
+        - Zucchini
+        - Kürbis
+      badCompanions: []
+    - name: Blaukraut
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Boretsch
+        - Buschbohnen
+        - Erbsen
+        - Möhren
+        - Phacelia
+        - Salat
+        - Sellerie
+        - Spinat
+        - Borretsch
+      badCompanions:
+        - Knoblauch
+        - Kohl
+        - Tomaten
+        - Zwiebel
+    - name: Blumenkohl
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Erbsen
+        - Phacelia
+        - Sellerie
+      badCompanions:
+        - Knoblauch
+        - Zwiebel
+    - name: Bohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnenkraut
+        - Mais
+        - Rettich
+        - Kohl
+        - Kohlrabi
+        - Gurken
+        - Schwarzwurzel
+        - Rote
+        - Borretsch
+        - Melonen
+        - Chinakohl
+        - Kürbis
+        - Knollensellerie
+        - Kopfsalat
+        - Mais
+        - Radieschen
+      badCompanions:
+        - Fenchel
+        - Zwiebeln
+        - Porree
+        - Erbsen
+    - name: Bohnenkraut
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Rote Bete
+        - Salat
+        - Zwiebeln
+        - Buschbohnen
+      badCompanions: []
+    - name: Boretsch
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Blaukraut
+      badCompanions: []
+    - name: Borretsch
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Blaukraut
+        - Bohnen
+        - Erdbeeren
+        - Erbsen
+        - Kohlrabi
+        - Kohlarten
+        - Kohl
+        - Buschbohnen
+      badCompanions: []
+    - name: Buschbohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnenkraut
+        - Borretsch
+        - Chinakohl
+        - Dill
+        - Erdbeeren
+        - Gurken
+        - Kapuzinerkresse
+        - Kartoffeln
+        - Kohlarten
+        - Kohlrabi
+        - Radieschen
+        - Rettich
+        - Rote Bete
+        - Salat
+        - Salbei
+        - Sellerie
+        - Spinat
+        - Tomaten
+        - Blaukraut
+        - Blumenkohl
+        - Rhabarber
+        - Mangold
+        - Pflücksalat
+        - Pfl
+      badCompanions:
+        - Erbsen
+        - Fenchel
+        - Knoblauch
+        - Paprika
+        - Porree
+        - Schnittlauch
+        - Stangenbohnen
+        - Zwiebeln
+    - name: Chicorée
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Möhren
+        - Kopfsalat
+        - Tomaten
+      badCompanions: []
+    - name: Chinakohl
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Erbsen
+        - Spinat
+        - Salat
+        - Sellerie
+        - Buschbohnen
+      badCompanions:
+        - Radieschen
+        - Rettich
+    - name: Dicke Bohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+      badCompanions: []
+    - name: Dill
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Erbsen
+        - Möhren
+        - Gurken
+        - Kohlarten
+        - Rote Bete
+        - Salat
+        - Zwiebel
+        - Kohl
+        - Kohlrabi
+        - Rote
+        - Melonen
+        - Zwiebeln
+        - Möhren
+        - Kürbis
+        - Mais
+        - Buschbohnen
+        - Spargel
+      badCompanions: []
+    - name: Endivie
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+      badCompanions: []
+    - name: Endivien
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+        - Kohlarten
+        - Porree
+        - Stangenbohnen
+        - Kohl
+      badCompanions: []
+    - name: Erbse
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+      badCompanions: []
+    - name: Erbsen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Borretsch
+        - Dill
+        - Fenchel
+        - Gurken
+        - Kohlarten
+        - Kohlrabi
+        - Kopfsalat
+        - Mais
+        - Möhren
+        - Radieschen
+        - Rettich
+        - Sellerie
+        - Spinat
+        - Zucchini
+        - Kohl
+        - Blaukraut
+        - Blumenkohl
+        - Rhabarber
+        - Melonen
+        - Chinakohl
+        - Möhren
+        - Kürbis
+        - Knollensellerie
+        - Mais
+      badCompanions:
+        - Bohnen
+        - Kartoffeln
+        - Knoblauch
+        - Porree
+        - Tomaten
+        - Zwiebel
+        - Sellerie
+        - Paprika
+        - Zwiebeln
+        - Buschbohnen
+        - Stangenbohnen
+    - name: Erdbeeren
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Borretsch
+        - Buschbohnen
+        - Knoblauch
+        - Kopfsalat
+        - Porree
+        - Radieschen
+        - Ringelblume
+        - Spinat
+        - Kohlrabi
+        - Feldsalat
+      badCompanions:
+        - Kohlarten
+    - name: Feldsalat
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Erdbeeren
+        - Radieschen
+        - Fenchel
+      badCompanions: []
+    - name: Fenchel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Endivie
+        - Erbse
+        - Feldsalat
+        - Gurke
+        - Salat
+        - Sellerie
+        - Gurken
+        - Melonen
+        - Kürbis
+        - Kopfsalat
+        - Endivien
+        - Erbsen
+        - Pflücksalat
+        - Pfl
+      badCompanions:
+        - Bohnen
+        - Tomaten
+        - Kohlrabi
+        - Paprika
+        - Buschbohnen
+        - Stangenbohnen
+    - name: Gurke
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+      badCompanions: []
+    - name: Gurken
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Basilikum
+        - Bohnen
+        - Dill
+        - Erbsen
+        - Fenchel
+        - Kohlarten
+        - Kopfsalat
+        - Kümmel
+        - Mais
+        - Porree
+        - Rote Bete
+        - Sellerie
+        - Zwiebeln
+        - Kohl
+        - Kohlrabi
+        - Petersilie
+        - Ringelblume
+        - Rote
+        - Knoblauch
+        - Sonnenblumen
+        - Knollensellerie
+        - Buschbohnen
+        - Stangenbohnen
+        - Spargel
+      badCompanions:
+        - Tomaten
+        - Kartoffeln
+        - Radieschen
+        - Rettich
+        - Zucchini
+    - name: Himbeeren
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Knoblauch
+      badCompanions: []
+    - name: Kamille
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Sellerie
+        - Zwiebeln
+      badCompanions: []
+    - name: Kapuzinerkresse
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+        - Zucchini
+        - Buschbohnen
+        - Stangenbohnen
+      badCompanions: []
+    - name: Kapuzinnerkresse
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Rettich
+        - Radieschen
+      badCompanions: []
+    - name: Kartoffeln
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Dicke Bohnen
+        - Kapuzinerkresse
+        - Kohlrabi
+        - Kümmel
+        - Mais
+        - Meerrettich
+        - Pfefferminze
+        - Spinat
+        - Tagetes
+        - Merrettich
+        - Pastinaken
+        - Stangenbohnen
+      badCompanions:
+        - Erbsen
+        - Gurken
+        - Kürbis
+        - Melone
+        - Rote Bete
+        - Sellerie
+        - Sonnenblume
+        - Tomaten
+        - Zwiebel
+        - Kohl
+        - Rote
+        - Sonnenblumen
+        - Melonen
+        - Zwiebeln
+        - Knollensellerie
+    - name: Knoblauch
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Erdbeeren
+        - Gurken
+        - Himbeeren
+        - Lilien
+        - Möhren
+        - Rosen
+        - Rote Bete
+        - Tomaten
+        - Zwiebeln
+        - Möhren
+        - Porree
+      badCompanions:
+        - Erbsen
+        - Buschbohnen
+        - Kohlarten
+        - Stangenbohne
+        - Kohl
+        - Blaukraut
+        - Blumenkohl
+        - Stangenbohnen
+    - name: Knollensellerie
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Erbsen
+        - Gurken
+        - Kohl
+        - Kohlrabi
+        - Porree
+        - Spinat
+        - Tomaten
+      badCompanions:
+        - Kartoffeln
+        - Mais
+        - Salat
+    - name: Kohl
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Borretsch
+        - Dill
+        - Endivien
+        - Erbsen
+        - Gurken
+        - Rote Bete
+        - Salat
+        - Sellerie
+        - Spinat
+        - Tagetes
+        - Tomaten
+        - Rettich
+        - Rote
+        - Knollensellerie
+        - Radieschen
+      badCompanions:
+        - Kohlarten
+        - Kartoffeln
+        - Knoblauch
+        - Kohlrabi
+        - Rhabarber
+        - Schnittlauch
+        - Zwiebel
+        - Blaukraut
+    - name: Kohlarten
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Paprika
+        - Ringelblume
+        - Gurken
+        - Rhabarber
+        - Borretsch
+        - Dill
+        - Melonen
+        - Mangold
+        - Kürbis
+        - Kopfsalat
+        - Buschbohnen
+        - Endivien
+        - Porree
+        - Spinat
+        - Stangenbohnen
+        - Erbsen
+        - Pflücksalat
+        - Pfl
+      badCompanions:
+        - Kohl
+        - Knoblauch
+        - Zwiebeln
+        - Erdbeeren
+    - name: Kohlrabi
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Borretsch
+        - Dill
+        - Erbsen
+        - Erdbeeren
+        - Gurken
+        - Kartoffeln
+        - Porree
+        - Radieschen
+        - Rote Bete
+        - Salat
+        - Schwarzwurzel
+        - Sellerie
+        - Spargel
+        - Spinat
+        - Rote
+        - Knollensellerie
+        - Kopfsalat
+        - Buschbohnen
+        - Stangenbohnen
+        - Tomaten
+      badCompanions:
+        - Kohl
+        - Fenchel
+    - name: Kopfsalat
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Chicorée
+        - Erbsen
+        - Fenchel
+        - Gurken
+        - Kohlarten
+        - Kohlrabi
+        - Möhren
+        - Porree
+        - Radieschen
+        - Rettich
+        - Schwarzwurzel
+        - Tomaten
+        - Zwiebel
+        - Pastinaken
+        - Mais
+        - Melonen
+        - Kürbis
+        - Erdbeeren
+      badCompanions:
+        - Kresse
+        - Petersilie
+        - Sellerie
+    - name: Kresse
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Kopfsalat
+    - name: Kümmel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+        - Gurken
+        - Melonen
+        - Kürbis
+      badCompanions: []
+    - name: Kürbis
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Basilikum
+        - Bohnen
+        - Dill
+        - Erbsen
+        - Fenchel
+        - Kohlarten
+        - Kopfsalat
+        - Kümmel
+        - Mais
+        - Porree
+        - Rote Bete
+        - Sellerie
+        - Zwiebeln
+      badCompanions:
+        - Tomaten
+        - Kartoffeln
+        - Radieschen
+        - Rettich
+        - Zucchini
+    - name: Lilien
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Knoblauch
+      badCompanions: []
+    - name: Mais
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Gurken
+        - Kartoffeln
+        - Kopfsalat
+        - Kürbis
+        - Melonen
+        - Tomaten
+        - Zucchini
+        - Erbsen
+        - Spinat
+        - Dill
+        - Mangold
+        - Salat
+      badCompanions:
+        - Rote Bete
+        - Sellerie
+        - Knollensellerie
+        - Steckrüben
+        - Weiß- und Rotkohl
+        - Raps
+        - Senf
+        - Rettich
+    - name: Mangold
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Kohlarten
+        - Möhren
+        - Radieschen
+        - Rettich
+        - Salat
+        - Möhren
+        - Mais
+      badCompanions:
+        - Rote Beete
+        - Rote
+        - Spinat
+    - name: Meerrettich
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+      badCompanions: []
+    - name: Melone
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Kartoffeln
+        - Rettich
+        - Zucchini
+        - Tomaten
+        - Radieschen
+    - name: Melonen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Basilikum
+        - Bohnen
+        - Dill
+        - Erbsen
+        - Fenchel
+        - Kohlarten
+        - Kopfsalat
+        - Kümmel
+        - Mais
+        - Porree
+        - Rote Bete
+        - Sellerie
+        - Zwiebeln
+      badCompanions:
+        - Tomaten
+        - Kartoffeln
+        - Radieschen
+        - Rettich
+    - name: Merrettich
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+      badCompanions: []
+    - name: Möhren
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Chicorée
+        - Dill
+        - Erbsen
+        - Knoblauch
+        - Mangold
+        - Porree
+        - Radieschen
+        - Rettich
+        - Salat
+        - Schwarzwurzeln
+        - Spinat
+        - Tomaten
+        - Zwiebeln
+        - Pastinaken
+        - Kopfsalat
+        - Blaukraut
+        - Paprika
+      badCompanions:
+        - Rote Bete
+        - Pfefferminze
+    - name: Paprika
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kohlarten
+        - Möhren
+        - Tomaten
+      badCompanions:
+        - Erbsen
+        - Fenchel
+        - Rote Bete
+        - Buschbohnen
+        - Stangenbohnen
+        - Aubergine
+    - name: Pastinake
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Sellerie
+        - Zwiebeln
+        - Tomaten
+        - Pflücksalat
+        - Pfl
+      badCompanions: []
+    - name: Pastinaken
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Möhren
+        - Kartoffeln
+        - Kopfsalat
+        - Pflücksalat
+        - Radieschen
+        - Rote Bete
+        - Sellerie
+        - Spinat
+      badCompanions: []
+    - name: Petersilie
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Gurken
+        - Radieschen
+        - Tomaten
+        - Zwiebeln
+        - Rettich
+        - Porree
+        - Spargel
+      badCompanions:
+        - Salate
+        - Kopfsalat
+    - name: Pfefferminze
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+      badCompanions:
+        - Möhren
+    - name: Pfl
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Fenchel
+        - Kohlarten
+        - Radieschen
+        - Rote Bete
+        - Stangen Bohnen
+        - Pastinake
+      badCompanions: []
+    - name: Pflücksalat
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Pastinaken
+        - Fenchel
+        - Rote Bete
+        - Kohlarten
+        - Pastinake
+        - Stangen Bohnen
+        - Buschbohnen
+        - Radieschen
+      badCompanions: []
+    - name: Phacelia
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Blaukraut
+        - Blumenkohl
+      badCompanions: []
+    - name: Porree
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Endivien
+        - Erdbeeren
+        - Kohlarten
+        - Knoblauch
+        - Möhren
+        - Petersilie
+        - Salat
+        - Schwarzwurzeln
+        - Sellerie
+        - Spinat
+        - Tomaten
+        - Kohlrabi
+        - Gurken
+        - Schwarzwurzel
+        - Melonen
+        - Möhren
+        - Kürbis
+        - Knollensellerie
+        - Kopfsalat
+      badCompanions:
+        - Bohnen
+        - Erbsen
+        - Rote Bete
+        - Stangenbohnen
+        - Rote
+        - Zwiebeln
+        - Buschbohnen
+    - name: Radieschen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Erbsen
+        - Kapuzinnerkresse
+        - Kohl
+        - Mangold
+        - Möhren
+        - Petersilie
+        - Salat
+        - Spinat
+        - Tomaten
+        - Pastinaken
+        - Kohlrabi
+        - Feldsalat
+        - Möhren
+        - Kopfsalat
+        - Buschbohnen
+        - Erdbeeren
+        - Stangenbohnen
+        - Pflücksalat
+        - Pfl
+      badCompanions:
+        - Gurken
+        - Chinakohl
+        - Kürbis
+        - Melone
+        - Melonen
+    - name: Raps
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Mais
+    - name: Rettich
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Erbsen
+        - Kapuzinnerkresse
+        - Kohl
+        - Mangold
+        - Möhren
+        - Petersilie
+        - Salat
+        - Spinat
+        - Tomaten
+        - Möhren
+        - Kopfsalat
+        - Buschbohnen
+        - Stangenbohnen
+      badCompanions:
+        - Gurken
+        - Chinakohl
+        - Kürbis
+        - Melone
+        - Melonen
+        - Mais
+    - name: Rhabarber
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Erbsen
+        - Kohlarten
+        - Salat
+        - Spinat
+      badCompanions:
+        - Kohl
+    - name: Ringelblume
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Erdbeeren
+        - Gurken
+        - Kohlarten
+        - Salate
+        - Tomaten
+      badCompanions: []
+    - name: Ringelblumen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Tomaten
+      badCompanions: []
+    - name: Rosen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Knoblauch
+      badCompanions: []
+    - name: Rote
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Dill
+        - Gurken
+        - Kohl
+        - Kohlrabi
+        - Salat
+        - Zucchini
+        - Zwiebeln
+      badCompanions:
+        - Kartoffeln
+        - Mangold
+        - Porree
+        - Spinat
+    - name: Rote Beete
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Mangold
+    - name: Rote Bete
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnenkraut
+        - Pastinaken
+        - Kohl
+        - Kohlrabi
+        - Gurken
+        - Dill
+        - Knoblauch
+        - Melonen
+        - Zwiebeln
+        - Kürbis
+        - Buschbohnen
+        - Stangenbohnen
+        - Pflücksalat
+        - Pfl
+      badCompanions:
+        - Mais
+        - Kartoffeln
+        - Paprika
+        - Möhren
+        - Porree
+        - Spinat
+        - Tomaten
+    - name: Salat
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnenkraut
+        - Sellerie
+        - Rettich
+        - Kohl
+        - Kohlrabi
+        - Blaukraut
+        - Fenchel
+        - Rhabarber
+        - Schwarzwurzel
+        - Rote
+        - Dill
+        - Zwiebeln
+        - Chinakohl
+        - Möhren
+        - Mangold
+        - Mais
+        - Buschbohnen
+        - Porree
+        - Stangenbohnen
+        - Tomaten
+        - Radieschen
+        - Spargel
+      badCompanions:
+        - Knollensellerie
+    - name: Salate
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Ringelblume
+      badCompanions:
+        - Petersilie
+    - name: Salbei
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Stangenbohnen
+      badCompanions: []
+    - name: Schnittlauch
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Kohl
+        - Buschbohnen
+        - Stangenbohnen
+    - name: Schwarzwurzel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Bohnen
+        - Kohlrabi
+        - Porree
+        - Salat
+        - Kopfsalat
+      badCompanions: []
+    - name: Schwarzwurzeln
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Möhren
+        - Porree
+      badCompanions: []
+    - name: Sellerie
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Chinakohl
+        - Fenchel
+        - Gurken
+        - Kamille
+        - Kohl
+        - Kohlrabi
+        - Pastinake
+        - Porree
+        - Salat
+        - Spinat
+        - Tomaten
+        - Pastinaken
+        - Blaukraut
+        - Blumenkohl
+        - Melonen
+        - Kürbis
+        - Stangenbohnen
+        - Erbsen
+      badCompanions:
+        - Erbsen
+        - Kartoffeln
+        - Mais
+        - Kopfsalat
+    - name: Senf
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Mais
+    - name: Sonnenblume
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Kartoffeln
+    - name: Sonnenblumen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Gurken
+      badCompanions:
+        - Kartoffeln
+    - name: Spargel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Dill
+        - Gurken
+        - Petersilie
+        - Kohlrabi
+        - Salat
+        - Tomaten
+      badCompanions: []
+    - name: Spinat
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Erdbeeren
+        - Kartoffeln
+        - Kohlarten
+        - Kohlrabi
+        - Radieschen
+        - Rettich
+        - Rhabarber
+        - Stangenbohnen
+        - Tomaten
+        - Pastinaken
+        - Sellerie
+        - Kohl
+        - Blaukraut
+        - Chinakohl
+        - Möhren
+        - Knollensellerie
+        - Mais
+        - Buschbohnen
+        - Porree
+        - Erbsen
+      badCompanions:
+        - Rote Bete
+        - Mangold
+        - Rote
+    - name: Stangen Bohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Pflücksalat
+        - Pfl
+      badCompanions: []
+    - name: Stangenbohne
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Knoblauch
+    - name: Stangenbohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Gurken
+        - Kapuzinerkresse
+        - Kartoffeln
+        - Kohlarten
+        - Kohlrabi
+        - Radieschen
+        - Rettich
+        - Rote Bete
+        - Salat
+        - Salbei
+        - Sellerie
+        - Spinat
+        - Zucchini
+        - Endivien
+      badCompanions:
+        - Buschbohnen
+        - Erbsen
+        - Fenchel
+        - Knoblauch
+        - Paprika
+        - Porree
+        - Schnittlauch
+        - Zwiebeln
+    - name: Steckrüben
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Mais
+    - name: Tagetes
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kartoffeln
+        - Kohl
+      badCompanions: []
+    - name: Tomaten
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Buschbohnen
+        - Chicorée
+        - Knoblauch
+        - Kohlrabi
+        - Möhren
+        - Pastinake
+        - Petersilie
+        - Porree
+        - Radieschen
+        - Ringelblumen
+        - Salat
+        - Sellerie
+        - Spinat
+        - Zwiebeln
+        - Mais
+        - Paprika
+        - Rettich
+        - Kohl
+        - Ringelblume
+        - Möhren
+        - Knollensellerie
+        - Kopfsalat
+        - Spargel
+      badCompanions:
+        - Blaukraut
+        - Erbsen
+        - Fenchel
+        - Gurken
+        - Kartoffeln
+        - Rote Bete
+        - Kürbis
+        - Melone
+        - Melonen
+        - Aubergine
+    - name: Weiß- und Rotkohl
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Mais
+    - name: Weiße Bohnen
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Aubergine
+      badCompanions: []
+    - name: Zucchini
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Basilikum
+        - Kapuzinerkresse
+        - Stangenbohnen
+        - Zwiebeln
+        - Mais
+        - Rote
+        - Erbsen
+      badCompanions:
+        - Gurken
+        - Kürbis
+        - Melone
+    - name: Zwiebel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Dill
+        - Kopfsalat
+      badCompanions:
+        - Kartoffeln
+        - Kohl
+        - Blaukraut
+        - Blumenkohl
+        - Erbsen
+    - name: Zwiebeln
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Dill
+        - Bohnenkraut
+        - Gurken
+        - Kamille
+        - Knoblauch
+        - Möhren
+        - Pastinake
+        - Rote Bete
+        - Salat
+        - Tomaten
+        - Zucchini
+        - Petersilie
+        - Rote
+        - Melonen
+        - Möhren
+        - Kürbis
+      badCompanions:
+        - Bohnen
+        - Erbsen
+        - Kartoffeln
+        - Kohlarten
+        - Porree
+        - Buschbohnen
+        - Stangenbohnen

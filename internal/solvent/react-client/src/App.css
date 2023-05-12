@@ -1,0 +1,398 @@
+
+/*
+  Fonts
+  Pattaya
+  Merriweather Sans
+  Cabin
+*/
+
+:root {
+  --text-color: black;
+  --light-brand-color: #14bca8;
+  --dark-brand-color: #21897e;
+  --accent-color: #ff9f1c;
+  --alert-color: #a20021;
+  --inactive-opacity: .6;
+  --inactive-opacity-light-bg: .2;
+  --disabled-color: black;
+  --disabled-opacity: .2;
+  --disabled-opacity-light-bg: .2;
+  --light-background-color: #f6f7eb;
+  --border-radius: 5px;
+  --box-shadow: 0px 1px 5px rgba(0, 0, 0, .2);
+}
+
+/*:root {
+  --light-brand-color: #abf0e9;
+  --dark-brand-color: #63b7af;
+  --accent-color: #ff9f1c;
+  --alert-color: #a20021;
+  --light-background-color: #f6f7eb;
+}*/
+
+#root {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+body {
+  font-family: 'Cabin', sans-serif;
+  background-color: var(--light-brand-color);
+}
+
+a {
+  text-decoration: none;
+}
+
+input, button, textarea {
+  border-radius: var(--border-radius);
+  font-family: 'Cabin', sans-serif;
+}
+
+input[type=text] {
+  height: 100%;
+}
+
+input[type=text]::placeholder, textarea::placeholder {
+  color: var(--text-color);
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+textarea {
+  resize: none;
+  line-height: 1.5em;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+}
+
+.header {
+  height: 3.5em;
+  padding: 0 1em;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  /*box-shadow: 0px 1px 5px rgba(0, 0, 0, .2);*/
+}
+
+.footer {
+  width: 100vw;
+  height: 4em;
+  padding: 0 1em;
+  position: absolute;
+  bottom: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.menuButton {
+  height: 2.5em;
+  width: 2.5em;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.menuButton > svg {
+  fill: var(--light-background-color);
+}
+
+.App {
+  width: 100vw;
+  display: flex;
+  transition: transform .1s;
+}
+
+.ViewContainer {
+  width: 100vw;
+  height: 100vh;
+  padding-bottom: 2em;
+  box-sizing: border-box;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ListView, .DetailView {
+  width: 100%;
+  max-width: 900px;
+}
+
+.DetailViewMain {
+  padding: 0 1em;
+}
+
+.ListViewMain {
+  padding: 0 1em;
+}
+
+.ListViewToDoListsTitle {
+  width: 100%;
+  display: inline-block;
+  box-sizing: border-box;
+  padding: .5em 1em;
+  border-bottom: solid 1px var(--light-background-color);
+  color: var(--light-background-color);
+  opacity: var(--inactive-opacity);
+}
+
+.ListViewToDoList {
+  font-family: 'Merriweather Sans', sans-serif;
+  font-size: 1em;
+  width: 100%;
+  display: block;
+  margin: 1em 0;
+  padding: 0 1em;
+  min-height: 3.5em;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--box-shadow);
+  background-color: var(--light-background-color);
+}
+
+.ListViewToDoList.checked .ListViewToDoListTitle {
+  text-decoration: line-through;
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+.ListViewAddListButton {
+  width: 100%;
+  height: 3.5em;
+  display: block;
+  margin: 1em 0;
+  padding: 0 1em;
+  text-align: left;
+  border: 1px dashed var(--light-background-color);
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.ListViewAddListButton > svg {
+  height: 70%;
+  fill: var(--light-background-color);
+}
+
+button {
+  transition: all .1s ease !important;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:disabled:hover {
+  transform: none;
+}
+
+.ListViewSearchBarLogo {
+  width: 2em;
+  height: 2em;
+  margin-left: 0.5em;
+  position: absolute;
+  cursor: pointer;
+}
+
+.ListViewSearchBarLogo > svg {
+  fill: var(--text-color);
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+.ListViewSearchBar {
+  width: 50%;
+  font-size: 1em;
+  height: 2.5em !important;
+  margin-right: 1em;
+  padding: 0 3em;
+  flex-grow: 1;
+  border: none;
+  box-shadow: var(--box-shadow);
+  background: var(--light-background-color);
+}
+
+.ListViewBackButton:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+.ListViewFooter {
+  width: 50%;
+  height: 8em;
+  margin: 0 auto;
+  padding: 0;
+  visibility: hidden;
+}
+
+.ToDoList {
+  width: 100%;
+  padding: 1em 1em .3em 1em;
+  box-sizing: border-box;
+  border-radius: 10px;
+  box-shadow: var(--box-shadow);
+  background-color: var(--light-background-color);
+}
+
+.ToDoListTitle {
+  width: 100%;
+  margin: .5em 0 .3em 0;
+  font-size: 2em;
+  font-family: 'Merriweather Sans', sans-serif;
+  border: none;
+  background: none;
+  color: var(--text-color);
+}
+
+.ToDoList.checked .ToDoListTitle {
+  text-decoration: line-through;
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoListBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ToDoItems {
+  width: 100%;
+}
+
+.ToDoItem {
+  min-height: 3em;
+  /*padding-left: 5%;*/
+  padding: .4em 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ToDoItemCheckbox {
+  height: 2em;
+  width: 2em;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  opacity: var(--inactive-opacity-light-bg);
+  cursor: pointer;
+}
+
+.ToDoItem.checked > .ToDoItemCheckbox {
+  opacity: 1;
+  fill: var(--light-brand-color);
+}
+
+.ToDoItemTitle {
+  font-size: 1em;
+  margin: 0 .3em;
+  padding: 0 .5em;
+  flex-grow: 1;
+  border: none;
+  background: none;
+}
+
+.ToDoItem.checked > .ToDoItemTitle {
+  text-decoration: line-through;
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoItemDelete {
+  height: 2em;
+  width: 2em;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  visibility: hidden;
+}
+
+.ToDoItemDelete > svg {
+  fill: var(--alert-color);
+}
+
+.ToDoItemTitle:focus + .ToDoItemDelete {
+  visibility: visible;
+}
+
+.ToDoItemDragHandle {
+  height: 1.5em;
+  width: 1.5em;
+  opacity: var(--inactive-opacity-light-bg);
+}
+
+.AddItemBar {
+  height: 3em;
+  width: 100%;
+  padding: .4em 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.AddItemBarLogo {
+  width: 2em;
+  height: 2em;
+  text-align: center;
+  visibility: hidden;
+}
+
+.AddItemBarTitle {
+  font-size: 1em;
+  margin: 0 .3em;
+  padding: 0 .5em;
+  flex-grow: 1;
+  border: none;
+  background: none;
+}
+
+.AddItemBarButton {
+  height: 2em;
+  width: 2em;
+  padding: 0;
+  font-weight: bold;
+  border: none;
+  background: none;
+  cursor: pointer;
+  justify-content: center;
+}
+
+.AddItemBarButton > svg {
+  fill: var(--light-brand-color);
+}
+
+.AddItemBarButton:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+.AddItemBarButton:disabled > svg {
+  fill: var(--disabled-color);
+}
+
+.HeaderSpacer {
+  height: 2em;
+  width: 2em;
+}
+
+.HeaderTitle {
+  margin: 0;
+  font-size: 2em;
+  text-align: center;
+  flex-grow: 1;
+  font-family: 'Pattaya', sans-serif;
+  color: var(--light-background-color);
+}
