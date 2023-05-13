@@ -5,32 +5,30 @@ import (
 )
 
 type Mergeable interface {
-	Identifier() interface{}
+	Identifier() string
 	//CanBeMerged(other Mergeable) bool
 	Merge(other Mergeable) (Mergeable, error)
 }
 
-type ItemMap map[interface{}]Mergeable
-
-type PSet struct {
-	LiveSet      ItemMap
-	TombstoneSet ItemMap
+type PSet[M Mergeable] struct {
+	LiveSet      map[string]M
+	TombstoneSet map[string]M
 	identifier   string
 }
 
-func NewPSet(identifier string) PSet {
-	return PSet{
-		LiveSet:      ItemMap{},
-		TombstoneSet: ItemMap{},
+func NewPSet[M Mergeable](identifier string) PSet[M] {
+	return PSet[M]{
+		LiveSet:      map[string]M{},
+		TombstoneSet: map[string]M{},
 		identifier:   identifier,
 	}
 }
 
-func (p *PSet) Add(item Mergeable) error {
+func (p *PSet[M]) Add(item M) error {
 	return addToItemMap(p.LiveSet, item)
 }
 
-func (p *PSet) Remove(item Mergeable) {
+func (p *PSet[M]) Remove(item M) {
 	key := item.Identifier()
 
 	if _, ok := p.LiveView()[key]; !ok {
@@ -40,8 +38,8 @@ func (p *PSet) Remove(item Mergeable) {
 	p.TombstoneSet[key] = item
 }
 
-func (p *PSet) LiveView() ItemMap {
-	liveView := ItemMap{}
+func (p *PSet[M]) LiveView() map[string]M {
+	liveView := map[string]M{}
 
 	for key, value := range p.LiveSet {
 		if _, ok := p.TombstoneSet[key]; !ok {
@@ -52,19 +50,19 @@ func (p *PSet) LiveView() ItemMap {
 	return liveView
 }
 
-func (p *PSet) Identifier() interface{} {
+func (p *PSet[M]) Identifier() string {
 	return p.identifier
 }
 
-func (p *PSet) Merge(other Mergeable) (Mergeable, error) {
+func (p *PSet[M]) Merge(other Mergeable) (Mergeable, error) {
 	if p.Identifier() != other.Identifier() {
 		err := NewCannotBeMergedError(p, other)
 		return nil, err
 	}
 
-	otherPSet, ok := other.(*PSet)
+	otherPSet, ok := other.(*PSet[M])
 	if !ok {
-		err := NewTypeMisMatchError(p, other)
+		err := NewTypeMismatchError(p, other)
 		return nil, err
 	}
 
@@ -78,7 +76,7 @@ func (p *PSet) Merge(other Mergeable) (Mergeable, error) {
 		return nil, err
 	}
 
-	mergedPSet := PSet{
+	mergedPSet := PSet[M]{
 		LiveSet:      mergedLiveSet,
 		TombstoneSet: mergedTombstoneSet,
 		identifier:   p.identifier,
@@ -86,8 +84,8 @@ func (p *PSet) Merge(other Mergeable) (Mergeable, error) {
 	return &mergedPSet, nil
 }
 
-func mergeItemMaps(this, other ItemMap) (ItemMap, error) {
-	mergedItemMap := ItemMap{}
+func mergeItemMaps[M Mergeable](this, other map[string]M) (map[string]M, error) {
+	mergedItemMap := map[string]M{}
 	for key, value := range this {
 		mergedItemMap[key] = value
 	}
@@ -102,7 +100,7 @@ func mergeItemMaps(this, other ItemMap) (ItemMap, error) {
 	return mergedItemMap, nil
 }
 
-func addToItemMap(itemMap ItemMap, item Mergeable) error {
+func addToItemMap[M Mergeable](itemMap map[string]M, item M) error {
 	key := item.Identifier()
 
 	oldItem, ok := itemMap[key]
@@ -116,7 +114,7 @@ func addToItemMap(itemMap ItemMap, item Mergeable) error {
 		return err
 	}
 
-	itemMap[key] = mergedItem
+	itemMap[key] = mergedItem.(M)
 	return nil
 }
 
@@ -146,7 +144,7 @@ type TypeMisMatchError struct {
 	message string
 }
 
-func NewTypeMisMatchError(this, other Mergeable) *TypeMisMatchError {
+func NewTypeMismatchError(this, other Mergeable) *TypeMisMatchError {
 	return &TypeMisMatchError{
 		this:    this,
 		other:   other,

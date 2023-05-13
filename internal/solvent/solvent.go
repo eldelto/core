@@ -30,8 +30,8 @@ type ToDoItem struct {
 }
 
 // Identifier returns the ID of the ToDoItem
-func (t *ToDoItem) Identifier() interface{} {
-	return t.ID
+func (t *ToDoItem) Identifier() string {
+	return t.ID.String()
 }
 
 // Merge combines the current ToDoItem with the one passed in as
@@ -45,7 +45,7 @@ func (t *ToDoItem) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 
 	otherToDoItem, ok := other.(*ToDoItem)
 	if !ok {
-		err := crdt.NewTypeMisMatchError(t, other)
+		err := crdt.NewTypeMismatchError(t, other)
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func (t *ToDoItem) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 type ToDoList struct {
 	ID        uuid.UUID
 	Title     Title
-	ToDoItems ToDoItemPSet
+	ToDoItems crdt.PSet[*ToDoItem]
 	CreatedAt int64
 }
 
@@ -90,7 +90,7 @@ func newToDoList(title string) (*ToDoList, error) {
 	toDoList := ToDoList{
 		ID:        id,
 		Title:     titleStruct,
-		ToDoItems: NewToDoItemPSet(),
+		ToDoItems: crdt.NewPSet[*ToDoItem]("ToDoListPSet"),
 		CreatedAt: time.Now().UTC().UnixNano(),
 	}
 
@@ -129,7 +129,7 @@ func (tdl *ToDoList) AddItem(title string) (uuid.UUID, error) {
 		Checked:    false,
 		OrderValue: orderValue,
 	}
-	err = tdl.ToDoItems.Add(item)
+	err = tdl.ToDoItems.Add(&item)
 
 	return id, err
 }
@@ -137,12 +137,12 @@ func (tdl *ToDoList) AddItem(title string) (uuid.UUID, error) {
 // GetItem returns the ToDoItem matching the given id or returns a
 // NotFoundError if no match could be found
 func (tdl *ToDoList) GetItem(id uuid.UUID) (ToDoItem, error) {
-	item, ok := tdl.ToDoItems.LiveView()[id]
-	if ok == false {
-		return item, newNotFoundError(id)
+	item, ok := tdl.ToDoItems.LiveView()[id.String()]
+	if !ok {
+		return ToDoItem{}, newNotFoundError(id)
 	}
 
-	return item, nil
+	return *item, nil
 }
 
 // RemoveItem removes the ToDoItem with the given id from the ToDoList
@@ -151,7 +151,7 @@ func (tdl *ToDoList) GetItem(id uuid.UUID) (ToDoItem, error) {
 func (tdl *ToDoList) RemoveItem(id uuid.UUID) {
 	item, err := tdl.GetItem(id)
 	if err == nil {
-		tdl.ToDoItems.Remove(item)
+		tdl.ToDoItems.Remove(&item)
 	}
 }
 
@@ -161,7 +161,7 @@ func (tdl *ToDoList) CheckItem(id uuid.UUID) (uuid.UUID, error) {
 	item, err := tdl.GetItem(id)
 	if err == nil {
 		item.Checked = true
-		tdl.ToDoItems.Add(item)
+		tdl.ToDoItems.Add(&item)
 	}
 
 	return item.ID, err
@@ -187,7 +187,7 @@ func (tdl *ToDoList) UncheckItem(id uuid.UUID) (uuid.UUID, error) {
 		Checked:    false,
 		OrderValue: item.OrderValue,
 	}
-	err = tdl.ToDoItems.Add(newItem)
+	err = tdl.ToDoItems.Add(&newItem)
 
 	return newID, err
 }
@@ -201,7 +201,7 @@ func (tdl *ToDoList) GetItems() []ToDoItem {
 	liveView := tdl.ToDoItems.LiveView()
 	items := make([]ToDoItem, 0, len(liveView))
 	for _, item := range liveView {
-		items = append(items, item)
+		items = append(items, *item)
 	}
 
 	return items
@@ -246,12 +246,12 @@ func (tdl *ToDoList) MoveItem(id uuid.UUID, targetIndex int) error {
 	}
 	item.OrderValue = newOrderValue
 
-	return tdl.ToDoItems.Add(item)
+	return tdl.ToDoItems.Add(&item)
 }
 
 // Identifier returns the ID of the ToDoList
-func (tdl *ToDoList) Identifier() interface{} {
-	return tdl.ID
+func (tdl *ToDoList) Identifier() string {
+	return tdl.ID.String()
 }
 
 // Merge combines the current ToDoList with the one passed in as
@@ -264,7 +264,7 @@ func (tdl *ToDoList) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 
 	otherToDoList, ok := other.(*ToDoList)
 	if !ok {
-		err := crdt.NewTypeMisMatchError(tdl, other)
+		err := crdt.NewTypeMismatchError(tdl, other)
 		return nil, err
 	}
 
@@ -283,7 +283,7 @@ func (tdl *ToDoList) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 	mergedToDoList := ToDoList{
 		ID:        tdl.ID,
 		Title:     title,
-		ToDoItems: mergedToDoItems,
+		ToDoItems: *mergedToDoItems.(*crdt.PSet[*ToDoItem]),
 		CreatedAt: tdl.CreatedAt,
 	}
 	return &mergedToDoList, nil
@@ -291,7 +291,7 @@ func (tdl *ToDoList) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 
 type Notebook struct {
 	ID        uuid.UUID
-	ToDoLists ToDoListPSet
+	ToDoLists crdt.PSet[*ToDoList]
 	CreatedAt int64
 }
 
@@ -303,7 +303,7 @@ func NewNotebook() (*Notebook, error) {
 
 	notebook := Notebook{
 		ID:        id,
-		ToDoLists: NewToDoListPSet(),
+		ToDoLists: crdt.NewPSet[*ToDoList]("ToDoListPSet"),
 		CreatedAt: time.Now().UTC().UnixNano(),
 	}
 	return &notebook, nil
@@ -332,8 +332,8 @@ func (n *Notebook) RemoveList(id uuid.UUID) {
 
 func (n *Notebook) GetList(id uuid.UUID) (*ToDoList, error) {
 	// TODO: Move Get method to PSet?
-	list, ok := n.ToDoLists.LiveView()[id]
-	if ok == false {
+	list, ok := n.ToDoLists.LiveView()[id.String()]
+	if !ok {
 		return nil, newNotFoundError(id)
 	}
 
@@ -350,8 +350,8 @@ func (n *Notebook) GetLists() []*ToDoList {
 	return lists
 }
 
-func (n *Notebook) Identifier() interface{} {
-	return n.ID
+func (n *Notebook) Identifier() string {
+	return n.ID.String()
 }
 
 func (n *Notebook) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
@@ -362,7 +362,7 @@ func (n *Notebook) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 
 	otherNotebook, ok := other.(*Notebook)
 	if !ok {
-		err := crdt.NewTypeMisMatchError(n, other)
+		err := crdt.NewTypeMismatchError(n, other)
 		return nil, err
 	}
 
@@ -373,7 +373,7 @@ func (n *Notebook) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 
 	mergedNotebook := Notebook{
 		ID:        n.ID,
-		ToDoLists: mergedToDoLists,
+		ToDoLists: *mergedToDoLists.(*crdt.PSet[*ToDoList]),
 		CreatedAt: n.CreatedAt,
 	}
 	return &mergedNotebook, nil

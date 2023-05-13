@@ -28,7 +28,7 @@ var invalidMergeable = testMergeable{
 }
 
 func TestAdd(t *testing.T) {
-	pset := NewPSet(psetID0)
+	pset := NewPSet[*testMergeable](psetID0)
 
 	err := pset.Add(&mergeable0)
 	AssertEquals(t, nil, err, "pset.Add error")
@@ -38,7 +38,7 @@ func TestAdd(t *testing.T) {
 
 	mergedMergeable := mergeable0
 	mergedMergeable.value = 2
-	expected := ItemMap{
+	expected := map[string]*testMergeable{
 		mergeable0.Identifier(): &mergedMergeable,
 		mergeable1.Identifier(): &mergeable1,
 	}
@@ -46,7 +46,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestInvalidAdd(t *testing.T) {
-	pset := NewPSet(psetID0)
+	pset := NewPSet[*testMergeable](psetID0)
 
 	err := pset.Add(&mergeable0)
 	AssertEquals(t, nil, err, "pset.Add error")
@@ -55,65 +55,65 @@ func TestInvalidAdd(t *testing.T) {
 	expectedErr := NewCannotBeMergedError(&mergeable0, &invalidMergeable)
 	AssertEquals(t, expectedErr, err, "pset.Add error")
 
-	expected := ItemMap{
+	expected := map[string]*testMergeable{
 		mergeable0.Identifier(): &mergeable0,
 	}
 	AssertEquals(t, expected, pset.LiveSet, "pset.LiveSet")
 }
 
 func TestRemove(t *testing.T) {
-	pset := NewPSet(psetID0)
+	pset := NewPSet[*testMergeable](psetID0)
 
 	pset.Add(&mergeable0)
 	pset.Remove(&mergeable0)
 	pset.Remove(&mergeable1)
 
-	expected := ItemMap{
+	expected := map[string]*testMergeable{
 		mergeable0.Identifier(): &mergeable0,
 	}
 	AssertEquals(t, expected, pset.TombstoneSet, "pset.TombstoneSet")
 }
 
 func TestLiveView(t *testing.T) {
-	pset := NewPSet(psetID0)
+	pset := NewPSet[*testMergeable](psetID0)
 
 	pset.Add(&mergeable0)
 	pset.Add(&mergeable1)
 	pset.Remove(&mergeable0)
 
-	expected := ItemMap{
+	expected := map[string]*testMergeable{
 		mergeable1.Identifier(): &mergeable1,
 	}
 	AssertEquals(t, expected, pset.LiveView(), "pset.LiveView")
 }
 
 func TestIdentifier(t *testing.T) {
-	pset := NewPSet(psetID0)
+	pset := NewPSet[*testMergeable](psetID0)
 
 	AssertEquals(t, psetID0, pset.Identifier(), "pset.Identifier")
 }
 
 func TestMerge(t *testing.T) {
-	pset0 := NewPSet(psetID0)
+	pset0 := NewPSet[*testMergeable](psetID0)
 	pset0.Add(&mergeable0)
 	pset0.Add(&mergeable1)
 
-	pset1 := NewPSet(psetID0)
+	pset1 := NewPSet[*testMergeable](psetID0)
 	pset1.Add(&mergeable0)
 	pset1.Remove(&mergeable0)
 
 	mergedPSet, err := pset0.Merge(&pset1)
 	AssertEquals(t, nil, err, "pset0.Merge error")
 
-	expected := ItemMap{
+	expected := map[string]*testMergeable{
 		mergeable1.Identifier(): &mergeable1,
 	}
-	AssertEquals(t, expected, mergedPSet.(*PSet).LiveView(), "pset.LiveView")
+	AssertEquals(t, expected, mergedPSet.(*PSet[*testMergeable]).LiveView(), "pset.LiveView")
 }
 
 func TestInvalidIdentifierMerge(t *testing.T) {
-	pset0 := NewPSet(psetID0)
-	pset1 := NewPSet(psetID1)
+	pset0 := NewPSet[*testMergeable](psetID0)
+	pset1 := NewPSet[*testMergeable](psetID1)
 
 	_, err := pset0.Merge(&pset1)
 
@@ -122,10 +122,10 @@ func TestInvalidIdentifierMerge(t *testing.T) {
 }
 
 func TestMergeError(t *testing.T) {
-	pset0 := NewPSet(psetID0)
+	pset0 := NewPSet[*testMergeable](psetID0)
 	pset0.Add(&mergeable0)
 
-	pset1 := NewPSet(psetID0)
+	pset1 := NewPSet[*testMergeable](psetID0)
 	pset1.Add(&invalidMergeable)
 
 	_, err := pset0.Merge(&pset1)
@@ -139,7 +139,7 @@ type testMergeable struct {
 	identifier string
 }
 
-func (t *testMergeable) Identifier() interface{} {
+func (t *testMergeable) Identifier() string {
 	return t.identifier
 }
 

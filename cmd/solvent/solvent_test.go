@@ -10,6 +10,7 @@ import (
 )
 
 type toDoListsDto struct {
+	Identifier   string        `json:"identifier"`
 	LiveSet      []interface{} `json:"liveSet"`
 	TombstoneSet []interface{} `json:"tombstoneSet"`
 }
@@ -77,6 +78,7 @@ func TestUpdateNotebook(t *testing.T) {
 	requestBody := fmt.Sprintf(`{
 		"id": "%s",
 		"toDoLists": {
+			"identifier": "ToDoListPSet",
 			"liveSet": [
 				{
 					"id": "c8745289-c064-4759-815d-172261eaff8b",

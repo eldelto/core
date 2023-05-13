@@ -146,7 +146,7 @@ func TestMergeToDoLists(t *testing.T) {
 	item1.Checked = true
 	item1.OrderValue.Value = 5.0
 	item1.OrderValue.UpdatedAt = item1.OrderValue.UpdatedAt + 1
-	list1.ToDoItems.Add(item1)
+	list1.ToDoItems.Add(&item1)
 
 	merged, err := list0.Merge(list1)
 	mergedList := merged.(*ToDoList)

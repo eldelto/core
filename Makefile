@@ -19,13 +19,11 @@ $(GO_BINARIES): bin/%: cmd/%.go
 	go build -o bin/ $^
 
 .PHONY: test
-test: lint
-	echo Testing ...
+test:
 	go test ./...
 
 .PHONY: lint
 lint:
-	go mod tidy
 	go fmt ./...
 	staticcheck ./...
 
