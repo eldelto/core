@@ -16,7 +16,7 @@ download:
 	go mod download
 
 $(GO_BINARIES): bin/%: cmd/%.go
-	go build -o bin/ $^
+	go build -ldflags="-s -w" -o bin/ $^
 
 .PHONY: test
 test:
