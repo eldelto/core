@@ -130,6 +130,11 @@ type PiPadResult struct {
 	ReturnLoss  float64
 }
 
+func (r *PiPadResult) String() string {
+	return fmt.Sprintf("R1 = %f, R2 = %f, Attenuation = %f, ReturnLoss = %f",
+		r.R1, r.R2, r.Attenuation, r.ReturnLoss)
+}
+
 func calcPossiblePiPadCombinations(zo, r1, r2 float64) []PiPadResult {
 	possibleR1s := findE12Values(r1)
 	possibleR2s := findE12Values(r2)
@@ -177,9 +182,15 @@ r2 █        █ r2
 	}
 
 	r1, r2 := calcPiPadResistors(zo, attenuation)
+	attenuation, returnLoss := calcPiPadAttenuation(zo, r1, r2)
+	result := PiPadResult{
+		R1:          r1,
+		R2:          r2,
+		Attenuation: attenuation,
+		ReturnLoss:  returnLoss,
+	}
 	fmt.Println(Magenta("\nIdeal values:"))
-	fmt.Printf("R1 = "+Green("%f\n"), r1)
-	fmt.Printf("R2 = "+Green("%f\n"), r2)
+	fmt.Println(Green(result.String()))
 
 	fmt.Println(Magenta("\nTop 5 possible E12 combinations:"))
 	results := calcPossiblePiPadCombinations(zo, r1, r2)
