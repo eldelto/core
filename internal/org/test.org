@@ -1,0 +1,93 @@
+* Test File
+** Ignored
+   asdflkjasdfoij elkasdf o
+   
+** Articles
+*** Raspberry Pi Pico no Hands Flashing
+
+    Today we're gonna check out how to use ~picotool~ to flash our
+    Raspberry Pi Pico without unplugging it.
+
+    This tutorial is based on a [[*Raspberry Pi Pico Setup for macOS][previous article]], so make sure to
+    consult the first part if the general SDK setup is unclear.
+
+**** Picotool
+
+     First things first we have to clone the [[https://github.com/raspberrypi/picotool][picotool repository]]
+     #+begin_src bash
+       git clone https://github.com/raspberrypi/picotool.git
+     #+end_src
+
+     and make sure to have ~libusb~ installed. On macOS we can do this
+     via the ~brew~ package manager:
+     #+begin_src bash
+       brew install libusb
+     #+end_src
+
+     After that is done we can build the ~picotool~ binary. Let's
+     switch into the ~picotool~ directory and execute the following
+     commands to create a build folder, export the path to our
+     ~pico-sdk~ project and finally build the binary.
+     #+begin_src bash
+       mkdir build
+       cd build
+       export PICO_SDK_PATH=<your path to the pico-sdk directory>
+       cmake ..
+       make
+     #+end_src
+     
+     After the compilation has finished we have our finished
+     ~picotool~ binary in our build folder. We can verify our build by
+     running picotool's ~help~ command:
+     #+begin_src bash
+       ./picotool help
+     #+end_src
+
+     #+begin_comment
+     If you're feeling fancy you can add the ~picotool~ binary to your
+     ~PATH~ for maximum efficiency gains.
+     #+end_comment
+
+**** Pico Preperations
+
+     To enable our Raspberry Pi Pico to be restarted via USB while
+     running we need to flash it once /manually/ with a binary enables
+     standard I/O via USB. This feature can be enabled in your
+     ~CMakeLists.txt~ file via the ~pico_enable_stdio_usb~ drective
+     (an example can be found [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]).
+
+     Rebuild our project and we are all set.
+
+**** No-Hands Flashing
+
+     Now the last step to greatness is to keep our Rasberry Pi Pico
+     plugged in, point the ~picotool load~ command to our ~.uf2~ file
+     and off we go:
+     #+begin_src bash
+       picotool load -f <path to .uf2 file>
+     #+end_src
+
+     #+begin_comment
+     The ~-f~ flag forces the Pico into /BOOTSEL/ mode even though it
+     is currently running. This is only possible when you build all
+     your binaries with ~pico_enable_stdio_usb~.
+     #+end_comment
+
+     Congrats! Another step towards ultimate laziness (aka efficiency) has
+     been taken and we no longer need to move away from our beloved
+     keyboard to mingle with those pesky cables. *TODO too ironic?*
+
+**** Going Further
+
+     This is all nice and well but there is still some room to improve
+     this setup. We still have to build our code on every change and
+     then flash our microcontroller via the ~picotool~ command. Two
+     steps that definitely could be one...
+
+     To have an even tighter integration into our build
+     process we can add the ~picotool~ execution into a custom
+     ~Makefile~ that in turn depends on our ~.uf2~ file being
+     up-to-date and rebuilds it automatically on changes. I'm not
+     going into too much detail here but instead just point you to one
+     of my [[https://github.com/eldelto/project-ikaros/blob/main/Makefile#L60][projects]] that uses it in a similar way.
+     

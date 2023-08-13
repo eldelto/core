@@ -33,6 +33,12 @@ func AssertContains(t *testing.T, expected interface{}, testee []interface{}, ti
 	t.Errorf("%s did not contain a value '%v': %v", title, expected, testee)
 }
 
+func AssertNoError(t *testing.T, err error, title string) {
+	if err != nil {
+		t.Errorf("%s should not return an error but returned '%v'", title, err)
+	}
+}
+
 type Response struct {
 	response   *http.Response
 	T          *testing.T
