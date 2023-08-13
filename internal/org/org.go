@@ -82,7 +82,7 @@ func NewText(content string) Text {
 	}
 }
 
-func parse(headlineName string, currentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) {
+func parse(parentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		/*
@@ -107,44 +107,42 @@ func parse(headlineName string, currentHeadline *Headline, scanner *bufio.Scanne
 				return nil, err
 			}
 
-			if currentHeadline == nil {
-				if headline.content == headlineName {
-					currentHeadline = headline
+			// Special handling for first headline we encounter.
+			if parentHeadline == nil {
+				if _, err := parse(headline, scanner); err != nil {
+					return nil, err
 				}
-				continue
-			}
 
-			if headline.Level <= currentHeadline.Level {
 				return headline, nil
 			}
-			currentHeadline.children = append(currentHeadline.children, headline)
 
-			headline, err = parse(headlineName, headline, scanner)
-			if err != nil {
-				return nil, err
+			// Append all sub-headlines.
+			for headline.Level > parentHeadline.Level {
+				parentHeadline.children = append(parentHeadline.children, headline)
+				headline, err = parse(headline, scanner)
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			if headline.Level <= currentHeadline.Level {
-				return headline, nil
-			}
-			currentHeadline.children = append(currentHeadline.children, headline)
+			return headline, nil
 		} else {
-			if currentHeadline == nil {
+			if parentHeadline == nil {
 				continue
 			}
 
 			text := NewText(strings.TrimSpace(line))
-			currentHeadline.children = append(currentHeadline.children, &text)
+			parentHeadline.children = append(parentHeadline.children, &text)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("failed to scan input reader: %w", err)
 	}
 
-	return currentHeadline, nil
+	return parentHeadline, nil
 }
 
-func Parse(headlineName string, r io.Reader) (*Headline, error) {
+func Parse(r io.Reader) (*Headline, error) {
 	scanner := bufio.NewScanner(r)
-	return parse(headlineName, nil, scanner)
+	return parse(nil, scanner)
 }

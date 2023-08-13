@@ -12,18 +12,24 @@ import (
 )
 
 func AssertEquals(t *testing.T, expected, actual interface{}, title string) {
+	t.Helper()
+
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("%s should be '%v' but was '%v'", title, expected, actual)
 	}
 }
 
 func AssertNotEquals(t *testing.T, expected, actual interface{}, title string) {
+	t.Helper()
+
 	if reflect.DeepEqual(expected, actual) {
 		t.Errorf("%s should not be '%v' but was '%v'", title, expected, actual)
 	}
 }
 
 func AssertContains(t *testing.T, expected interface{}, testee []interface{}, title string) {
+	t.Helper()
+
 	for _, actual := range testee {
 		if reflect.DeepEqual(expected, actual) {
 			return
@@ -34,6 +40,8 @@ func AssertContains(t *testing.T, expected interface{}, testee []interface{}, ti
 }
 
 func AssertNoError(t *testing.T, err error, title string) {
+	t.Helper()
+
 	if err != nil {
 		t.Errorf("%s should not return an error but returned '%v'", title, err)
 	}

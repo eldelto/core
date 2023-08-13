@@ -9,23 +9,26 @@ import (
 	. "github.com/eldelto/core/internal/testutils"
 )
 
-//go:embed test.org
-var testFile string
-
-const (
-	targetHeadline = "Articles"
-)
+//go:embed small.org
+var smallTestFile string
 
 func TestParsing(t *testing.T) {
-	headline, err := org.Parse(targetHeadline, strings.NewReader(testFile))
-	AssertNoError(t, err, "org.Parse")
+	headline, err := org.Parse(strings.NewReader(smallTestFile))
+	AssertNoError(t, err, "Parse")
 
-	AssertEquals(t, targetHeadline, headline.Content(), "1. headline")
-	AssertEquals(t, uint(2), headline.Level, "1. headline level")
+	AssertEquals(t, "Headline 1", headline.Content(), "1. headline")
+	AssertEquals(t, uint(1), headline.Level, "1. headline level")
+	AssertEquals(t, 3, len(headline.Children()), "1. headline children len")
 
-	articleHeadline := headline.Children()[0].(*org.Headline)
-	AssertEquals(t, "Raspberry Pi Pico no Hands Flashing", articleHeadline.Content(), "1.1 headline")
-	AssertEquals(t, uint(3), articleHeadline.Level, "1.1 headline level")
-	AssertEquals(t, "Picotool", articleHeadline.Children()[4].Content(), "1.1.1 headline")
-	AssertEquals(t, "Pico Preperations", articleHeadline.Children()[5].Content(), "1.1.2 headline")
+	headlineOneOne := headline.Children()[1].(*org.Headline)
+	AssertEquals(t, "Headline 1.1", headlineOneOne.Content(), "1.1 headline")
+	AssertEquals(t, uint(2), headlineOneOne.Level, "1.1 headline level")
+	AssertEquals(t, "Headline 1.1 text.", headlineOneOne.Children()[0].Content(),
+		"1.1 headline paragraph")
+
+	headlineOneTwo := headline.Children()[2].(*org.Headline)
+	AssertEquals(t, "Headline 1.2", headlineOneTwo.Content(), "1.2 headline")
+	AssertEquals(t, uint(2), headlineOneTwo.Level, "1.2 headline level")
+	AssertEquals(t, "Headline 1.2 text.", headlineOneTwo.Children()[0].Content(),
+		"1.2 headline paragraph")
 }

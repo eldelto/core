@@ -1,0 +1,15 @@
+* Headline 1
+
+  Headline 1 text.
+
+** Headline 1.1
+
+   Headline 1.1 text.
+
+** Headline 1.2
+
+   Headline 1.2 text.
+
+* Headline 2 
+
+  Needs to be excluded.
