@@ -2,12 +2,10 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"os"
 
-	"github.com/eldelto/core/internal/solvent/service"
-	"github.com/eldelto/core/internal/solvent/service/errcode"
+	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/solvent/web/dto"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
@@ -15,10 +13,10 @@ import (
 )
 
 type MainController struct {
-	service *service.Service
+	service *solvent.Service
 }
 
-func NewMainController(service *service.Service) MainController {
+func NewMainController(service *solvent.Service) MainController {
 	return MainController{
 		service: service,
 	}
@@ -127,23 +125,24 @@ func responseContentTypeHandler(next http.Handler, contentType string) http.Hand
 }
 
 func handleError(w http.ResponseWriter, err error) {
-	var notFoundErrro *errcode.NotFoundError
-	if errors.As(err, &notFoundErrro) {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
+	// TODO: Implement
+	// var notFoundErrro *errcode.NotFoundError
+	// if errors.As(err, &notFoundErrro) {
+	// 	http.Error(w, err.Error(), http.StatusNotFound)
+	// 	return
+	// }
 
-	var notebookError *errcode.NotebookError
-	if errors.As(err, &notebookError) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// var notebookError *errcode.NotebookError
+	// if errors.As(err, &notebookError) {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	var unknownError *errcode.UnknownError
-	if errors.As(err, &unknownError) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// var unknownError *errcode.UnknownError
+	// if errors.As(err, &unknownError) {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
