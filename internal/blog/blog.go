@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"html"
 	"io"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -149,17 +152,15 @@ func parse(parentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) 
 }
 
 func cleanupChildren(node TextNode) {
-	for i, child := range node.Children() {
-		if i >= len(node.Children())-1 {
-			break
+	newChildren := []TextNode{}
+	for _, child := range node.Children() {
+		if child.Content() != "" {
+			newChildren = append(newChildren, child)
+			cleanupChildren(child)
 		}
-
-		if child.Content() == "" {
-			node.SetChildren(append(node.Children()[:i], node.Children()[i+1:]...))
-		}
-
-		cleanupChildren(child)
 	}
+
+	node.SetChildren(newChildren)
 }
 
 func parseOrgFile(r io.Reader) (*Headline, error) {
@@ -224,4 +225,77 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 	}
 
 	return articles, nil
+}
+
+func tagged(s, tag string) string {
+	b := strings.Builder{}
+	b.WriteRune('<')
+	b.WriteString(tag)
+	b.WriteRune('>')
+	b.WriteString(s)
+	b.WriteRune('<')
+	b.WriteRune('/')
+	b.WriteString(tag)
+	b.WriteRune('>')
+	b.WriteRune('\n')
+
+	return b.String()
+}
+
+var inlineRules = []func(string) string{
+	// replace("[[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]", ""),
+	replaceLinks(),
+}
+
+func replaceLinks() func(string) string {
+	r := regexp.MustCompile(`\[\[([^\]]+)\]\[([^\]]+)\]\]`)
+	return func(s string) string {
+		matches := r.FindAllStringSubmatch(s, -1)
+		for _, match := range matches {
+			replacement := fmt.Sprintf("<a href=\"%s\" target=\"_blank\">%s</a>", match[1], match[2])
+			s = strings.Replace(s, match[0], replacement, 1)
+		}
+
+		return s
+	}
+}
+
+func replaceInlineElements(s string) string {
+	for _, rule := range inlineRules {
+		s = rule(s)
+	}
+
+	return s
+}
+
+func TextNodeToHtml(t TextNode) string {
+	b := strings.Builder{}
+
+	content := html.EscapeString(t.Content())
+	switch t := t.(type) {
+	case *Headline:
+		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-2)))
+	case *Paragraph:
+		content = replaceInlineElements(content)
+		b.WriteString(tagged(content, "p"))
+	default:
+		panic(fmt.Sprintf("unknown type '%t'", t))
+	}
+
+	for _, child := range t.Children() {
+		b.WriteString(TextNodeToHtml(child))
+	}
+
+	return b.String()
+}
+
+func ArticleToHtml(a Article) string {
+	b := strings.Builder{}
+	b.WriteString(tagged(a.Title, "h1"))
+
+	for _, child := range a.Children {
+		b.WriteString(TextNodeToHtml(child))
+	}
+
+	return b.String()
 }

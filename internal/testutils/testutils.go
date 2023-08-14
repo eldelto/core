@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -37,6 +38,14 @@ func AssertContains(t *testing.T, expected interface{}, testee []interface{}, ti
 	}
 
 	t.Errorf("%s did not contain a value '%v': %v", title, expected, testee)
+}
+
+func AssertStringContains(t *testing.T, expected, testee, title string) {
+	t.Helper()
+
+	if !strings.Contains(testee, expected) {
+		t.Errorf("%s did not contain the substring '%v': %v", title, expected, testee)
+	}
 }
 
 func AssertNoError(t *testing.T, err error, title string) {
