@@ -1,6 +1,7 @@
 package api
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/eldelto/core/internal/blog"
@@ -28,8 +29,7 @@ func getArticle(service *blog.Service) web.Handler {
 
 		htmlArticle := blog.ArticleToHtml(article)
 
-		w.Write([]byte(htmlArticle))
-
-		return nil
+		templater := web.NewTemplater(TemplatesFS)
+		return templater.Write(w, template.HTML(htmlArticle), "base.html", "article.html")
 	}
 }

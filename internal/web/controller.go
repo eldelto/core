@@ -69,6 +69,6 @@ func getTemplate(templater *Templater, data any) Handler {
 			templatePath = "index.html"
 		}
 
-		return templater.Write(templatePath, w, data)
+		return templater.Write(w, data, templatePath)
 	}
 }

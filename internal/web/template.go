@@ -16,23 +16,28 @@ func NewTemplater(fileSystem fs.FS) *Templater {
 	return &Templater{fileSystem: fileSystem}
 }
 
-func (t *Templater) Get(templatePath string) (*template.Template, error) {
-	tmpl, err := template.ParseFS(t.fileSystem, path.Join("templates", templatePath+".tmpl"))
+func (t *Templater) Get(patterns ...string) (*template.Template, error) {
+	templatePaths := make([]string, len(patterns))
+	for i := range patterns {
+		templatePaths[i] = path.Join("templates", patterns[i]+".tmpl")
+	}
+
+	tmpl, err := template.ParseFS(t.fileSystem, templatePaths...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template %s: %w", templatePath, err)
+		return nil, fmt.Errorf("failed to parse template %v: %w", templatePaths, err)
 	}
 
 	return tmpl, nil
 }
 
-func (t *Templater) Write(templatePath string, writer io.Writer, data any) error {
-	tmpl, err := t.Get(templatePath)
+func (t *Templater) Write(writer io.Writer, data any, patterns ...string) error {
+	tmpl, err := t.Get(patterns...)
 	if err != nil {
 		return err
 	}
 
 	if err := tmpl.Execute(writer, data); err != nil {
-		return fmt.Errorf("failed to execute template %s: %w", templatePath, err)
+		return fmt.Errorf("failed to execute template %v: %w", patterns, err)
 	}
 
 	return nil
