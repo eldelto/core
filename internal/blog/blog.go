@@ -11,6 +11,13 @@ import (
 	"strings"
 )
 
+const (
+	codeBlockStart    = "#+begin_src"
+	codeBlockEnd      = "#+end_src"
+	commentBlockStart = "#+begin_comment"
+	commentBlockEnd   = "#+end_comment"
+)
+
 type TextNode interface {
 	Content() string
 	SetContent(content string)
@@ -82,22 +89,47 @@ func NewParagraph(content string) *Paragraph {
 	}
 }
 
+type CodeBlock struct {
+	textNode
+	Language string
+}
+
+func NewCodeBlock(language string) *CodeBlock {
+	return &CodeBlock{
+		textNode: textNode{
+			content:  "",
+			children: []TextNode{},
+		},
+	}
+}
+
+type CommentBlock struct {
+	textNode
+	Language string
+}
+
+func NewCommentBlock() *CommentBlock {
+	return &CommentBlock{
+		textNode: textNode{
+			content:  "",
+			children: []TextNode{},
+		},
+	}
+}
+
 func parse(parentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) {
 	var currentParagraph *Paragraph
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		trimmedLine := strings.TrimSpace(line)
 		/*
-			* as first char => headline
-			*\w => bold on
-			/\w => italic on
-			_\w => underline on
-			~\w => code on
-			^- => unordered list
-			^\d. => ordered list
-			#+begin_src => code block on
-			#+begin_comment => comment on
-			else text
+			  TODO:
+				^- => unordered list
+				^\d. => ordered list
+				#+begin_src => code block on
+				#+begin_comment => comment on
+				else text
 		*/
 
 		if len(line) > 0 && line[0] == '*' {
@@ -130,12 +162,34 @@ func parse(parentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) 
 			}
 
 			return headline, nil
+		} else if strings.HasPrefix(trimmedLine, codeBlockStart) {
+			block := NewCodeBlock(strings.Replace(trimmedLine, codeBlockStart+" ", "", 1))
+
+			for scanner.Scan() {
+				line := scanner.Text()
+				trimmedLine := strings.TrimSpace(line)
+				if strings.HasPrefix(trimmedLine, codeBlockEnd) {
+					break
+				}
+				block.content += "\n" + line
+			}
+			parentHeadline.children = append(parentHeadline.children, block)
+		} else if strings.HasPrefix(trimmedLine, commentBlockStart) {
+			block := NewCommentBlock()
+
+			for scanner.Scan() {
+				trimmedLine := strings.TrimSpace(scanner.Text())
+				if strings.HasPrefix(trimmedLine, commentBlockEnd) {
+					break
+				}
+				block.content += " " + trimmedLine
+			}
+			parentHeadline.children = append(parentHeadline.children, block)
 		} else {
 			if parentHeadline == nil {
 				continue
 			}
 
-			trimmedLine := strings.TrimSpace(line)
 			if currentParagraph == nil || trimmedLine == "" {
 				currentParagraph = NewParagraph(trimmedLine)
 				parentHeadline.children = append(parentHeadline.children, currentParagraph)
@@ -244,16 +298,55 @@ func tagged(s, tag string) string {
 
 var inlineRules = []func(string) string{
 	// replace("[[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]", ""),
-	replaceLinks(),
+	replaceExternalLinks(),
+	replaceInternalLinks(),
+	replaceWrappedText("~", "code"),
+	replaceWrappedText("\\*", "strong"),
+	replaceWrappedText("/", "cite"),
+	replaceWrappedText("\\+", "s"),
+	replaceWrappedText("_", "u"),
 }
 
-func replaceLinks() func(string) string {
-	r := regexp.MustCompile(`\[\[([^\]]+)\]\[([^\]]+)\]\]`)
+func replaceExternalLinks() func(string) string {
+	r := regexp.MustCompile(`\[\[([^*][^\]]+)\]\[([^\]]+)\]\]`)
+
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
 			replacement := fmt.Sprintf("<a href=\"%s\" target=\"_blank\">%s</a>", match[1], match[2])
 			s = strings.Replace(s, match[0], replacement, 1)
+		}
+
+		return s
+	}
+}
+
+func urlEncodeTitle(title string) string {
+	return strings.ReplaceAll(strings.ToLower(title), " ", "-")
+}
+
+func replaceInternalLinks() func(string) string {
+	r := regexp.MustCompile(`\[\[\*([^\]]+)\]\[([^\]]+)\]\]`)
+
+	return func(s string) string {
+		matches := r.FindAllStringSubmatch(s, -1)
+		for _, match := range matches {
+			href := urlEncodeTitle(match[1]) + ".html"
+			replacement := fmt.Sprintf("<a href=\"%s\">%s</a>", href, match[2])
+			s = strings.Replace(s, match[0], replacement, 1)
+		}
+
+		return s
+	}
+}
+
+func replaceWrappedText(symbol, replacement string) func(string) string {
+	r := regexp.MustCompile(`\s` + symbol + `([^` + symbol + `]+)` + symbol)
+
+	return func(s string) string {
+		matches := r.FindAllStringSubmatch(s, -1)
+		for _, match := range matches {
+			s = strings.Replace(s, match[0], " "+tagged(match[1], replacement), 1)
 		}
 
 		return s
@@ -278,8 +371,15 @@ func TextNodeToHtml(t TextNode) string {
 	case *Paragraph:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "p"))
+	case *CodeBlock:
+		b.WriteString(`<div class="code-block"><pre>`)
+		b.WriteString(content)
+		b.WriteString(`</pre></div>`)
+	case *CommentBlock:
+		content = replaceInlineElements(content)
+		b.WriteString(tagged(content, "aside"))
 	default:
-		panic(fmt.Sprintf("unknown type '%t'", t))
+		panic(fmt.Sprintf("unhandled type for HTML conversion: '%T'", t))
 	}
 
 	for _, child := range t.Children() {
