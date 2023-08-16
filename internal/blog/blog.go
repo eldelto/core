@@ -2,6 +2,8 @@ package blog
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"html"
@@ -28,6 +30,31 @@ type TextNode interface {
 type textNode struct {
 	content  string
 	children []TextNode
+}
+
+func (tn *textNode) GobEncode() ([]byte, error) {
+	buffer := bytes.Buffer{}
+	encoder := gob.NewEncoder(&buffer)
+	if err := encoder.Encode(tn.content); err != nil {
+		return nil, fmt.Errorf("failed to encode textNode.content: %w", err)
+	}
+	if err := encoder.Encode(tn.children); err != nil {
+		return nil, fmt.Errorf("failed to encode textNode.children: %w", err)
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func (tn *textNode) GobDecode(b []byte) error {
+	decoder := gob.NewDecoder(bytes.NewBuffer(b))
+	if err := decoder.Decode(&tn.content); err != nil {
+		return fmt.Errorf("failed to decode textNode.content: %w", err)
+	}
+	if err := decoder.Decode(&tn.children); err != nil {
+		return fmt.Errorf("failed to decode textNode.children: %w", err)
+	}
+
+	return nil
 }
 
 func (n *textNode) Content() string {

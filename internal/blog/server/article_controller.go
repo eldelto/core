@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"html/template"
@@ -18,18 +18,22 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	}
 }
 
+var (
+	templater          = web.NewTemplater(TemplatesFS)
+	articleTemplate, _ = templater.Get("base.html", "article.html")
+)
+
 func getArticle(service *blog.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		title := chi.URLParam(r, "title")
 
-		article, err := service.FetchArticle(title)
+		article, err := service.Fetch(title)
 		if err != nil {
 			return err
 		}
 
 		htmlArticle := blog.ArticleToHtml(article)
 
-		templater := web.NewTemplater(TemplatesFS)
-		return templater.Write(w, template.HTML(htmlArticle), "base.html", "article.html")
+		return articleTemplate.Execute(w, template.HTML(htmlArticle))
 	}
 }
