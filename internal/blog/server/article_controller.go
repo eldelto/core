@@ -21,8 +21,8 @@ func NewArticleController(service *blog.Service) *web.Controller {
 
 var (
 	templater       = web.NewTemplater(TemplatesFS)
-	sitemapTemplate = templater.GetP("base.html", "sitemap.html")
-	articleTemplate = templater.GetP("base.html", "article.html")
+	sitemapTemplate = templater.GetP("sitemap.html")
+	articleTemplate = templater.GetP("article.html")
 )
 
 func getSitemap(service *blog.Service) web.Handler {

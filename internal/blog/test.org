@@ -1,8 +1,144 @@
 * Test File
 ** Ignored
    asdflkjasdfoij elkasdf o
-   
+
 ** Articles
+*** Raspberry Pi Pico Setup for macOS
+
+**** Install required dependencies
+
+     First off we have to install a couple of tools so we can actually
+     build the Pico C/C++ SDK:
+
+     - Make
+     - Cmake
+     - GCC ARM Cross-Compiler
+     - Git
+     - Libusb
+
+     For easier installation we will use the Brew package manager. If
+     you don't already use it you can install it by following their
+     setup guide: https://brew.sh/index
+
+     With Brew setup, we can run the following command to install all
+     required dependencies:
+     #+begin_src bash
+       brew install gcc-arm-embedded libusb make cmake git
+     #+end_src
+
+**** Get the Pico SDK
+
+     In our workspace lets create a new folder called ~pico~ to contain
+     all related tools:
+     #+begin_src bash
+       mkdir pico
+     #+end_src
+
+     We can then change into this directory and checkout the ~pico-sdk~
+     from Github: https://github.com/raspberrypi/pico-sdk
+     #+begin_src bash
+       git clone https://github.com/raspberrypi/pico-sdk.git
+     #+end_src
+
+     This is going to take a little bit as it downloads the whole
+     project. Once the checkout procedure is done we still need to
+     do a last initialization step as the ~pico-sdk~ project manages
+     its dependencies as Git submodules. So we can execute
+     #+begin_src bash
+       git submodule update --init
+     #+end_src
+     to fetch all referenced submodules.
+
+**** Create and build our project
+
+     Now we are ready to create our very own project in the root of our
+     workspace. As a starting point we are going to use the ~blink~
+     example from the ~pico-examples~ repository:
+     https://github.com/raspberrypi/pico-examples
+
+     You can clone it to any location but I like to keep it in the
+     local ~pico~ folder as well:
+     #+begin_src bash
+       cd pico
+       git clone https://github.com/raspberrypi/pico-examples.git
+     #+end_src
+
+     We can then simply copy the example folder to root of our
+     workspace:
+     #+begin_src bash
+       cd ..
+       cp -r pico-examples/blink .
+     #+end_src
+
+     Make sure to use the examples in the ~pico_w~ directory if you
+     have a Pico W board otherwise they won't work correctly.
+
+     This should leave us with a directory structure like this:
+     #+begin_src bash
+       tree -L 2
+       TODO: Insert tree
+     #+end_src
+
+     We still need some other files to satisfy build process. Namely
+     the ~pico_sdk_import.cmake~ file to initialize the Pico SDK and a
+     ~CMakeLists.txt~ to handle the actual build process. The former
+     can be copied from the ~pico-exampels~ project and an example of
+     the latter can be found on [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][Github]].
+
+     Now we have everything setup to actually build this example and
+     push the generated binary to our development board.
+
+     First we have to create a ~build~ directory where our binary will
+     be located after the build finishes:
+     #+begin_src bash
+       cd blink
+       mkdir build
+     #+end_src
+
+     Next we need to set two environment variables that are required
+     by the build process:
+     #+begin_src bash
+       cd build
+       export PICO_SDK_PATH=../../pico/pico-sdk
+       export PICO_BOARD=pico
+       # export PICO_BOARD=pico_w
+     #+end_src
+
+     With this out of the way we can finally build our program with the
+     help CMake and Make like this:
+     #+begin_src bash
+       cmake ..
+       make
+     #+end_src
+
+     After the compilation process is done we should have a file called
+     ~blink.uf2~ in our build directory.
+
+**** Uploading our binary
+
+     Last but not least, we actually need to transfer our program to
+     the Raspberry Pi Pico board.
+
+     To do this we grab our trusty micro USB cable and connect it to
+     our development machine. Next we hold down the ~BOOTSEL~ button on
+     our Pico and connect the other end of our USB cable while still
+     holding the button down.
+
+     The Raspberry Pi Pico will now show up as a mass storage device
+     and we can simply copy our binary over. The microcontroller will
+     then restart by itself and start running our program.
+
+     That's it, you've successfully run your first Raspberry Pi Pico
+     program!
+
+**** Enhancing the build process
+
+     With this setup we have some manual steps that need be repeated
+     every time we change our code. First and foremost unplugging the
+     Raspberry Pi Pico all the time to get it into ~BOOTSEL~ mode.
+
+     Luckily for us their is a better solution using a project called
+     ~picotool~ which we will check out in the next video.
 *** Raspberry Pi Pico no Hands Flashing
 
     Today we're gonna check out how to use ~picotool~ to flash our
@@ -90,4 +226,4 @@
      up-to-date and rebuilds it automatically on changes. I'm not
      going into too much detail here but instead just point you to one
      of my [[https://github.com/eldelto/project-ikaros/blob/main/Makefile#L60][projects]] that uses it in a similar way.
-     
+ 

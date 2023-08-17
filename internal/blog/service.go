@@ -55,17 +55,13 @@ func (s *Service) store(articles ...Article) error {
 			return fmt.Errorf("failed to get bucket with name '%s'", bucketName)
 		}
 
-		buffer := bytes.Buffer{}
-		encoder := gob.NewEncoder(&buffer)
 		for _, article := range articles {
-			buffer.Reset()
-
-			if err := encoder.Encode(article); err != nil {
+			buffer := bytes.Buffer{}
+			if err := gob.NewEncoder(&buffer).Encode(article); err != nil {
 				return fmt.Errorf("failed to encode article '%s': %w", article.Title, err)
 			}
 
 			key := urlEncodeTitle(article.Title)
-			fmt.Println(key)
 			if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
 				return fmt.Errorf("failed to persist article '%s': %w", article.Title, err)
 			}

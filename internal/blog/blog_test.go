@@ -2,7 +2,6 @@ package blog
 
 import (
 	_ "embed"
-	"os"
 	"strings"
 	"testing"
 
@@ -40,8 +39,8 @@ func TestArticlesFromOrgFile(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
-	AssertEquals(t, 1, len(articles), "articles len")
-	AssertEquals(t, "Raspberry Pi Pico no Hands Flashing", articles[0].Title,
+	AssertEquals(t, 2, len(articles), "articles len")
+	AssertEquals(t, "Raspberry Pi Pico Setup for macOS", articles[0].Title,
 		"1. article headline")
 }
 
@@ -49,13 +48,13 @@ func TestArticlesToHtml(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
-	html := ArticleToHtml(articles[0])
+	html := ArticleToHtml(articles[1])
 	AssertStringContains(t, "<h1>Raspberry Pi Pico no Hands Flashing</h1>", html, "title")
 	AssertStringContains(t, "<h2>Picotool</h2>", html, "sub-headline")
 	AssertStringContains(t,
 		`<a href="https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e" target="_blank">here</a>`,
 		html, "link")
-	// TODO: Link to other article
-
-	os.WriteFile("article.html", []byte(html), 0666)
+	AssertStringContains(t,
+		`<a href="/articles/raspberry-pi-pico-setup-for-macos">previous article</a>`,
+		html, "link to another article")
 }

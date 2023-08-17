@@ -17,9 +17,10 @@ func NewTemplater(fileSystem fs.FS) *Templater {
 }
 
 func (t *Templater) Get(patterns ...string) (*template.Template, error) {
-	templatePaths := make([]string, len(patterns))
+	templatePaths := make([]string, len(patterns)+1)
+	templatePaths[0] = "templates/base.html.tmpl"
 	for i := range patterns {
-		templatePaths[i] = path.Join("templates", patterns[i]+".tmpl")
+		templatePaths[i+1] = path.Join("templates", patterns[i]+".tmpl")
 	}
 
 	tmpl, err := template.ParseFS(t.fileSystem, templatePaths...)

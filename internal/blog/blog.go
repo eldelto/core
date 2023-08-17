@@ -366,7 +366,7 @@ func replaceInternalLinks() func(string) string {
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-			href := urlEncodeTitle(match[1]) + ".html"
+			href := "/articles/" + urlEncodeTitle(match[1])
 			replacement := fmt.Sprintf("<a href=\"%s\">%s</a>", href, match[2])
 			s = strings.Replace(s, match[0], replacement, 1)
 		}

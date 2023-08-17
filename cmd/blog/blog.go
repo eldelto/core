@@ -27,7 +27,7 @@ func main() {
 	r := chi.NewRouter()
 
 	web.NewAssetController(server.AssetsFS).Register(r)
-	// web.NewTemplateController(server.TemplatesFS, nil).Register(r)
+	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
 
 	http.Handle("/", r)

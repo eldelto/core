@@ -69,6 +69,11 @@ func getTemplate(templater *Templater, data any) Handler {
 			templatePath = "index.html"
 		}
 
-		return templater.Write(w, data, templatePath)
+		if err := templater.Write(w, data, templatePath); err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return templater.Write(w, data, "not-found.html")
+		}
+
+		return nil
 	}
 }
