@@ -154,9 +154,6 @@ func parse(parentHeadline *Headline, scanner *bufio.Scanner) (*Headline, error) 
 			  TODO:
 				^- => unordered list
 				^\d. => ordered list
-				#+begin_src => code block on
-				#+begin_comment => comment on
-				else text
 		*/
 
 		if len(line) > 0 && line[0] == '*' {
@@ -255,9 +252,18 @@ func parseOrgFile(r io.Reader) (*Headline, error) {
 	return headline, nil
 }
 
+func urlEncodeTitle(title string) string {
+	return strings.ReplaceAll(strings.ToLower(title), " ", "-")
+}
+
 type Article struct {
-	Title    string
-	Children []TextNode
+	Title        string
+	Introduction string
+	Children     []TextNode
+}
+
+func (a *Article) UrlEncodedTitle() string {
+	return urlEncodeTitle(a.Title)
 }
 
 func findArticleHeadline(headline *Headline) (*Headline, error) {
@@ -298,9 +304,15 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 			continue
 		}
 
+		children := child.Children()
+		if len(children) < 1 {
+			return nil, fmt.Errorf("article '%s' is missing content", child.Content())
+		}
+
 		article := Article{
-			Title:    child.Content(),
-			Children: child.Children(),
+			Title:        child.Content(),
+			Introduction: children[0].Content(),
+			Children:     children,
 		}
 		articles = append(articles, article)
 	}
@@ -346,10 +358,6 @@ func replaceExternalLinks() func(string) string {
 
 		return s
 	}
-}
-
-func urlEncodeTitle(title string) string {
-	return strings.ReplaceAll(strings.ToLower(title), " ", "-")
 }
 
 func replaceInternalLinks() func(string) string {

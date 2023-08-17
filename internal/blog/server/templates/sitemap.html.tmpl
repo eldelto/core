@@ -1,0 +1,12 @@
+{{define "content"}}
+
+<div class="sitemap">
+  {{range .}}
+    <a href="/articles/{{.UrlEncodedTitle}}">
+    <h2>{{.Title}}</h2>
+    <p>{{.Introduction}}</p>
+    </a>
+  {{end}}
+</div>
+
+{{end}}

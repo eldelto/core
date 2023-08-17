@@ -30,6 +30,15 @@ func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 	return tmpl, nil
 }
 
+func (t *Templater) GetP(patterns ...string) *template.Template {
+	template, err := t.Get(patterns...)
+	if err != nil {
+		panic(err)
+	}
+
+	return template
+}
+
 func (t *Templater) Write(writer io.Writer, data any, patterns ...string) error {
 	tmpl, err := t.Get(patterns...)
 	if err != nil {

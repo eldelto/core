@@ -99,6 +99,29 @@ func (s *Service) Fetch(key string) (Article, error) {
 	return article, err
 }
 
+func (s *Service) FetchAll() ([]Article, error) {
+	articles := []Article{}
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket with name '%s'", bucketName)
+		}
+
+		return bucket.ForEach(func(key, value []byte) error {
+			article := Article{}
+			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&article); err != nil {
+				return fmt.Errorf("failed to decode article for key '%s': %w", key, err)
+			}
+
+			articles = append(articles, article)
+			return nil
+		})
+	})
+
+	return articles, err
+}
+
 func (s *Service) UpdateArticles(orgFile string) error {
 	f, err := os.Open(orgFile)
 	if err != nil {
