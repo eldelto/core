@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"go.etcd.io/bbolt"
 )
@@ -130,4 +131,13 @@ func (s *Service) UpdateArticles(orgFile string) error {
 	}
 
 	return s.store(articles...)
+}
+
+func (s *Service) CheckoutRepository(destination string) error {
+	cmd := exec.Command("git", "clone", "git@github.com:eldelto/gtd.git", destination)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to checkout Git repository to '%s': %s", destination, out)
+	}
+
+	return nil
 }
