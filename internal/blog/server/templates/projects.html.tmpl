@@ -1,0 +1,72 @@
+{{define "content"}} 
+
+<h1>Hobby Projects</h1>
+
+Below you can find a list of most (at least the ones that are worth showing)
+of my hobby projects.
+
+<h2>Core</h2>
+<p>
+  Repository: <a href="https://github.com/eldelto/core" target="_blank">Github</a><br>
+  Status: <strong>Permanently In Progress</strong>
+</p>
+<p>
+  My newish mono-repo that contains all current projects. <strong>Doesn't
+  contain all current projects yet :(</strong>
+</p>
+
+<h2>Project Ikaros</h2>
+<p>
+  Repository: <a href="https://github.com/eldelto/project-ikaros" target="_blank">Github</a><br>
+  Status: <strong>In Progress</strong>
+</p>
+<p>
+  My long-term project to build a custom flight-controller for a quad-copter
+  from scratch (at least software-wise). It is based on a Raspberry Pi Pico W
+  and contains
+</p>
+<img class="right" src="/assets/project-ikaros.png" alt="Solvent in action">
+
+<h2>Solvent</h2>
+<p>
+  Repository: <a href="https://github.com/eldelto/solvent" target="_blank">Github</a><br>
+  Status: <strong>Rework Pending</strong>
+</p>
+<p>
+  A CRDT-based to-do list written in Go with a React frontend. It doesn't
+  support multiple users at the moment but I still regularly use a self-hosted
+  instance with basic-auth for one-off to-do lists.
+</p>
+<p>
+  The current syncing mechanism is based on regularly polling the backend which
+  is already getting slow because the CRDT data structure is growing larger
+  with every new edit. Therefore I plan to rework the project a bit as it is
+  still the one project I use the most.
+</p>
+<img class="left" src="/assets/solvent.png" alt="Solvent in action">
+
+<h2>Temporary</h2>
+<p>
+  Repository: <a href="https://github.com/eldelto/temporary" target="_blank">Github</a><br>
+  Status: <strong>Done</strong>
+</p><p>
+  A website for encrypted file-sharing written in Elixir and some vanilla
+  Javascript. Uploaded files are automatically deleted after three days and the
+  encryption happens on the client-side so you can safely share your darkest
+  secrets.
+</p>
+<p> 
+  The encryption algorithm is kinda basic as I'm not a big cryptographer
+  but I once lost a password for an uploaded file and couldn't recover it even
+  with full root access to the server so it is sufficient I guess.
+</p>
+<p>
+  A publicly accessible version is hosted at
+  <a href="https://temporary.eldelto.com" target="_blank">
+    temporary.eldelto.com
+  </a>
+  .
+</p>
+<img class="right" src="/assets/temporary.png" alt="Temporary in action">
+
+{{end}}

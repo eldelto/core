@@ -1,12 +1,15 @@
 {{define "content"}}
 
+<p>All articles from all time:</p>
+
 <div class="sitemap">
+  <ul>
   {{range .}}
-    <a href="/articles/{{.UrlEncodedTitle}}">
-    <h2>{{.Title}}</h2>
-    <p>{{.Introduction}}</p>
-    </a>
+    <li>
+      <a href="/articles/{{.UrlEncodedTitle}}">{{.Title}}</a>
+    </li>
   {{end}}
+  </ul>
 </div>
 
 {{end}}

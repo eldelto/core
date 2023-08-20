@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -103,6 +104,37 @@ func NewHeadline(content string) (*Headline, error) {
 	}, nil
 }
 
+func (h *Headline) GobEncode() ([]byte, error) {
+	buffer := bytes.Buffer{}
+	encoder := gob.NewEncoder(&buffer)
+	if err := encoder.Encode(h.content); err != nil {
+		return nil, fmt.Errorf("failed to encode Headline.content: %w", err)
+	}
+	if err := encoder.Encode(h.children); err != nil {
+		return nil, fmt.Errorf("failed to encode Headline.children: %w", err)
+	}
+	if err := encoder.Encode(h.Level); err != nil {
+		return nil, fmt.Errorf("failed to encode Headline.Level: %w", err)
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func (h *Headline) GobDecode(b []byte) error {
+	decoder := gob.NewDecoder(bytes.NewBuffer(b))
+	if err := decoder.Decode(&h.content); err != nil {
+		return fmt.Errorf("failed to decode Headline.content: %w", err)
+	}
+	if err := decoder.Decode(&h.children); err != nil {
+		return fmt.Errorf("failed to decode Headline.children: %w", err)
+	}
+	if err := decoder.Decode(&h.Level); err != nil {
+		return fmt.Errorf("failed to decode Headline.Level: %w", err)
+	}
+
+	return nil
+}
+
 type Paragraph struct {
 	textNode
 }
@@ -118,7 +150,6 @@ func NewParagraph(content string) *Paragraph {
 
 type CodeBlock struct {
 	textNode
-	Language string
 }
 
 func NewCodeBlock(language string) *CodeBlock {
@@ -132,7 +163,6 @@ func NewCodeBlock(language string) *CodeBlock {
 
 type CommentBlock struct {
 	textNode
-	Language string
 }
 
 func NewCommentBlock() *CommentBlock {
@@ -306,7 +336,8 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 
 		children := child.Children()
 		if len(children) < 1 {
-			return nil, fmt.Errorf("article '%s' is missing content", child.Content())
+			log.Printf("article '%s' is missing content - skipping", child.Content())
+			continue
 		}
 
 		article := Article{

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/eldelto/core/internal/blog"
@@ -27,7 +28,7 @@ func updateArticles(service *blog.Service, destination string) {
 		return
 	}
 
-	if err := service.UpdateArticles(destination + "/notes.org"); err != nil {
+	if err := service.UpdateArticles(path.Join(destination, "notes.org")); err != nil {
 		log.Println(err)
 		return
 	}
@@ -44,6 +45,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	updateArticles(service, destination)
 
 	// Schedulers
 	articleUpdater := gocron.NewScheduler(time.UTC)
