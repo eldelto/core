@@ -1,10 +1,3 @@
-@font-face {
-  font-family: Koomik;
-  font-style: normal;
-  font-weight: 400;
-  src: url(/assets/koomik.otf);
-}
-
 :root {
   --white: #ffffff;
   --black: #141414;
@@ -16,6 +9,8 @@
 
 body {
   width: 100%;
+  box-sizing: border-box;
+  padding: 0 .5em;
   margin: 0px;
   display: flex;
   flex-direction: column;
@@ -86,12 +81,16 @@ nav#nav-bar {
 }
 
 nav#nav-bar>a {
-  padding: .3em 1em;
+  padding: .5em 1em;
   border-bottom: solid 2px rgba(0, 0, 0, 0);
 }
 
 nav#nav-bar>a:hover {
   border-bottom: solid 2px var(--highlight);
+}
+
+#nav-logo {
+  width: 1.8em;
 }
 
 .sitemap>ul {
@@ -101,4 +100,9 @@ nav#nav-bar>a:hover {
 .sitemap>ul>li {
   margin-bottom: 10px;
   list-style: none;
+}
+
+.shadow {
+  border-radius: 5px;
+  box-shadow: 0px 7px 12px rgba(0, 0, 0, .6);
 }

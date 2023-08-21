@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,18 +18,28 @@ import (
 
 const destinationEnv = "REPO_DESTINATION"
 
-func updateArticles(service *blog.Service, destination string) {
-	if err := os.RemoveAll(destination); err != nil {
+func updateArticles(service *blog.Service, destination string, overwrite bool) {
+	if overwrite {
+		if err := os.RemoveAll(destination); err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	orgFilePath := path.Join(destination, "notes.org")
+
+	_, err := os.Stat(orgFilePath)
+	if errors.Is(err, os.ErrNotExist) {
+		if err := service.CheckoutRepository(destination); err != nil {
+			log.Println(err)
+			return
+		}
+	} else if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if err := service.CheckoutRepository(destination); err != nil {
-		log.Println(err)
-		return
-	}
-
-	if err := service.UpdateArticles(path.Join(destination, "notes.org")); err != nil {
+	if err := service.UpdateArticles(orgFilePath); err != nil {
 		log.Println(err)
 		return
 	}
@@ -46,12 +57,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	updateArticles(service, destination)
+	updateArticles(service, destination, false)
 
 	// Schedulers
 	articleUpdater := gocron.NewScheduler(time.UTC)
 	defer articleUpdater.Stop()
-	if _, err := articleUpdater.Every(1).Day().At("00:00").Do(updateArticles, service, destination); err != nil {
+	if _, err := articleUpdater.Every(1).Day().At("00:00").Do(updateArticles, service, destination, true); err != nil {
 		log.Fatalf("failed to start articleUpdater scheduled job: %v", err)
 	}
 
