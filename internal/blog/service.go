@@ -11,7 +11,8 @@ import (
 )
 
 type Service struct {
-	db *bbolt.DB
+	db      *bbolt.DB
+	gitHost string
 }
 
 const (
@@ -26,7 +27,7 @@ func init() {
 	gob.Register(&CommentBlock{})
 }
 
-func NewService() (*Service, error) {
+func NewService(gitHost string) (*Service, error) {
 	db, err := bbolt.Open(dbName, 0600, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bbolt DB '%s': %w", dbName, err)
@@ -41,7 +42,8 @@ func NewService() (*Service, error) {
 	}
 
 	return &Service{
-		db: db,
+		db:      db,
+		gitHost: gitHost,
 	}, nil
 }
 
@@ -134,7 +136,7 @@ func (s *Service) UpdateArticles(orgFile string) error {
 }
 
 func (s *Service) CheckoutRepository(destination string) error {
-	cmd := exec.Command("git", "clone", "git@github.com:eldelto/gtd.git", destination)
+	cmd := exec.Command("git", "clone", "git@"+s.gitHost+":eldelto/gtd.git", destination)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to checkout Git repository to '%s': %s", destination, out)
 	}

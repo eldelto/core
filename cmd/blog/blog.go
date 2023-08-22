@@ -16,7 +16,10 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
-const destinationEnv = "REPO_DESTINATION"
+const (
+	destinationEnv = "REPO_DESTINATION"
+	gitHostEnv     = "GIT_HOST"
+)
 
 func updateArticles(service *blog.Service, destination string, overwrite bool) {
 	if overwrite {
@@ -51,8 +54,13 @@ func main() {
 		log.Fatalf("failed to read environment variable '%s', please provide a value", destinationEnv)
 	}
 
+	gitHost, ok := os.LookupEnv(gitHostEnv)
+	if !ok {
+		gitHost = "github.com"
+	}
+
 	// Services
-	service, err := blog.NewService()
+	service, err := blog.NewService(gitHost)
 	if err != nil {
 		log.Fatal(err)
 	}
