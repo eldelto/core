@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
@@ -137,6 +138,8 @@ func (s *Service) UpdateArticles(orgFile string) error {
 
 func (s *Service) CheckoutRepository(destination string) error {
 	cmd := exec.Command("git", "clone", "git@"+s.gitHost+":eldelto/gtd.git", destination)
+	log.Println("Checking out repository with " + cmd.String())
+
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to checkout Git repository to '%s': %s", destination, out)
 	}
