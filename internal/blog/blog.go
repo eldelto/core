@@ -9,6 +9,7 @@ import (
 	"html"
 	"io"
 	"log"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -283,7 +284,7 @@ func parseOrgFile(r io.Reader) (*Headline, error) {
 }
 
 func urlEncodeTitle(title string) string {
-	return strings.ReplaceAll(strings.ToLower(title), " ", "-")
+	return url.QueryEscape((strings.ReplaceAll(strings.ToLower(title), " ", "-")))
 }
 
 type Article struct {
@@ -344,6 +345,11 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 			Title:        child.Content(),
 			Introduction: children[0].Content(),
 			Children:     children,
+		}
+
+		if strings.HasPrefix(article.Title, "TODO") {
+			log.Printf("article '%s' is marked as TODO - skipping", article.Title)
+			continue
 		}
 		articles = append(articles, article)
 	}
