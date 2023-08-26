@@ -36,6 +36,12 @@ func getSitemap(service *blog.Service) web.Handler {
 	}
 }
 
+type articleData struct {
+	Title       string
+	Description string
+	Content     template.HTML
+}
+
 func getArticle(service *blog.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		title := chi.URLParam(r, "title")
@@ -47,6 +53,12 @@ func getArticle(service *blog.Service) web.Handler {
 
 		htmlArticle := blog.ArticleToHtml(article)
 
-		return articleTemplate.Execute(w, template.HTML(htmlArticle))
+		data := articleData{
+			Title:       article.Title,
+			Description: article.Introduction,
+			Content:     template.HTML(htmlArticle),
+		}
+
+		return articleTemplate.Execute(w, data)
 	}
 }
