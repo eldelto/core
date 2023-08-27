@@ -70,7 +70,7 @@ func main() {
 	// Schedulers
 	articleUpdater := gocron.NewScheduler(time.UTC)
 	defer articleUpdater.Stop()
-	if _, err := articleUpdater.Every(1).Day().At("00:00").Do(updateArticles, service, destination, true); err != nil {
+	if _, err := articleUpdater.Every(1).Hour().Do(updateArticles, service, destination, true); err != nil {
 		log.Fatalf("failed to start articleUpdater scheduled job: %v", err)
 	}
 
