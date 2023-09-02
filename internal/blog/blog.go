@@ -175,9 +175,23 @@ func NewCommentBlock() *CommentBlock {
 	}
 }
 
+type UnorderedList struct {
+	textNode
+}
+
+func NewUnorderedList() *UnorderedList {
+	return &UnorderedList{
+		textNode: textNode{
+			content:  "",
+			children: []TextNode{},
+		},
+	}
+}
+
 type parser struct {
 	currentToken string
 	line         uint
+	emptyLine    bool
 	scanner      *bufio.Scanner
 }
 
@@ -197,13 +211,23 @@ func (p *parser) token() (string, uint, error) {
 		}
 		p.line++
 		p.currentToken = p.scanner.Text()
+
+		// TODO: Refactor this so we don't do this check twice.
+		if strings.TrimSpace(p.currentToken) == "" {
+			p.emptyLine = true
+		}
 	}
 
 	return p.currentToken, p.line, nil
 }
 
+func (p *parser) sawEmptyLine() bool {
+	return p.emptyLine
+}
+
 func (p *parser) consume() {
 	p.currentToken = ""
+	p.emptyLine = false
 }
 
 func parseError(message string, line uint, token string) error {
@@ -314,6 +338,52 @@ func parseCommentBlock(p *parser) (*CommentBlock, error) {
 	}
 }
 
+func isUnorderedList(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), "- ")
+}
+
+func isText(token string) bool {
+	return !(isHeadline(token) || isCodeBlock(token) || isCommentBlock(token))
+}
+
+func parseUnorderedList(p *parser) (*UnorderedList, error) {
+	token, line, err := p.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected unordered list: %w", line, err)
+	}
+
+	if !isUnorderedList(token) {
+		return nil, parseError("expected unordered list", line, token)
+	}
+
+	list := NewUnorderedList()
+	node := NewParagraph(strings.TrimSpace(token)[2:])
+	list.children = append(list.children, node)
+	p.consume()
+
+	for {
+		token, line, err = p.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
+		}
+
+		if !isText(token) || p.sawEmptyLine() {
+			return list, nil
+		}
+
+		trimmedToken := strings.TrimSpace(token)
+
+		if isUnorderedList(token) {
+			node := NewParagraph(trimmedToken[2:])
+			list.children = append(list.children, node)
+		} else {
+			node.content += " " + trimmedToken
+		}
+
+		p.consume()
+	}
+}
+
 func parseContent(p *parser, level uint) ([]TextNode, error) {
 	var node TextNode
 	nodes := []TextNode{}
@@ -352,11 +422,16 @@ func parseContent(p *parser, level uint) ([]TextNode, error) {
 				return nil, err
 			}
 			nodes = append(nodes, node)
+		} else if isUnorderedList(token) {
+			if node, err = parseUnorderedList(p); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
 		} else {
 			trimmedToken := strings.TrimSpace(token)
 
 			paragraph, isParagraph := node.(*Paragraph)
-			if node == nil || !isParagraph {
+			if p.sawEmptyLine() || node == nil || !isParagraph {
 				node = NewParagraph(trimmedToken)
 				nodes = append(nodes, node)
 			} else {
@@ -535,6 +610,10 @@ func TextNodeToHtml(t TextNode) string {
 	switch t := t.(type) {
 	case *Headline:
 		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-2)))
+
+		for _, child := range t.Children() {
+			b.WriteString(TextNodeToHtml(child))
+		}
 	case *Paragraph:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "p"))
@@ -545,12 +624,14 @@ func TextNodeToHtml(t TextNode) string {
 	case *CommentBlock:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "aside"))
+	case *UnorderedList:
+		b.WriteString("<ul>")
+		for _, child := range t.children {
+			b.WriteString(tagged(child.Content(), "li"))
+		}
+		b.WriteString("</ul>")
 	default:
 		panic(fmt.Sprintf("unhandled type for HTML conversion: '%T'", t))
-	}
-
-	for _, child := range t.Children() {
-		b.WriteString(TextNodeToHtml(child))
 	}
 
 	return b.String()
