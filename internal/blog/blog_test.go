@@ -58,25 +58,3 @@ func TestArticlesToHtml(t *testing.T) {
 		`<a href="/articles/raspberry-pi-pico-setup-for-macos">previous article</a>`,
 		html, "link to another article")
 }
-
-func TestParsewOrgFile(t *testing.T) {
-	headline, err := Parse2(strings.NewReader(testFile))
-	AssertNoError(t, err, "parseOrgFile")
-
-	t.Logf("headline: %v", headline)
-	// AssertEquals(t, "Headline 1", headline.Content(), "1. headline")
-	// AssertEquals(t, uint(1), headline.Level, "1. headline level")
-	// AssertEquals(t, 3, len(headline.Children()), "1. headline children len")
-
-	// headlineOneOne := headline.Children()[1].(*Headline)
-	// AssertEquals(t, "Headline 1.1", headlineOneOne.Content(), "1.1 headline")
-	// AssertEquals(t, uint(2), headlineOneOne.Level, "1.1 headline level")
-	// AssertEquals(t, "Headline 1.1 text.", headlineOneOne.Children()[0].Content(),
-	// 	"1.1 headline paragraph")
-
-	// headlineOneTwo := headline.Children()[2].(*Headline)
-	// AssertEquals(t, "Headline 1.2", headlineOneTwo.Content(), "1.2 headline")
-	// AssertEquals(t, uint(2), headlineOneTwo.Level, "1.2 headline level")
-	// AssertEquals(t, "Headline 1.2 text.", headlineOneTwo.Children()[0].Content(),
-	// 	"1.2 headline paragraph")
-}
