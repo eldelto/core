@@ -26,6 +26,7 @@ func init() {
 	gob.Register(&Paragraph{})
 	gob.Register(&CodeBlock{})
 	gob.Register(&CommentBlock{})
+	gob.Register(&UnorderedList{})
 }
 
 func NewService(gitHost string) (*Service, error) {
