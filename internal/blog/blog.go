@@ -189,10 +189,11 @@ func NewUnorderedList() *UnorderedList {
 }
 
 type parser struct {
-	currentToken string
-	line         uint
-	emptyLine    bool
-	scanner      *bufio.Scanner
+	currentToken     string
+	line             uint
+	emptyLine        bool
+	scanner          *bufio.Scanner
+	returnEmptyLines bool
 }
 
 // Skips trimmed empty lines but return the raw line without trimming.
@@ -215,6 +216,9 @@ func (p *parser) token() (string, uint, error) {
 		// TODO: Refactor this so we don't do this check twice.
 		if strings.TrimSpace(p.currentToken) == "" {
 			p.emptyLine = true
+			if p.returnEmptyLines {
+				break
+			}
 		}
 	}
 
@@ -284,6 +288,8 @@ func parseCodeBlock(p *parser) (*CodeBlock, error) {
 	language := strings.Replace(strings.TrimSpace(token), codeBlockStart+" ", "", 1)
 	codeBlock := NewCodeBlock(language)
 	p.consume()
+	p.returnEmptyLines = true
+	defer func() { p.returnEmptyLines = false }()
 
 	for {
 		token, line, err = p.token()
