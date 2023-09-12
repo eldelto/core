@@ -50,6 +50,7 @@ func TestArticlesToHtml(t *testing.T) {
 
 	html := ArticleToHtml(articles[0])
 	AssertStringContains(t, `<li>Make</li>`, html, "unordered list")
+	AssertStringContains(t, "<li><code>listed code</code>\n</li>", html, "code in list")
 
 	html = ArticleToHtml(articles[1])
 	AssertStringContains(t, "<h1>Raspberry Pi Pico no Hands Flashing</h1>", html, "title")

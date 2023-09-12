@@ -546,11 +546,11 @@ var inlineRules = []func(string) string{
 	// replace("[[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]", ""),
 	replaceExternalLinks(),
 	replaceInternalLinks(),
-	replaceWrappedText("~", "code"),
-	replaceWrappedText("\\*", "strong"),
-	replaceWrappedText("/", "cite"),
-	replaceWrappedText("\\+", "s"),
-	replaceWrappedText("_", "u"),
+	replaceWrappedText("~", "code", false),
+	replaceWrappedText("\\*", "strong", true),
+	replaceWrappedText("/", "cite", true),
+	replaceWrappedText("\\+", "s", true),
+	replaceWrappedText("_", "u", true),
 }
 
 func replaceExternalLinks() func(string) string {
@@ -582,13 +582,21 @@ func replaceInternalLinks() func(string) string {
 	}
 }
 
-func replaceWrappedText(symbol, replacement string) func(string) string {
-	r := regexp.MustCompile(`\s` + symbol + `([^` + symbol + `]+)` + symbol)
+func replaceWrappedText(symbol, replacement string, precedingSpace bool) func(string) string {
+	regex := symbol + `([^` + symbol + `]+)` + symbol
+	if precedingSpace {
+		regex = `\s` + regex
+	}
+	r := regexp.MustCompile(regex)
 
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-			s = strings.Replace(s, match[0], " "+tagged(match[1], replacement), 1)
+			replacement := tagged(match[1], replacement)
+			if precedingSpace {
+				replacement = " " + replacement
+			}
+			s = strings.Replace(s, match[0], replacement, 1)
 		}
 
 		return s
@@ -627,7 +635,8 @@ func TextNodeToHtml(t TextNode) string {
 	case *UnorderedList:
 		b.WriteString("<ul>")
 		for _, child := range t.children {
-			b.WriteString(tagged(child.Content(), "li"))
+			content = replaceInlineElements(child.Content())
+			b.WriteString(tagged(content, "li"))
 		}
 		b.WriteString("</ul>")
 	default:
