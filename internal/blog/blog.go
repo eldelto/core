@@ -641,7 +641,8 @@ func TextNodeToHtml(t TextNode) string {
 	case *UnorderedList:
 		b.WriteString("<ul>")
 		for _, child := range t.children {
-			content = replaceInlineElements(child.Content())
+			content = html.EscapeString(child.Content())
+			content = replaceInlineElements(content)
 			b.WriteString(tagged(content, "li"))
 		}
 		b.WriteString("</ul>")
