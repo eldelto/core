@@ -294,9 +294,11 @@ func parseCodeBlock(p *parser) (*CodeBlock, error) {
 		return nil, parseError("expected code block", line, token)
 	}
 
+	spaceCount := indentationLevel(token)
 	language := strings.Replace(strings.TrimSpace(token), codeBlockStart+" ", "", 1)
 	codeBlock := NewCodeBlock(language)
 	p.consume()
+
 	p.returnEmptyLines = true
 	defer func() { p.returnEmptyLines = false }()
 
@@ -311,6 +313,9 @@ func parseCodeBlock(p *parser) (*CodeBlock, error) {
 			return codeBlock, nil
 		}
 
+		if len(token) > spaceCount {
+			token = token[spaceCount:]
+		}
 		codeBlock.content += "\n" + token
 		p.consume()
 	}
@@ -322,6 +327,16 @@ func isCommentBlock(token string) bool {
 
 func isCommentBlockEnd(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), commentBlockEnd)
+}
+
+func indentationLevel(s string) int {
+	for i, r := range s {
+		if r != ' ' {
+			return i
+		}
+	}
+
+	return 0
 }
 
 func parseCommentBlock(p *parser) (*CommentBlock, error) {
