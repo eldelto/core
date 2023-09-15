@@ -756,10 +756,11 @@ func ArticleToHtml(a Article) string {
 	b.WriteString(tagged(a.Title, "h1"))
 
 	b.WriteString(`<div class="timestamps">`)
-	b.WriteString(tagged("Created @ "+tagged(a.CreatedAt.Format(time.DateOnly), "time"), "span"))
+	b.WriteString("Created @ " + tagged(a.CreatedAt.Format(time.DateOnly), "time"))
 
 	if a.UpdatedAt != emptyTime {
-		b.WriteString(tagged("Updated @ "+tagged(a.UpdatedAt.Format(time.DateOnly), "time"), "span"))
+		b.WriteString("<br>")
+		b.WriteString("Updated @ " + tagged(a.UpdatedAt.Format(time.DateOnly), "time"))
 	}
 	b.WriteString("</div>")
 

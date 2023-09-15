@@ -7,6 +7,34 @@
   --dark: rgb(0, 23, 62);
 }
 
+@font-face {
+  font-family: Atkinson;
+  font-style: normal;
+  font-weight: 400;
+  src: url(/assets/Atkinson-Hyperlegible-Regular-102a.woff2);
+}
+
+@font-face {
+  font-family: Atkinson;
+  font-style: normal;
+  font-weight: bold;
+  src: url(/assets/Atkinson-Hyperlegible-Bold-102a.woff2);
+}
+
+@font-face {
+  font-family: Atkinson;
+  font-style: italic;
+  font-weight: 400;
+  src: url(/assets/Atkinson-Hyperlegible-Italic-102a.woff2);
+}
+
+@font-face {
+  font-family: Atkinson;
+  font-style: italic;
+  font-weight: bold;
+  src: url(/assets/Atkinson-Hyperlegible-BoldItalic-102a.woff2);
+}
+
 body {
   width: 100%;
   box-sizing: border-box;
@@ -19,7 +47,7 @@ body {
   line-height: 1.5;
   color: var(--black);
   background-color: var(--white);
-  font-family: sans-serif;
+  font-family: Atkinson;
 }
 
 #content {
@@ -29,11 +57,7 @@ body {
 }
 
 h1 {
-  font-family: serif;
   text-align: center;
-  /* text-decoration: underline;
-  text-decoration-color: var(--highlight);
-  text-decoration-thickness: 4px; */
   margin-bottom: 1.2em;
 }
 
@@ -106,7 +130,7 @@ nav#nav-bar>a:hover {
 }
 
 .sitemap>ul>li {
-  margin-bottom: 10px;
+  margin-bottom: 1em;
   list-style: none;
 }
 
@@ -123,10 +147,4 @@ img {
 .timestamps {
   opacity: .7;
   font-size: .9em;
-}
-
-.timestamps {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
 }
