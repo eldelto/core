@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 
 	"go.etcd.io/bbolt"
 )
@@ -27,6 +28,7 @@ func init() {
 	gob.Register(&CodeBlock{})
 	gob.Register(&CommentBlock{})
 	gob.Register(&UnorderedList{})
+	gob.Register(&Properties{})
 }
 
 func NewService(gitHost string) (*Service, error) {
@@ -118,6 +120,10 @@ func (s *Service) FetchAll() ([]Article, error) {
 			articles = append(articles, article)
 			return nil
 		})
+	})
+
+	sort.Slice(articles, func(a, b int) bool {
+		return articles[a].CreatedAt.After(articles[b].CreatedAt)
 	})
 
 	return articles, err

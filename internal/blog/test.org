@@ -4,6 +4,10 @@
 
 ** Articles
 *** Raspberry Pi Pico Setup for macOS
+    :PROPERTIES:
+    :CREATED_AT:  <2023-09-12 Tue>
+    :UPDATED_AT:  <2023-09-13 Wed>
+    :END:
 
 **** Install required dependencies
 
@@ -142,7 +146,11 @@
 
      Luckily for us their is a better solution using a project called
      ~picotool~ which we will check out in the next video.
+
 *** Raspberry Pi Pico no Hands Flashing
+    :PROPERTIES:
+    :CREATED_AT:  <2023-09-12 Tue>
+    :END:
 
     Today we're gonna check out how to use ~picotool~ to flash our
     Raspberry Pi Pico without unplugging it.

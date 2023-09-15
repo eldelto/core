@@ -10,6 +10,7 @@
   <ul>
   {{range .}}
     <li>
+      <span class="timestamp">{{.CreatedAtString}}</span>
       <a href="/articles/{{.UrlEncodedTitle}}">{{.Title}}</a>
     </li>
   {{end}}

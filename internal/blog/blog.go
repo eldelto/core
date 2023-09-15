@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -21,6 +22,8 @@ const (
 	commentBlockStart = "#+begin_comment"
 	commentBlockEnd   = "#+end_comment"
 )
+
+var emptyTime = time.Time{}
 
 type TextNode interface {
 	Content() string
@@ -186,6 +189,12 @@ func NewUnorderedList() *UnorderedList {
 			children: []TextNode{},
 		},
 	}
+}
+
+type Properties struct {
+	textNode
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type parser struct {
@@ -390,6 +399,74 @@ func parseUnorderedList(p *parser) (*UnorderedList, error) {
 	}
 }
 
+func isProperties(token string) bool {
+	return strings.TrimSpace(token) == ":PROPERTIES:"
+}
+
+func isPropertiesEnd(token string) bool {
+	return strings.TrimSpace(token) == ":END:"
+}
+
+func parseDateProperty(token string, line uint) (time.Time, error) {
+	parts := strings.Split(token, " ")
+	if len(parts) < 3 {
+		return time.Time{}, parseError("expected date", line, token)
+	}
+
+	rawDate := strings.TrimSpace(parts[2])
+	rawDate = rawDate[1:]
+	date, err := time.Parse(time.DateOnly, rawDate)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("line %d: invalid date format: %w", line, err)
+	}
+
+	return date, nil
+}
+
+func parseProperties(p *parser) (*Properties, error) {
+	token, line, err := p.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected properties block: %w", line, err)
+	}
+
+	if !isProperties(token) {
+		return nil, parseError("expected properties", line, token)
+	}
+
+	properties := Properties{}
+	p.consume()
+
+	for {
+		token, line, err = p.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected property: %w", line, err)
+		}
+
+		if isPropertiesEnd(token) {
+			p.consume()
+			return &properties, nil
+		}
+
+		token = strings.TrimSpace(token)
+
+		if strings.HasPrefix(token, ":CREATED_AT:") {
+			date, err := parseDateProperty(token, line)
+			if err != nil {
+				return nil, err
+			}
+			properties.CreatedAt = date
+		} else if strings.HasPrefix(token, ":UPDATED_AT:") {
+			date, err := parseDateProperty(token, line)
+			if err != nil {
+				return nil, err
+			}
+			properties.UpdatedAt = date
+		}
+
+		p.consume()
+	}
+}
+
 func parseContent(p *parser, level uint) ([]TextNode, error) {
 	var node TextNode
 	nodes := []TextNode{}
@@ -433,6 +510,11 @@ func parseContent(p *parser, level uint) ([]TextNode, error) {
 				return nil, err
 			}
 			nodes = append(nodes, node)
+		} else if isProperties(token) {
+			if node, err = parseProperties(p); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
 		} else {
 			trimmedToken := strings.TrimSpace(token)
 
@@ -467,10 +549,16 @@ type Article struct {
 	Title        string
 	Introduction string
 	Children     []TextNode
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (a *Article) UrlEncodedTitle() string {
 	return urlEncodeTitle(a.Title)
+}
+
+func (a *Article) CreatedAtString() string {
+	return a.CreatedAt.Format(time.DateOnly)
 }
 
 func findArticleHeadline(headline *Headline) (*Headline, error) {
@@ -521,6 +609,20 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 			Title:        child.Content(),
 			Introduction: children[0].Content(),
 			Children:     children,
+		}
+
+		for _, child := range children {
+			properties, ok := child.(*Properties)
+			if ok {
+				article.CreatedAt = properties.CreatedAt
+				article.UpdatedAt = properties.UpdatedAt
+				break
+			}
+		}
+
+		if article.CreatedAt == emptyTime {
+			log.Printf("article '%s' is missing property CREATED_AT - skipping", article.Title)
+			continue
 		}
 
 		if strings.HasPrefix(article.Title, "TODO") {
@@ -646,6 +748,7 @@ func TextNodeToHtml(t TextNode) string {
 			b.WriteString(tagged(content, "li"))
 		}
 		b.WriteString("</ul>")
+	case *Properties:
 	default:
 		panic(fmt.Sprintf("unhandled type for HTML conversion: '%T'", t))
 	}
@@ -656,6 +759,14 @@ func TextNodeToHtml(t TextNode) string {
 func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 	b.WriteString(tagged(a.Title, "h1"))
+
+	b.WriteString(`<div class="timestamps">`)
+	b.WriteString(tagged("Created @ "+tagged(a.CreatedAt.Format(time.DateOnly), "time"), "span"))
+
+	if a.UpdatedAt != emptyTime {
+		b.WriteString(tagged("Updated @ "+tagged(a.UpdatedAt.Format(time.DateOnly), "time"), "span"))
+	}
+	b.WriteString("</div>")
 
 	for _, child := range a.Children {
 		b.WriteString(TextNodeToHtml(child))

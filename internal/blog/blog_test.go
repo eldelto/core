@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/eldelto/core/internal/testutils"
 )
@@ -45,8 +46,15 @@ func TestArticlesFromOrgFile(t *testing.T) {
 }
 
 func TestArticlesToHtml(t *testing.T) {
+	createdAt := time.Date(2023, 9, 12, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 9, 13, 0, 0, 0, 0, time.UTC)
+
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
+
+	article := articles[0]
+	AssertEquals(t, createdAt, article.CreatedAt, "article.CreatedAt")
+	AssertEquals(t, updatedAt, article.UpdatedAt, "article.UpdatedAt")
 
 	html := ArticleToHtml(articles[0])
 	AssertStringContains(t, `<li>Make</li>`, html, "unordered list")

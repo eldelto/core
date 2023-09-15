@@ -31,9 +31,9 @@ body {
 h1 {
   font-family: serif;
   text-align: center;
-  text-decoration: underline;
+  /* text-decoration: underline;
   text-decoration-color: var(--highlight);
-  text-decoration-thickness: 4px;
+  text-decoration-thickness: 4px; */
   margin-bottom: 1.2em;
 }
 
@@ -117,4 +117,16 @@ nav#nav-bar>a:hover {
 
 img {
   max-width: 100%;
+}
+
+.timestamp,
+.timestamps {
+  opacity: .7;
+  font-size: .9em;
+}
+
+.timestamps {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
