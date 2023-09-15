@@ -645,7 +645,6 @@ func tagged(s, tag string) string {
 	b.WriteRune('/')
 	b.WriteString(tag)
 	b.WriteRune('>')
-	b.WriteRune('\n')
 
 	return b.String()
 }
@@ -654,11 +653,11 @@ var inlineRules = []func(string) string{
 	// replace("[[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]", ""),
 	replaceExternalLinks(),
 	replaceInternalLinks(),
-	replaceWrappedText("~", "code", false),
-	replaceWrappedText("\\*", "strong", true),
-	replaceWrappedText("/", "cite", true),
-	replaceWrappedText("\\+", "s", true),
-	replaceWrappedText("_", "u", true),
+	replaceWrappedText("~", "code"),
+	replaceWrappedText("\\*", "strong"),
+	replaceWrappedText("/", "cite"),
+	replaceWrappedText("\\+", "s"),
+	replaceWrappedText("_", "u"),
 }
 
 func replaceExternalLinks() func(string) string {
@@ -690,24 +689,20 @@ func replaceInternalLinks() func(string) string {
 	}
 }
 
-func replaceWrappedText(symbol, replacement string, precedingSpace bool) func(string) string {
-	regex := symbol + `([^` + symbol + `]+)` + symbol
-	if precedingSpace {
-		regex = `\s` + regex
-	}
-	r := regexp.MustCompile(regex)
+func replaceWrappedText(symbol, replacement string) func(string) string {
+	r := regexp.MustCompile(`\s` + symbol + `([^` + symbol + `]+)` + symbol)
 
 	return func(s string) string {
+		// Add space so the regex also matches when symbol is at the start.
+		s = " " + s
+
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-			replacement := tagged(match[1], replacement)
-			if precedingSpace {
-				replacement = " " + replacement
-			}
+			replacement := " " + tagged(match[1], replacement)
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
 
-		return s
+		return s[1:]
 	}
 }
 
