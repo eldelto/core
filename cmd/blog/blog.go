@@ -81,6 +81,7 @@ func main() {
 
 	web.NewAssetController(server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
+	server.NewRobotsController().Register(r)
 	server.NewArticleController(service).Register(r)
 
 	http.Handle("/", r)
