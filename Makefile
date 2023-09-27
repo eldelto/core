@@ -1,11 +1,9 @@
 .DELETE_ON_ERROR:
 
-GO_CMDS := $(shell find cmd -name "*.go" -not -name "*_test.go")
-GO_BINARIES := $(GO_CMDS:cmd/%.go=bin/%)
-
 # High-level commands
 .PHONY: build lint
-build: $(GO_BINARIES)
+build:
+	go build -ldflags="-s -w" -o bin/ github.com/eldelto/core/...
 
 .PHONY: init
 init: download
@@ -14,9 +12,6 @@ init: download
 .PHONY: download
 download:
 	go mod download
-
-$(GO_BINARIES): bin/%: cmd/%.go
-	go build -ldflags="-s -w" -o bin/ $^
 
 .PHONY: test
 test:
