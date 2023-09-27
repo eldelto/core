@@ -1,13 +1,19 @@
 package web
 
 import (
+	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"path"
+	"path/filepath"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
+
+var startupTime = time.Now()
 
 type Endpoint struct {
 	Path   string
@@ -31,18 +37,42 @@ func (c *Controller) Register(router chi.Router) {
 
 func NewAssetController(fileSystem fs.FS) *Controller {
 	return &Controller{
-		BasePath: "/assets",
+		BasePath: "",
 		Handlers: map[Endpoint]Handler{
-			{Method: "GET", Path: "/*"}: getAsset(fileSystem),
+			{Method: "GET", Path: "/assets/*"}:    getAsset(fileSystem),
+			{Method: "GET", Path: "/robots.txt"}:  getFile(fileSystem, "robots.txt"),
+			{Method: "GET", Path: "/favicon.ico"}: getFile(fileSystem, "favicon.ico"),
 		},
 	}
 }
 
 func getAsset(fileSystem fs.FS) Handler {
+	next := http.FileServer(http.FS(fileSystem))
+	next = StaticContentMiddleware(next)
+
 	return func(w http.ResponseWriter, r *http.Request) error {
-		next := http.FileServer(http.FS(fileSystem))
-		next = StaticContentMiddleware(next)
 		next.ServeHTTP(w, r)
+		return nil
+	}
+}
+
+func getFile(fileSystem fs.FS, filename string) Handler {
+	rootPath := filepath.Join("/", filename)
+	assetPath := filepath.Join("assets", filename)
+
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if r.URL.Path != rootPath {
+			w.WriteHeader(404)
+			return nil
+		}
+
+		file, err := fileSystem.Open(assetPath)
+		if err != nil {
+			return fmt.Errorf("failed to serve file '%s': %w", filename, err)
+		}
+		defer file.Close()
+
+		http.ServeContent(w, r, filename, startupTime, file.(io.ReadSeeker))
 
 		return nil
 	}
