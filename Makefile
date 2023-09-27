@@ -3,7 +3,7 @@
 # High-level commands
 .PHONY: build lint
 build:
-	go build -ldflags="-s -w" -o bin/ github.com/eldelto/core/...
+	go install -ldflags="-s -w" github.com/eldelto/core/cmd/...
 
 .PHONY: init
 init: download
