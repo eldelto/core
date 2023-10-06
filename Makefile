@@ -1,7 +1,10 @@
 .DELETE_ON_ERROR:
 
 # High-level commands
-.PHONY: build lint
+.PHONY: all
+all: lint test build
+
+.PHONY: build
 build:
 	go install -ldflags="-s -w" github.com/eldelto/core/cmd/...
 

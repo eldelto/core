@@ -197,7 +197,7 @@ type Properties struct {
 	UpdatedAt time.Time
 }
 
-type parser struct {
+type tokenizer struct {
 	currentToken     string
 	line             uint
 	emptyLine        bool
@@ -206,41 +206,41 @@ type parser struct {
 }
 
 // Skips trimmed empty lines but return the raw line without trimming.
-func (p *parser) token() (string, uint, error) {
-	if p.currentToken != "" {
-		return p.currentToken, p.line, nil
+func (t *tokenizer) token() (string, uint, error) {
+	if t.currentToken != "" {
+		return t.currentToken, t.line, nil
 	}
 
-	for strings.TrimSpace(p.currentToken) == "" {
-		if !p.scanner.Scan() {
-			if p.scanner.Err() == nil {
-				return "", p.line, fmt.Errorf("reached end of input: %w", io.EOF)
+	for strings.TrimSpace(t.currentToken) == "" {
+		if !t.scanner.Scan() {
+			if t.scanner.Err() == nil {
+				return "", t.line, fmt.Errorf("reached end of input: %w", io.EOF)
 			}
 
-			return "", p.line, fmt.Errorf("failed to read next token: %w", p.scanner.Err())
+			return "", t.line, fmt.Errorf("failed to read next token: %w", t.scanner.Err())
 		}
-		p.line++
-		p.currentToken = p.scanner.Text()
+		t.line++
+		t.currentToken = t.scanner.Text()
 
 		// TODO: Refactor this so we don't do this check twice.
-		if strings.TrimSpace(p.currentToken) == "" {
-			p.emptyLine = true
-			if p.returnEmptyLines {
+		if strings.TrimSpace(t.currentToken) == "" {
+			t.emptyLine = true
+			if t.returnEmptyLines {
 				break
 			}
 		}
 	}
 
-	return p.currentToken, p.line, nil
+	return t.currentToken, t.line, nil
 }
 
-func (p *parser) sawEmptyLine() bool {
-	return p.emptyLine
+func (t *tokenizer) sawEmptyLine() bool {
+	return t.emptyLine
 }
 
-func (p *parser) consume() {
-	p.currentToken = ""
-	p.emptyLine = false
+func (t *tokenizer) consume() {
+	t.currentToken = ""
+	t.emptyLine = false
 }
 
 func parseError(message string, line uint, token string) error {
@@ -251,8 +251,8 @@ func isHeadline(token string) bool {
 	return strings.HasPrefix(token, "*")
 }
 
-func parseHeadline(p *parser) (*Headline, error) {
-	token, line, err := p.token()
+func parseHeadline(t *tokenizer) (*Headline, error) {
+	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected headline: %w", line, err)
 	}
@@ -265,9 +265,9 @@ func parseHeadline(p *parser) (*Headline, error) {
 	if err != nil {
 		return nil, parseError("malformed headline", line, token)
 	}
-	p.consume()
+	t.consume()
 
-	children, err := parseContent(p, headline.Level)
+	children, err := parseContent(t, headline.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -284,8 +284,8 @@ func isCodeBlockEnd(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), codeBlockEnd)
 }
 
-func parseCodeBlock(p *parser) (*CodeBlock, error) {
-	token, line, err := p.token()
+func parseCodeBlock(t *tokenizer) (*CodeBlock, error) {
+	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected code block: %w", line, err)
 	}
@@ -297,19 +297,19 @@ func parseCodeBlock(p *parser) (*CodeBlock, error) {
 	spaceCount := indentationLevel(token)
 	language := strings.Replace(strings.TrimSpace(token), codeBlockStart+" ", "", 1)
 	codeBlock := NewCodeBlock(language)
-	p.consume()
+	t.consume()
 
-	p.returnEmptyLines = true
-	defer func() { p.returnEmptyLines = false }()
+	t.returnEmptyLines = true
+	defer func() { t.returnEmptyLines = false }()
 
 	for {
-		token, line, err = p.token()
+		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected code block content: %w", line, err)
 		}
 
 		if isCodeBlockEnd(token) {
-			p.consume()
+			t.consume()
 			return codeBlock, nil
 		}
 
@@ -317,7 +317,7 @@ func parseCodeBlock(p *parser) (*CodeBlock, error) {
 			token = token[spaceCount:]
 		}
 		codeBlock.content += "\n" + token
-		p.consume()
+		t.consume()
 	}
 }
 
@@ -339,8 +339,8 @@ func indentationLevel(s string) int {
 	return 0
 }
 
-func parseCommentBlock(p *parser) (*CommentBlock, error) {
-	token, line, err := p.token()
+func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
+	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected comment block: %w", line, err)
 	}
@@ -350,21 +350,21 @@ func parseCommentBlock(p *parser) (*CommentBlock, error) {
 	}
 
 	commentBlock := NewCommentBlock()
-	p.consume()
+	t.consume()
 
 	for {
-		token, line, err = p.token()
+		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected comment block content: %w", line, err)
 		}
 
 		if isCommentBlockEnd(token) {
-			p.consume()
+			t.consume()
 			return commentBlock, nil
 		}
 
 		commentBlock.content += " " + token
-		p.consume()
+		t.consume()
 	}
 }
 
@@ -376,8 +376,8 @@ func isText(token string) bool {
 	return !(isHeadline(token) || isCodeBlock(token) || isCommentBlock(token))
 }
 
-func parseUnorderedList(p *parser) (*UnorderedList, error) {
-	token, line, err := p.token()
+func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
+	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected unordered list: %w", line, err)
 	}
@@ -389,15 +389,15 @@ func parseUnorderedList(p *parser) (*UnorderedList, error) {
 	list := NewUnorderedList()
 	node := NewParagraph(strings.TrimSpace(token)[2:])
 	list.children = append(list.children, node)
-	p.consume()
+	t.consume()
 
 	for {
-		token, line, err = p.token()
+		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
 		}
 
-		if !isText(token) || p.sawEmptyLine() {
+		if !isText(token) || t.sawEmptyLine() {
 			return list, nil
 		}
 
@@ -410,7 +410,7 @@ func parseUnorderedList(p *parser) (*UnorderedList, error) {
 			node.content += " " + trimmedToken
 		}
 
-		p.consume()
+		t.consume()
 	}
 }
 
@@ -438,8 +438,8 @@ func parseDateProperty(token string, line uint) (time.Time, error) {
 	return date, nil
 }
 
-func parseProperties(p *parser) (*Properties, error) {
-	token, line, err := p.token()
+func parseProperties(t *tokenizer) (*Properties, error) {
+	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected properties block: %w", line, err)
 	}
@@ -449,16 +449,16 @@ func parseProperties(p *parser) (*Properties, error) {
 	}
 
 	properties := Properties{}
-	p.consume()
+	t.consume()
 
 	for {
-		token, line, err = p.token()
+		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected property: %w", line, err)
 		}
 
 		if isPropertiesEnd(token) {
-			p.consume()
+			t.consume()
 			return &properties, nil
 		}
 
@@ -478,16 +478,16 @@ func parseProperties(p *parser) (*Properties, error) {
 			properties.UpdatedAt = date
 		}
 
-		p.consume()
+		t.consume()
 	}
 }
 
-func parseContent(p *parser, level uint) ([]TextNode, error) {
+func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 	var node TextNode
 	nodes := []TextNode{}
 
 	for {
-		token, line, err := p.token()
+		token, line, err := t.token()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nodes, nil
@@ -506,27 +506,27 @@ func parseContent(p *parser, level uint) ([]TextNode, error) {
 				return nodes, nil
 			}
 
-			if node, err = parseHeadline(p); err != nil {
+			if node, err = parseHeadline(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
 		} else if isCodeBlock(token) {
-			if node, err = parseCodeBlock(p); err != nil {
+			if node, err = parseCodeBlock(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
 		} else if isCommentBlock(token) {
-			if node, err = parseCommentBlock(p); err != nil {
+			if node, err = parseCommentBlock(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
 		} else if isUnorderedList(token) {
-			if node, err = parseUnorderedList(p); err != nil {
+			if node, err = parseUnorderedList(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
 		} else if isProperties(token) {
-			if node, err = parseProperties(p); err != nil {
+			if node, err = parseProperties(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
@@ -534,21 +534,21 @@ func parseContent(p *parser, level uint) ([]TextNode, error) {
 			trimmedToken := strings.TrimSpace(token)
 
 			paragraph, isParagraph := node.(*Paragraph)
-			if p.sawEmptyLine() || node == nil || !isParagraph {
+			if t.sawEmptyLine() || node == nil || !isParagraph {
 				node = NewParagraph(trimmedToken)
 				nodes = append(nodes, node)
 			} else {
 				paragraph.content += " " + trimmedToken
 			}
 
-			p.consume()
+			t.consume()
 		}
 	}
 }
 
 func parseOrgFile(r io.Reader) (*Headline, error) {
 	scanner := bufio.NewScanner(r)
-	headline, err := parseHeadline(&parser{scanner: scanner})
+	headline, err := parseHeadline(&tokenizer{scanner: scanner})
 	if err != nil {
 		return nil, err
 	}
