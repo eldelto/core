@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/eldelto/core/internal/web"
 )
 
 func AssertEquals(t *testing.T, expected, actual interface{}, title string) {
@@ -131,7 +133,7 @@ func (ts *TestServer) request(verb, path string, body string) Response {
 		ts.T.Fatalf("http.NewRequest error: %v", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(web.ContentType, "application/json")
 
 	response, err := ts.Client.Do(req)
 	if err != nil {

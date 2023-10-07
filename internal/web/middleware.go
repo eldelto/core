@@ -34,7 +34,6 @@ func handleError(handler Handler) http.Handler {
 }
 
 func StaticContentMiddleware(next http.Handler) http.Handler {
-	next = BaseMiddleware(next)
 	next = middleware.Compress(5)(next)
 	next = etagMiddleware(next)
 

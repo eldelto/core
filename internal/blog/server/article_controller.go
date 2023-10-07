@@ -13,26 +13,26 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/articles",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}:        getSitemap(service),
+			{Method: "GET", Path: "/"}:        getArticles(service),
 			{Method: "GET", Path: "/{title}"}: getArticle(service),
 		},
 	}
 }
 
 var (
-	templater       = web.NewTemplater(TemplatesFS)
-	sitemapTemplate = templater.GetP("sitemap.html")
-	articleTemplate = templater.GetP("article.html")
+	templater        = web.NewTemplater(TemplatesFS)
+	articlesTemplate = templater.GetP("articles.html")
+	articleTemplate  = templater.GetP("article.html")
 )
 
-func getSitemap(service *blog.Service) web.Handler {
+func getArticles(service *blog.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		articles, err := service.FetchAll()
 		if err != nil {
 			return err
 		}
 
-		return sitemapTemplate.Execute(w, articles)
+		return articlesTemplate.Execute(w, articles)
 	}
 }
 

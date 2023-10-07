@@ -1,6 +1,6 @@
 module github.com/eldelto/core
 
-go 1.20
+go 1.21
 
 require (
 	github.com/cespare/reflex v0.3.1

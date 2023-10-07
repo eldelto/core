@@ -125,11 +125,11 @@ nav#nav-bar>a:hover {
   position: relative;
 }
 
-.sitemap>ul {
+.articles>ul {
   padding: 0;
 }
 
-.sitemap>ul>li {
+.articles>ul>li {
   margin-bottom: 1em;
   list-style: none;
 }

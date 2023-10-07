@@ -5,16 +5,19 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"sort"
 
+	"github.com/eldelto/core/internal/web"
 	"go.etcd.io/bbolt"
 )
 
 type Service struct {
-	db      *bbolt.DB
-	gitHost string
+	gitHost          string
+	db               *bbolt.DB
+	sitemapControlle *web.SitemapController
 }
 
 const (
@@ -31,7 +34,7 @@ func init() {
 	gob.Register(&Properties{})
 }
 
-func NewService(gitHost string) (*Service, error) {
+func NewService(gitHost string, sitmapController *web.SitemapController) (*Service, error) {
 	db, err := bbolt.Open(dbName, 0600, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bbolt DB '%s': %w", dbName, err)
@@ -46,8 +49,9 @@ func NewService(gitHost string) (*Service, error) {
 	}
 
 	return &Service{
-		db:      db,
-		gitHost: gitHost,
+		gitHost:          gitHost,
+		db:               db,
+		sitemapControlle: sitmapController,
 	}, nil
 }
 
@@ -140,6 +144,15 @@ func (s *Service) UpdateArticles(orgFile string) error {
 		return err
 	}
 
+	// TODO: Think about how the service doesn't need to know the full domain.
+	for _, article := range articles {
+		url, err := url.Parse("https://www.eldelto.net/articles/" + article.UrlEncodedTitle())
+		if err != nil {
+			return fmt.Errorf("failed to generate sitemap URL for article '%s'", article.Title)
+		}
+
+		s.sitemapControlle.AddSite(*url)
+	}
 	return s.store(articles...)
 }
 

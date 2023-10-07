@@ -1,13 +1,16 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -104,6 +107,44 @@ func getTemplate(templater *Templater, data any) Handler {
 			return templater.Write(w, data, "not-found.html")
 		}
 
+		return nil
+	}
+}
+
+type SitemapController struct {
+	Controller
+	sites map[url.URL]struct{}
+}
+
+func NewSitemapController() *SitemapController {
+	sc := SitemapController{
+		sites: map[url.URL]struct{}{},
+	}
+
+	sc.Controller = Controller{
+		BasePath: "",
+		Handlers: map[Endpoint]Handler{
+			{Method: "GET", Path: "/sitemap.txt"}: getSitemap(&sc),
+		},
+	}
+
+	return &sc
+}
+
+func (sc *SitemapController) AddSite(url url.URL) {
+	sc.sites[url] = struct{}{}
+}
+
+func getSitemap(sc *SitemapController) Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		b := strings.Builder{}
+		for url := range sc.sites {
+			b.WriteString(url.String())
+			b.WriteRune('\n')
+		}
+
+		w.Header().Add(ContentType, ContentTypeText)
+		io.Copy(w, bytes.NewBufferString(b.String()))
 		return nil
 	}
 }

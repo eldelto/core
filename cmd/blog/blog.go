@@ -59,8 +59,10 @@ func main() {
 		gitHost = "github.com"
 	}
 
+	sitemapContoller := web.NewSitemapController()
+
 	// Services
-	service, err := blog.NewService(gitHost)
+	service, err := blog.NewService(gitHost, sitemapContoller)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -79,6 +81,7 @@ func main() {
 	port := 8080
 	r := chi.NewRouter()
 
+	sitemapContoller.Register(r)
 	web.NewAssetController(server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
