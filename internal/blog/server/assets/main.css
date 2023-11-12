@@ -156,9 +156,3 @@ img {
   opacity: .5;
   font-size: .9em;
 }
-
-.timestamps {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-}
