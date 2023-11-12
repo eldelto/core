@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"strconv"
-
-	"golang.org/x/exp/slices"
 )
 
 const toleranceFactor = 1.5
@@ -153,8 +152,8 @@ func calcPossiblePiPadCombinations(zo, r1, r2 float64) []PiPadResult {
 		}
 	}
 
-	slices.SortFunc(results, func(a PiPadResult, b PiPadResult) bool {
-		return a.ReturnLoss < b.ReturnLoss
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ReturnLoss < results[j].ReturnLoss
 	})
 
 	return results[:5]
