@@ -75,6 +75,7 @@ func main() {
 	if _, err := articleUpdater.Every(1).Hour().Do(updateArticles, service, destination, true); err != nil {
 		log.Fatalf("failed to start articleUpdater scheduled job: %v", err)
 	}
+	articleUpdater.WaitForSchedule()
 	articleUpdater.StartAsync()
 
 	// Controllers

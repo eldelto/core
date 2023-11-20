@@ -56,6 +56,14 @@ body {
   margin-top: 1em;
 }
 
+#table-of-contents {
+  margin: 1em 0 3em 0;
+}
+
+#table-of-contents>ul {
+  margin-top: .3em;
+}
+
 h1 {
   text-align: center;
 }

@@ -735,11 +735,13 @@ func TextNodeToHtml(t TextNode) string {
 	content := html.EscapeString(t.Content())
 	switch t := t.(type) {
 	case *Headline:
+		b.WriteString(`<section id="` + urlEncodeTitle(t.content) + `">`)
 		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-2)))
 
 		for _, child := range t.Children() {
 			b.WriteString(TextNodeToHtml(child))
 		}
+		b.WriteString("</section>")
 	case *Paragraph:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "p"))
@@ -766,6 +768,23 @@ func TextNodeToHtml(t TextNode) string {
 	return b.String()
 }
 
+func writeTableOfContents(a *Article, b *strings.Builder) {
+	// TODO: Move to a template?
+	b.WriteString(`<div id="table-of-contents">`)
+	b.WriteString(tagged("Table of Contents", "strong"))
+	b.WriteString("<ul>")
+
+	for _, child := range a.Children {
+		headline, ok := child.(*Headline)
+		if ok && headline.Level == 4 {
+			b.WriteString(`<li><a href="#` + urlEncodeTitle(headline.content) + `">` + headline.content + `</a></li>`)
+		}
+	}
+
+	b.WriteString("</ul>")
+	b.WriteString("</div>")
+}
+
 func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 	b.WriteString(tagged(a.Title, "h1"))
@@ -778,6 +797,8 @@ func ArticleToHtml(a Article) string {
 		b.WriteString("Updated @ " + tagged(a.UpdatedAt.Format(time.DateOnly), "time"))
 	}
 	b.WriteString("</div>")
+
+	writeTableOfContents(&a, &b)
 
 	for _, child := range a.Children {
 		b.WriteString(TextNodeToHtml(child))
