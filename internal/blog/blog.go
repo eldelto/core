@@ -2,8 +2,6 @@ package blog
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"html"
@@ -26,62 +24,14 @@ const (
 var emptyTime = time.Time{}
 
 type TextNode interface {
-	Content() string
-	SetContent(content string)
-	Children() []TextNode
-	SetChildren(children []TextNode)
+	GetContent() string
+	GetChildren() []TextNode
 }
 
-type textNode struct {
-	content  string
-	children []TextNode
-}
-
-func (tn *textNode) GobEncode() ([]byte, error) {
-	buffer := bytes.Buffer{}
-	encoder := gob.NewEncoder(&buffer)
-	if err := encoder.Encode(tn.content); err != nil {
-		return nil, fmt.Errorf("failed to encode textNode.content: %w", err)
-	}
-	if err := encoder.Encode(tn.children); err != nil {
-		return nil, fmt.Errorf("failed to encode textNode.children: %w", err)
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func (tn *textNode) GobDecode(b []byte) error {
-	decoder := gob.NewDecoder(bytes.NewBuffer(b))
-	if err := decoder.Decode(&tn.content); err != nil {
-		return fmt.Errorf("failed to decode textNode.content: %w", err)
-	}
-	if err := decoder.Decode(&tn.children); err != nil {
-		return fmt.Errorf("failed to decode textNode.children: %w", err)
-	}
-
-	return nil
-}
-
-func (n *textNode) Content() string {
-	return n.content
-}
-
-func (n *textNode) SetContent(content string) {
-	n.content = content
-}
-
-func (n *textNode) Children() []TextNode {
-	return n.children
-}
-
-func (n *textNode) SetChildren(children []TextNode) {
-	n.children = children
-}
-
-func headlineLevel(content string) (uint, string) {
-	for i, r := range content {
+func headlineLevel(Content string) (uint, string) {
+	for i, r := range Content {
 		if r != '*' {
-			return uint(i), strings.TrimSpace(content[i:])
+			return uint(i), strings.TrimSpace(Content[i:])
 		}
 	}
 
@@ -89,112 +39,117 @@ func headlineLevel(content string) (uint, string) {
 }
 
 type Headline struct {
-	textNode
-	Level uint
+	Content  string
+	Children []TextNode
+	Level    uint
 }
 
-func NewHeadline(content string) (*Headline, error) {
-	level, parsedContent := headlineLevel(content)
+func NewHeadline(Content string) (*Headline, error) {
+	level, parsedContent := headlineLevel(Content)
 	if level == 0 {
-		return nil, fmt.Errorf("failed to parse '%s' as headline: invalid format", content)
+		return nil, fmt.Errorf("failed to parse '%s' as headline: invalid format", Content)
 	}
 
 	return &Headline{
-		textNode: textNode{
-			content:  parsedContent,
-			children: []TextNode{},
-		},
-		Level: level,
+		Content:  parsedContent,
+		Children: []TextNode{},
+		Level:    level,
 	}, nil
 }
 
-func (h *Headline) GobEncode() ([]byte, error) {
-	buffer := bytes.Buffer{}
-	encoder := gob.NewEncoder(&buffer)
-	if err := encoder.Encode(h.content); err != nil {
-		return nil, fmt.Errorf("failed to encode Headline.content: %w", err)
-	}
-	if err := encoder.Encode(h.children); err != nil {
-		return nil, fmt.Errorf("failed to encode Headline.children: %w", err)
-	}
-	if err := encoder.Encode(h.Level); err != nil {
-		return nil, fmt.Errorf("failed to encode Headline.Level: %w", err)
-	}
-
-	return buffer.Bytes(), nil
+func (h *Headline) GetContent() string {
+	return h.Content
 }
 
-func (h *Headline) GobDecode(b []byte) error {
-	decoder := gob.NewDecoder(bytes.NewBuffer(b))
-	if err := decoder.Decode(&h.content); err != nil {
-		return fmt.Errorf("failed to decode Headline.content: %w", err)
-	}
-	if err := decoder.Decode(&h.children); err != nil {
-		return fmt.Errorf("failed to decode Headline.children: %w", err)
-	}
-	if err := decoder.Decode(&h.Level); err != nil {
-		return fmt.Errorf("failed to decode Headline.Level: %w", err)
-	}
-
-	return nil
+func (h *Headline) GetChildren() []TextNode {
+	return h.Children
 }
 
 type Paragraph struct {
-	textNode
+	Content string
 }
 
-func NewParagraph(content string) *Paragraph {
+func NewParagraph(Content string) *Paragraph {
 	return &Paragraph{
-		textNode: textNode{
-			content:  content,
-			children: []TextNode{},
-		},
+		Content: Content,
 	}
 }
 
+func (h *Paragraph) GetContent() string {
+	return h.Content
+}
+
+func (h *Paragraph) GetChildren() []TextNode {
+	return nil
+}
+
 type CodeBlock struct {
-	textNode
+	Language string
+	Content  string
 }
 
 func NewCodeBlock(language string) *CodeBlock {
 	return &CodeBlock{
-		textNode: textNode{
-			content:  "",
-			children: []TextNode{},
-		},
+		Language: language,
+		Content:  "",
 	}
 }
 
+func (cb *CodeBlock) GetContent() string {
+	return cb.Content
+}
+
+func (cb *CodeBlock) GetChildren() []TextNode {
+	return nil
+}
+
 type CommentBlock struct {
-	textNode
+	Content string
 }
 
 func NewCommentBlock() *CommentBlock {
 	return &CommentBlock{
-		textNode: textNode{
-			content:  "",
-			children: []TextNode{},
-		},
+		Content: "",
 	}
 }
 
+func (cb *CommentBlock) GetContent() string {
+	return cb.Content
+}
+
+func (cb *CommentBlock) GetChildren() []TextNode {
+	return nil
+}
+
 type UnorderedList struct {
-	textNode
+	Children []TextNode
 }
 
 func NewUnorderedList() *UnorderedList {
 	return &UnorderedList{
-		textNode: textNode{
-			content:  "",
-			children: []TextNode{},
-		},
+		Children: []TextNode{},
 	}
 }
 
+func (ul *UnorderedList) GetContent() string {
+	return ""
+}
+
+func (ul *UnorderedList) GetChildren() []TextNode {
+	return ul.Children
+}
+
 type Properties struct {
-	textNode
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (p *Properties) GetContent() string {
+	return ""
+}
+
+func (p *Properties) GetChildren() []TextNode {
+	return nil
 }
 
 type tokenizer struct {
@@ -272,7 +227,7 @@ func parseHeadline(t *tokenizer) (*Headline, error) {
 		return nil, err
 	}
 
-	headline.children = children
+	headline.Children = children
 	return headline, nil
 }
 
@@ -305,7 +260,7 @@ func parseCodeBlock(t *tokenizer) (*CodeBlock, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected code block content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected code block Content: %w", line, err)
 		}
 
 		if isCodeBlockEnd(token) {
@@ -316,7 +271,7 @@ func parseCodeBlock(t *tokenizer) (*CodeBlock, error) {
 		if len(token) > spaceCount {
 			token = token[spaceCount:]
 		}
-		codeBlock.content += "\n" + token
+		codeBlock.Content += "\n" + token
 		t.consume()
 	}
 }
@@ -355,7 +310,7 @@ func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected comment block content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected comment block Content: %w", line, err)
 		}
 
 		if isCommentBlockEnd(token) {
@@ -363,7 +318,7 @@ func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 			return commentBlock, nil
 		}
 
-		commentBlock.content += " " + token
+		commentBlock.Content += " " + token
 		t.consume()
 	}
 }
@@ -388,13 +343,13 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 
 	list := NewUnorderedList()
 	node := NewParagraph(strings.TrimSpace(token)[2:])
-	list.children = append(list.children, node)
+	list.Children = append(list.Children, node)
 	t.consume()
 
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected unordered list Content: %w", line, err)
 		}
 
 		if !isText(token) || t.sawEmptyLine() {
@@ -405,9 +360,9 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 
 		if isUnorderedList(token) {
 			node := NewParagraph(trimmedToken[2:])
-			list.children = append(list.children, node)
+			list.Children = append(list.Children, node)
 		} else {
-			node.content += " " + trimmedToken
+			node.Content += " " + trimmedToken
 		}
 
 		t.consume()
@@ -493,7 +448,7 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 				return nodes, nil
 			}
 
-			return nil, fmt.Errorf("line %d: expected content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected Content: %w", line, err)
 		}
 
 		if isHeadline(token) {
@@ -538,7 +493,7 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 				node = NewParagraph(trimmedToken)
 				nodes = append(nodes, node)
 			} else {
-				paragraph.content += " " + trimmedToken
+				paragraph.Content += " " + trimmedToken
 			}
 
 			t.consume()
@@ -577,11 +532,11 @@ func (a *Article) CreatedAtString() string {
 }
 
 func findArticleHeadline(headline *Headline) (*Headline, error) {
-	if headline.content == "Articles" {
+	if headline.Content == "Articles" {
 		return headline, nil
 	}
 
-	for _, child := range headline.children {
+	for _, child := range headline.Children {
 		childHeadline, isHeadline := child.(*Headline)
 		if !isHeadline {
 			continue
@@ -607,22 +562,22 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 		return nil, err
 	}
 
-	articles := make([]Article, 0, len(articleHeadline.children))
-	for _, child := range articleHeadline.children {
+	articles := make([]Article, 0, len(articleHeadline.Children))
+	for _, child := range articleHeadline.Children {
 		_, isHeadline := child.(*Headline)
 		if !isHeadline {
 			continue
 		}
 
-		children := child.Children()
+		children := child.GetChildren()
 		if len(children) < 1 {
-			log.Printf("article '%s' is missing content - skipping", child.Content())
+			log.Printf("article '%s' is missing Content - skipping", child.GetContent())
 			continue
 		}
 
 		article := Article{
-			Title:        child.Content(),
-			Introduction: children[0].Content(),
+			Title:        child.GetContent(),
+			Introduction: children[0].GetContent(),
 			Children:     children,
 		}
 
@@ -732,13 +687,13 @@ func replaceInlineElements(s string) string {
 func TextNodeToHtml(t TextNode) string {
 	b := strings.Builder{}
 
-	content := html.EscapeString(t.Content())
+	content := html.EscapeString(t.GetContent())
 	switch t := t.(type) {
 	case *Headline:
-		b.WriteString(`<section id="` + urlEncodeTitle(t.content) + `">`)
+		b.WriteString(`<section id="` + urlEncodeTitle(t.Content) + `">`)
 		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-2)))
 
-		for _, child := range t.Children() {
+		for _, child := range t.GetChildren() {
 			b.WriteString(TextNodeToHtml(child))
 		}
 		b.WriteString("</section>")
@@ -754,8 +709,8 @@ func TextNodeToHtml(t TextNode) string {
 		b.WriteString(tagged(content, "aside"))
 	case *UnorderedList:
 		b.WriteString("<ul>")
-		for _, child := range t.children {
-			content = html.EscapeString(child.Content())
+		for _, child := range t.Children {
+			content = html.EscapeString(child.GetContent())
 			content = replaceInlineElements(content)
 			b.WriteString(tagged(content, "li"))
 		}
@@ -777,7 +732,7 @@ func writeTableOfContents(a *Article, b *strings.Builder) {
 	for _, child := range a.Children {
 		headline, ok := child.(*Headline)
 		if ok && headline.Level == 4 {
-			b.WriteString(`<li><a href="#` + urlEncodeTitle(headline.content) + `">` + headline.content + `</a></li>`)
+			b.WriteString(`<li><a href="#` + urlEncodeTitle(headline.Content) + `">` + headline.Content + `</a></li>`)
 		}
 	}
 

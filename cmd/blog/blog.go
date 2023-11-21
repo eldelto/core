@@ -62,7 +62,7 @@ func main() {
 	sitemapContoller := web.NewSitemapController()
 
 	// Services
-	service, err := blog.NewService(gitHost, sitemapContoller)
+	service, err := blog.NewService("blog.db", gitHost, sitemapContoller)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -14,7 +14,7 @@ import (
 	"github.com/eldelto/core/internal/web"
 )
 
-func AssertEquals(t *testing.T, expected, actual interface{}, title string) {
+func AssertEquals(t *testing.T, expected, actual any, title string) {
 	t.Helper()
 
 	if !reflect.DeepEqual(expected, actual) {
@@ -22,7 +22,7 @@ func AssertEquals(t *testing.T, expected, actual interface{}, title string) {
 	}
 }
 
-func AssertNotEquals(t *testing.T, expected, actual interface{}, title string) {
+func AssertNotEquals(t *testing.T, expected, actual any, title string) {
 	t.Helper()
 
 	if reflect.DeepEqual(expected, actual) {
@@ -30,7 +30,7 @@ func AssertNotEquals(t *testing.T, expected, actual interface{}, title string) {
 	}
 }
 
-func AssertContains(t *testing.T, expected interface{}, testee []interface{}, title string) {
+func AssertContains(t *testing.T, expected any, testee []any, title string) {
 	t.Helper()
 
 	for _, actual := range testee {

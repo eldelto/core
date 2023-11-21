@@ -21,7 +21,6 @@ type Service struct {
 }
 
 const (
-	dbName     = "blog.db"
 	bucketName = "articles"
 )
 
@@ -34,10 +33,10 @@ func init() {
 	gob.Register(&Properties{})
 }
 
-func NewService(gitHost string, sitmapController *web.SitemapController) (*Service, error) {
-	db, err := bbolt.Open(dbName, 0600, nil)
+func NewService(dbPath, gitHost string, sitmapController *web.SitemapController) (*Service, error) {
+	db, err := bbolt.Open(dbPath, 0600, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bbolt DB '%s': %w", dbName, err)
+		return nil, fmt.Errorf("failed to open bbolt DB '%s': %w", dbPath, err)
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
