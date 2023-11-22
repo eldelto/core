@@ -9,6 +9,8 @@
     :UPDATED_AT:  <2023-09-13 Wed>
     :END:
 
+    In this article we will checkout the Raspberry Pi Pico setup.
+    
 **** Install required dependencies
 
      First off we have to install a couple of tools so we can actually

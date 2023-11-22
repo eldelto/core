@@ -37,9 +37,8 @@ func getArticles(service *blog.Service) web.Handler {
 }
 
 type articleData struct {
-	Title       string
-	Description string
-	Content     template.HTML
+	Title   string
+	Content template.HTML
 }
 
 func getArticle(service *blog.Service) web.Handler {
@@ -54,9 +53,8 @@ func getArticle(service *blog.Service) web.Handler {
 		htmlArticle := blog.ArticleToHtml(article)
 
 		data := articleData{
-			Title:       article.Title,
-			Description: article.Introduction,
-			Content:     template.HTML(htmlArticle),
+			Title:   article.Title,
+			Content: template.HTML(htmlArticle),
 		}
 
 		return articleTemplate.Execute(w, data)

@@ -4,6 +4,7 @@
   --highlight: #a01ed9;
   --light-highlight: #d174fa;
   --ultra-light-highlight: rgba(209, 116, 250, 0.31);
+  --dark-highlight: #631685;
   --dark: rgb(0, 23, 62);
 }
 
@@ -38,7 +39,6 @@
 body {
   width: 100%;
   box-sizing: border-box;
-  padding: 0 .5em;
   margin: 0px;
   display: flex;
   flex-direction: column;
@@ -51,9 +51,10 @@ body {
 }
 
 #content {
-  width: 100%;
+  width: 95%;
   max-width: 40em;
   margin-top: 1em;
+  margin: 0 .5em;
 }
 
 #table-of-contents {
@@ -66,6 +67,15 @@ body {
 
 h1 {
   text-align: center;
+  text-decoration: underline;
+  text-decoration-color: var(--highlight);
+  text-decoration-thickness: 4px;
+}
+
+h2 {
+  text-decoration: underline;
+  text-decoration-color: var(--highlight);
+  text-decoration-thickness: 3px;
 }
 
 h2,
@@ -104,11 +114,12 @@ pre {
 a {
   color: var(--black);
   text-decoration: none;
-  border-bottom: solid 2px var(--highlight);
+  border-bottom: dotted 1px var(--highlight);
 }
 
 a:hover {
   background-color: var(--ultra-light-highlight);
+  border-bottom: solid 2px var(--highlight);
 }
 
 aside {
@@ -118,21 +129,29 @@ aside {
 
 nav#nav-bar {
   width: 100%;
-  max-width: 40em;
   height: 2.5em;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-bottom: solid 1px var(--black);
+  background-color: var(--highlight);
+  border-bottom: solid 5px var(--dark-highlight);
 }
 
 nav#nav-bar>a {
-  border-bottom: solid 2px rgba(0, 0, 0, 0);
-  /* height: 100%; */
+  color: var(--white);
+  border-bottom: solid 5px rgba(0, 0, 0, 0);
+  padding: 0 1em;
+  height: 100%;
+  line-height: 300%;
+
+  /* Hack to align the border of the links with the parent. */
+  position: relative;
+  top: 2px;
 }
 
 nav#nav-bar>a:hover {
-  border-bottom: solid 2px var(--highlight);
+  border-bottom: solid 5px var(--light-highlight);
+  background-color: var(--dark-highlight);
 }
 
 #nav-logo>img {
@@ -163,4 +182,10 @@ img {
 .timestamps {
   opacity: .5;
   font-size: .9em;
+  margin-top: 1em;
+}
+
+.timestamps {
+  display: flex;
+  justify-content: space-between;
 }

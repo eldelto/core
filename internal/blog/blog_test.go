@@ -41,8 +41,13 @@ func TestArticlesFromOrgFile(t *testing.T) {
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
 	AssertEquals(t, 2, len(articles), "articles len")
-	AssertEquals(t, "Raspberry Pi Pico Setup for macOS", articles[0].Title,
+
+	article := articles[0]
+	AssertEquals(t, "Raspberry Pi Pico Setup for macOS", article.Title,
 		"1. article headline")
+
+	AssertEquals(t, "In this article we will checkout the Raspberry Pi Pico setup.",
+		article.Introduction(), "article.Introduction")
 }
 
 func TestArticlesToHtml(t *testing.T) {

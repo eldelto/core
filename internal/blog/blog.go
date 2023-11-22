@@ -515,12 +515,20 @@ func urlEncodeTitle(title string) string {
 	return url.QueryEscape((strings.ReplaceAll(strings.ToLower(title), " ", "-")))
 }
 
+func firstRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+
+	return string(r[:n]) + " ..."
+}
+
 type Article struct {
-	Title        string
-	Introduction string
-	Children     []TextNode
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	Title     string
+	Children  []TextNode
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (a *Article) UrlEncodedTitle() string {
@@ -529,6 +537,17 @@ func (a *Article) UrlEncodedTitle() string {
 
 func (a *Article) CreatedAtString() string {
 	return a.CreatedAt.Format(time.DateOnly)
+}
+
+func (a *Article) Introduction() string {
+	for _, child := range a.Children {
+		_, ok := child.(*Paragraph)
+		if ok {
+			return firstRunes(child.GetContent(), 100)
+		}
+	}
+
+	return ""
 }
 
 func findArticleHeadline(headline *Headline) (*Headline, error) {
@@ -576,9 +595,8 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 		}
 
 		article := Article{
-			Title:        child.GetContent(),
-			Introduction: children[0].GetContent(),
-			Children:     children,
+			Title:    child.GetContent(),
+			Children: children,
 		}
 
 		for _, child := range children {
@@ -742,17 +760,16 @@ func writeTableOfContents(a *Article, b *strings.Builder) {
 
 func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
-	b.WriteString(tagged(a.Title, "h1"))
 
 	b.WriteString(`<div class="timestamps">`)
-	b.WriteString("Created @ " + tagged(a.CreatedAt.Format(time.DateOnly), "time"))
+	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly), "time"), "span"))
 
 	if a.UpdatedAt != emptyTime {
-		b.WriteString("<br>")
-		b.WriteString("Updated @ " + tagged(a.UpdatedAt.Format(time.DateOnly), "time"))
+		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly), "time"), "span"))
 	}
 	b.WriteString("</div>")
 
+	b.WriteString(tagged(a.Title, "h1"))
 	writeTableOfContents(&a, &b)
 
 	for _, child := range a.Children {
