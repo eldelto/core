@@ -18,7 +18,7 @@ func AssertEquals(t *testing.T, expected, actual any, title string) {
 	t.Helper()
 
 	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("%s should be '%v' but was '%v'", title, expected, actual)
+		t.Errorf("%s should be\n'%v'\nbut was\n'%v'", title, expected, actual)
 	}
 }
 
@@ -26,7 +26,7 @@ func AssertNotEquals(t *testing.T, expected, actual any, title string) {
 	t.Helper()
 
 	if reflect.DeepEqual(expected, actual) {
-		t.Errorf("%s should not be '%v' but was '%v'", title, expected, actual)
+		t.Errorf("%s should not be\n'%v'\nbut was\n'%v'", title, expected, actual)
 	}
 }
 
