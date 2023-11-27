@@ -144,7 +144,10 @@ func getSitemap(sc *SitemapController) Handler {
 		}
 
 		w.Header().Add(ContentType, ContentTypeText)
-		io.Copy(w, bytes.NewBufferString(b.String()))
+		if _, err := io.Copy(w, bytes.NewBufferString(b.String())); err != nil {
+			return fmt.Errorf("failed to copy sitemap pages to response: %w", err)
+		}
+
 		return nil
 	}
 }

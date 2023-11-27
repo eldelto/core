@@ -23,8 +23,16 @@ func NewWSClient(conn *websocket.Conn, onMessage MessageHandler, onClose CloseHa
 		onClose: onClose,
 	}
 
-	go client.readMessages(onMessage)
-	go client.writeMessages()
+	go func() {
+		if err := client.readMessages(onMessage); err != nil {
+			log.Printf("failed to read client messages: %v", err)
+		}
+	}()
+	go func() {
+		if err := client.writeMessages(); err != nil {
+			log.Printf("failed to write to client: %v", err)
+		}
+	}()
 
 	return &client
 }
