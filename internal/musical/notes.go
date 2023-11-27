@@ -1,7 +1,8 @@
-package riffrobot
+package musical
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 
@@ -16,6 +17,14 @@ func ClampI[A constraints.Integer](value, min, max A) A {
 	} else {
 		return value
 	}
+}
+
+func AbsI[A constraints.Integer](value A) A {
+	if value < 0 {
+		return -value
+	}
+
+	return value
 }
 
 func ReverseCopy[T any](slice []T) []T {
@@ -113,22 +122,26 @@ func (n Note) ApplyAccidental(a Accidental) Note {
 	return n
 }
 
-func (n Note) RaiseSemitone(x uint) Note {
+func (n Note) TransposeSemitone(x int) Note {
+	if x >= 0 {
+		return n.raiseSemitone(uint(x))
+	}
+
+	return n.lowerSemitone(uint(AbsI(x)))
+}
+
+func (n Note) raiseSemitone(x uint) Note {
 	return NoteFromValue(n.totalValue() + x)
 }
 
-func (n Note) LowerSemitone(x uint) Note {
+func (n Note) lowerSemitone(x uint) Note {
 	value := n.totalValue() - x
 	return noteFromValue(baseOctaveReversed, value, func(a, b uint) bool { return a < b })
 }
 
-func (n Note) RaiseOctave(x uint) Note {
-	n.octave += x
-	return n
-}
-
-func (n Note) LowerOctave(x uint) Note {
-	n.octave -= x
+func (n Note) TransposeOctave(x int) Note {
+	o := int(n.octave) + x
+	n.octave = uint(ClampI(o, 0, math.MaxInt))
 	return n
 }
 

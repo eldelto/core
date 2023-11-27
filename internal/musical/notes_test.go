@@ -1,4 +1,4 @@
-package riffrobot
+package musical
 
 import (
 	"strings"
@@ -16,18 +16,18 @@ func TestNotesManipulation(t *testing.T) {
 		{
 			name:     "raise semitone",
 			expected: "C2 - C#2 - D2 - D#2 - E2 - F2 - F#2 - G2 - G#2 - A2 - A#2 - B2 - C3 - C#3 - D3 - D#3",
-			f:        func(n Note) Note { return n.RaiseSemitone(1) },
+			f:        func(n Note) Note { return n.TransposeSemitone(1) },
 		},
 		{
 			name:     "lower semitone",
 			expected: "C2 - B1 - Bb1 - A1 - Ab1 - G1 - Gb1 - F1 - E1 - Eb1 - D1 - Db1 - C1 - B0 - Bb0 - A0",
-			f:        func(n Note) Note { return n.LowerSemitone(1) },
+			f:        func(n Note) Note { return n.TransposeSemitone(-1) },
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			note := C.RaiseOctave(2)
+			note := C.TransposeOctave(2)
 			builder := strings.Builder{}
 
 			builder.WriteString(note.String())
