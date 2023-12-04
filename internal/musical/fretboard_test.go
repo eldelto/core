@@ -1,0 +1,45 @@
+package musical
+
+import (
+	"testing"
+
+	. "github.com/eldelto/core/internal/testutils"
+)
+
+func TestFretboardVisualisation(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected string
+		tuning   []Note
+	}{
+		{
+			name: "E Standard",
+			expected: `E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----D#5---E5----
+B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----
+G3----G#3---A3----A#3---B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----
+D3----D#3---E3----F3----F#3---G3----G#3---A3----A#3---B3----C4----C#4---D4----
+A2----A#2---B2----C3----C#3---D3----D#3---E3----F3----F#3---G3----G#3---A3----
+E2----F2----F#2---G2----G#2---A2----A#2---B2----C3----C#3---D3----D#3---E3----
+`,
+			tuning: TuningEStandard,
+		},
+		{
+			name: "D Standard",
+			expected: `D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----
+A3----A#3---B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----
+F3----F#3---G3----G#3---A3----A#3---B3----C4----C#4---D4----D#4---E4----F4----
+C3----C#3---D3----D#3---E3----F3----F#3---G3----G#3---A3----A#3---B3----C4----
+G2----G#2---A2----A#2---B2----C3----C#3---D3----D#3---E3----F3----F#3---G3----
+D2----D#2---E2----F2----F#2---G2----G#2---A2----A#2---B2----C3----C#3---D3----
+`,
+			tuning: TuningDStandard,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fretboard := Fretboard{Tuning: tt.tuning}
+			AssertEquals(t, tt.expected, fretboard.String(), "fretboard.String()")
+		})
+	}
+}
