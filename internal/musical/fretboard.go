@@ -27,7 +27,7 @@ type Tuning struct {
 }
 
 func (t *Tuning) Name() string {
-	return t.Steps.name + " " + t.Tonic.String()
+	return t.Steps.name + " " + t.Tonic.ShortName()
 }
 
 func (t *Tuning) Notes() []Note {

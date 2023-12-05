@@ -145,6 +145,10 @@ func (n Note) TransposeOctave(x int) Note {
 	return n
 }
 
+func (n *Note) ShortName() string {
+	return n.name + n.accidental.String()
+}
+
 func (n *Note) String() string {
 	return n.name + n.accidental.String() + strconv.Itoa(int(n.octave))
 }

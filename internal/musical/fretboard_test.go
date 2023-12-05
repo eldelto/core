@@ -13,7 +13,7 @@ func TestFretboardVisualisation(t *testing.T) {
 		expected string
 	}{
 		{
-			name:   "standard E2",
+			name:   "standard E",
 			tuning: TuningEStandard,
 			expected: `E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----D#5---E5----
 B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----
@@ -24,7 +24,7 @@ E2----F2----F#2---G2----G#2---A2----A#2---B2----C3----C#3---D3----D#3---E3----
 `,
 		},
 		{
-			name:   "standard D2",
+			name:   "standard D",
 			tuning: TuningDStandard,
 			expected: `D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----
 A3----A#3---B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----
@@ -35,7 +35,7 @@ D2----D#2---E2----F2----F#2---G2----G#2---A2----A#2---B2----C3----C#3---D3----
 `,
 		},
 		{
-			name:   "drop D2",
+			name:   "drop D",
 			tuning: TuningDropD,
 			expected: `E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----D#5---E5----
 B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----
@@ -46,7 +46,7 @@ D2----D#2---E2----F2----F#2---G2----G#2---A2----A#2---B2----C3----C#3---D3----
 `,
 		},
 		{
-			name:   "drop C2",
+			name:   "drop C",
 			tuning: TuningDropC,
 			expected: `D4----D#4---E4----F4----F#4---G4----G#4---A4----A#4---B4----C5----C#5---D5----
 A3----A#3---B3----C4----C#4---D4----D#4---E4----F4----F#4---G4----G#4---A4----
