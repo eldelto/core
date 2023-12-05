@@ -13,6 +13,17 @@ var (
 	}
 )
 
+func notesFromIntervals(tonic Note, intervals []int) []Note {
+	notes := make([]Note, len(intervals)+1)
+	notes[0] = tonic
+
+	for i := range intervals {
+		notes[i+1] = notes[i].TransposeSemitone(intervals[i])
+	}
+
+	return notes
+}
+
 type Scale struct {
 	Tonic Note
 	Steps ScaleSteps
@@ -23,13 +34,5 @@ func (s *Scale) Name() string {
 }
 
 func (s *Scale) Notes() []Note {
-	notes := make([]Note, len(s.Steps.intervals)+1)
-	notes[0] = s.Tonic
-	intervals := s.Steps.intervals
-
-	for i := range intervals {
-		notes[i+1] = notes[i].TransposeSemitone(intervals[i])
-	}
-
-	return notes
+	return notesFromIntervals(s.Tonic, s.Steps.intervals)
 }
