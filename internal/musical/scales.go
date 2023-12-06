@@ -1,5 +1,7 @@
 package musical
 
+import "strings"
+
 // 1 = a semitone
 type ScaleSteps struct {
 	name      string
@@ -30,9 +32,21 @@ type Scale struct {
 }
 
 func (s *Scale) Name() string {
-	return s.Tonic.String() + " " + s.Steps.name
+	return s.Tonic.ShortName() + " " + s.Steps.name
 }
 
 func (s *Scale) Notes() []Note {
 	return notesFromIntervals(s.Tonic, s.Steps.intervals)
+}
+
+func (s *Scale) String() string {
+	b := strings.Builder{}
+	for i, note := range s.Notes() {
+		if i != 0 {
+			b.WriteString(" - ")
+		}
+		b.WriteString(note.ShortName())
+	}
+
+	return b.String()
 }

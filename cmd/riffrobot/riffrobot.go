@@ -11,19 +11,15 @@ import (
 )
 
 func main() {
-	// Services
-	// service, err := riffrobot.NewService()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
 	// Controllers
 	port := 8080
 	r := chi.NewRouter()
 
+	sitemapContoller := web.NewSitemapController()
+	sitemapContoller.Register(r)
 	web.NewAssetController(server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
-
+	server.NewRiffController().Register(r)
 	http.Handle("/", r)
 
 	log.Printf("RiffRobot listening on localhost:%d", port)
