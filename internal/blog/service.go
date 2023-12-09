@@ -21,7 +21,7 @@ type Service struct {
 }
 
 const (
-	bucketName = "articles"
+	articleBucket = "articles"
 )
 
 func init() {
@@ -40,11 +40,11 @@ func NewService(dbPath, gitHost string, sitmapController *web.SitemapController)
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		_, err := tx.CreateBucketIfNotExists([]byte(articleBucket))
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create bucket '%s': %w", bucketName, err)
+		return nil, fmt.Errorf("failed to create bucket '%s': %w", articleBucket, err)
 	}
 
 	return &Service{
@@ -60,9 +60,9 @@ func (s *Service) Close() error {
 
 func (s *Service) store(articles ...Article) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
+		bucket := tx.Bucket([]byte(articleBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name '%s'", bucketName)
+			return fmt.Errorf("failed to get bucket with name '%s'", articleBucket)
 		}
 
 		for _, article := range articles {
@@ -85,9 +85,9 @@ func (s *Service) Fetch(key string) (Article, error) {
 	article := Article{}
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
+		bucket := tx.Bucket([]byte(articleBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name '%s'", bucketName)
+			return fmt.Errorf("failed to get bucket with name '%s'", articleBucket)
 		}
 
 		value := bucket.Get([]byte(key))
@@ -105,13 +105,13 @@ func (s *Service) Fetch(key string) (Article, error) {
 	return article, err
 }
 
-func (s *Service) FetchAll() ([]Article, error) {
+func (s *Service) FetchAll(includeDraft bool) ([]Article, error) {
 	articles := []Article{}
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
+		bucket := tx.Bucket([]byte(articleBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name '%s'", bucketName)
+			return fmt.Errorf("failed to get bucket with name '%s'", articleBucket)
 		}
 
 		return bucket.ForEach(func(key, value []byte) error {
@@ -120,7 +120,9 @@ func (s *Service) FetchAll() ([]Article, error) {
 				return fmt.Errorf("failed to decode article for key '%s': %w", key, err)
 			}
 
-			articles = append(articles, article)
+			if !article.Draft || includeDraft {
+				articles = append(articles, article)
+			}
 			return nil
 		})
 	})
@@ -145,6 +147,10 @@ func (s *Service) UpdateArticles(orgFile string) error {
 
 	// TODO: Think about how the service doesn't need to know the full domain.
 	for _, article := range articles {
+		if article.Draft {
+			continue
+		}
+
 		url, err := url.Parse("https://www.eldelto.net/articles/" + article.UrlEncodedTitle())
 		if err != nil {
 			return fmt.Errorf("failed to generate sitemap URL for article '%s'", article.Title)

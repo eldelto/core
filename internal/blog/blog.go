@@ -268,6 +268,7 @@ func parseCodeBlock(t *tokenizer) (*CodeBlock, error) {
 			return codeBlock, nil
 		}
 
+		token = strings.ReplaceAll(token, "\t", "        ")
 		if len(token) > spaceCount {
 			token = token[spaceCount:]
 		}
@@ -529,6 +530,7 @@ type Article struct {
 	Children  []TextNode
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Draft     bool
 }
 
 func (a *Article) UrlEncodedTitle() string {
@@ -608,15 +610,8 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 			}
 		}
 
-		if article.CreatedAt == emptyTime {
-			log.Printf("article '%s' is missing property CREATED_AT - skipping", article.Title)
-			continue
-		}
-
-		if strings.HasPrefix(article.Title, "TODO") {
-			log.Printf("article '%s' is marked as TODO - skipping", article.Title)
-			continue
-		}
+		article.Draft = article.CreatedAt == emptyTime ||
+			strings.HasPrefix(article.Title, "TODO")
 		articles = append(articles, article)
 	}
 
