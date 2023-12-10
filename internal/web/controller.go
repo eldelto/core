@@ -71,7 +71,7 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 
 		file, err := fileSystem.Open(assetPath)
 		if err != nil {
-			return fmt.Errorf("failed to serve file '%s': %w", filename, err)
+			return fmt.Errorf("failed to serve file %q: %w", filename, err)
 		}
 		defer file.Close()
 

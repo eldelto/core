@@ -65,7 +65,7 @@ type KeyNotFoundError struct {
 func NewKeyNotFoundError(key string) *KeyNotFoundError {
 	return &KeyNotFoundError{
 		Key:     key,
-		message: fmt.Sprintf("config value with key '%s' could not be found", key),
+		message: fmt.Sprintf("config value with key %q could not be found", key),
 	}
 }
 
@@ -85,7 +85,7 @@ func NewTypeConversionError(key, value, typ string) *TypeConversionError {
 		Key:     key,
 		Value:   value,
 		Type:    typ,
-		message: fmt.Sprintf("value '%s' of key '%s' cannot be converted to expected type '%s'", value, key, typ),
+		message: fmt.Sprintf("value %q of key %q cannot be converted to expected type %q", value, key, typ),
 	}
 }
 
@@ -101,7 +101,7 @@ type ParsingError struct {
 func NewParsingError(line string) *ParsingError {
 	return &ParsingError{
 		Line:    line,
-		message: fmt.Sprintf("could not parse line '%s'", line),
+		message: fmt.Sprintf("could not parse line %q", line),
 	}
 }
 

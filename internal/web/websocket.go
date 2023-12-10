@@ -66,7 +66,7 @@ func (c *WSClient) readMessages(onMessage MessageHandler) error {
 		}
 
 		if err := onMessage(c, string(msg)); err != nil {
-			return fmt.Errorf("failed to handle message '%s': %w", string(msg), err)
+			return fmt.Errorf("failed to handle message %q: %w", string(msg), err)
 		}
 	}
 }
@@ -76,7 +76,7 @@ func (c *WSClient) writeMessages() error {
 
 	for msg := range c.inbox {
 		if err := c.conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
-			return fmt.Errorf("failed to write message to websocket connection '%s': %w", msg, err)
+			return fmt.Errorf("failed to write message to websocket connection %q: %w", msg, err)
 		}
 	}
 

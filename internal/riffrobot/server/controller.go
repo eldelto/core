@@ -31,7 +31,7 @@ func currentRiff() web.Handler {
 		today := time.Now().Format(time.DateOnly)
 		path, err := url.JoinPath("/riff", today)
 		if err != nil {
-			return fmt.Errorf("failed to construct redirect destination for date '%s': %w", today, err)
+			return fmt.Errorf("failed to construct redirect destination for date %q: %w", today, err)
 		}
 
 		w.Header().Add(web.Location, path)

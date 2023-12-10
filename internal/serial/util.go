@@ -21,7 +21,7 @@ func ChoosePort() (string, error) {
 	serialPorts := []string{}
 	err := filepath.Walk(serialDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("failed to walk directory path '%s': %w", path, err)
+			return fmt.Errorf("failed to walk directory path %q: %w", path, err)
 		}
 
 		if info.IsDir() && path != serialDir {
@@ -35,7 +35,7 @@ func ChoosePort() (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to walk directory '%s': %w", serialDir, err)
+		return "", fmt.Errorf("failed to walk directory %q: %w", serialDir, err)
 	}
 
 	fmt.Print("Choose a serial port to relay:\n\n")
@@ -52,7 +52,7 @@ func ChoosePort() (string, error) {
 
 	parsedInput, err := strconv.Atoi(userInput)
 	if err != nil {
-		return "", fmt.Errorf("invalid integer '%s'", userInput)
+		return "", fmt.Errorf("invalid integer %q", userInput)
 	}
 
 	fileIndex := parsedInput - 1
@@ -70,7 +70,7 @@ func Read(serialPort string) (io.ReadCloser, error) {
 
 	port, err := serial.Open(serialPort, mode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open serial port '%s': %w", serialPort, err)
+		return nil, fmt.Errorf("failed to open serial port %q: %w", serialPort, err)
 	}
 
 	return port, nil

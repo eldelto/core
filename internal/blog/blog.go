@@ -47,7 +47,7 @@ type Headline struct {
 func NewHeadline(Content string) (*Headline, error) {
 	level, parsedContent := headlineLevel(Content)
 	if level == 0 {
-		return nil, fmt.Errorf("failed to parse '%s' as headline: invalid format", Content)
+		return nil, fmt.Errorf("failed to parse %q as headline: invalid format", Content)
 	}
 
 	return &Headline{
@@ -199,7 +199,7 @@ func (t *tokenizer) consume() {
 }
 
 func parseError(message string, line uint, token string) error {
-	return fmt.Errorf("line %d: %s: '%s'", line, message, token)
+	return fmt.Errorf("line %d: %s: %q", line, message, token)
 }
 
 func isHeadline(token string) bool {
@@ -592,7 +592,7 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 
 		children := child.GetChildren()
 		if len(children) < 1 {
-			log.Printf("article '%s' is missing Content - skipping", child.GetContent())
+			log.Printf("article %q is missing Content - skipping", child.GetContent())
 			continue
 		}
 

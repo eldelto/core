@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/eldelto/core/internal/blog"
@@ -19,6 +20,7 @@ import (
 const (
 	destinationEnv = "REPO_DESTINATION"
 	gitHostEnv     = "GIT_HOST"
+	readOnlyEnv    = "READ_ONLY"
 )
 
 func updateArticles(service *blog.Service, destination string, overwrite bool) {
@@ -51,12 +53,22 @@ func updateArticles(service *blog.Service, destination string, overwrite bool) {
 func main() {
 	destination, ok := os.LookupEnv(destinationEnv)
 	if !ok {
-		log.Fatalf("failed to read environment variable '%s', please provide a value", destinationEnv)
+		log.Fatalf("failed to read environment variable %q, please provide a value", destinationEnv)
 	}
 
 	gitHost, ok := os.LookupEnv(gitHostEnv)
 	if !ok {
 		gitHost = "github.com"
+	}
+
+	readOnly := false
+	rawReadOnly, ok := os.LookupEnv(readOnlyEnv)
+	if ok {
+		value, err := strconv.ParseBool(rawReadOnly)
+		if err != nil {
+			log.Fatalf("failed to parse environment variable %q as bool: %v", rawReadOnly, err)
+		}
+		readOnly = value
 	}
 
 	sitemapContoller := web.NewSitemapController()
@@ -72,7 +84,7 @@ func main() {
 	// Schedulers
 	articleUpdater := gocron.NewScheduler(time.UTC)
 	defer articleUpdater.Stop()
-	if _, err := articleUpdater.Every(1).Hour().Do(updateArticles, service, destination, true); err != nil {
+	if _, err := articleUpdater.Every(1).Hour().Do(updateArticles, service, destination, !readOnly); err != nil {
 		log.Fatalf("failed to start articleUpdater scheduled job: %v", err)
 	}
 	articleUpdater.WaitForSchedule()
