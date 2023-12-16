@@ -142,7 +142,7 @@
 
 **** Enhancing the build process
 
-     With this setup we have some manual ScaleSteps that need be repeated
+     With this setup we have some manual ScaleDegrees that need be repeated
      every time we change our code. First and foremost unplugging the
      Raspberry Pi Pico all the time to get it into ~BOOTSEL~ mode.
 
@@ -231,7 +231,7 @@
      This is all nice and well but there is still some room to improve
      this setup. We still have to build our code on every change and
      then flash our microcontroller via the ~picotool~ command. Two
-     ScaleSteps that definitely could be one...
+     ScaleDegrees that definitely could be one...
 
      To have an even tighter integration into our build
      process we can add the ~picotool~ execution into a custom

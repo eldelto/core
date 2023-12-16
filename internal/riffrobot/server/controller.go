@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/eldelto/core/internal/musical"
 	"github.com/eldelto/core/internal/riffrobot"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
@@ -13,10 +14,11 @@ import (
 
 func NewRiffController() *web.Controller {
 	return &web.Controller{
-		BasePath: "/riff",
+		BasePath: "/",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}:       currentRiff(),
-			{Method: "GET", Path: "/{date}"}: riffForSeed(),
+			{Method: "GET", Path: "/"}:            currentRiff(),
+			{Method: "GET", Path: "/riff"}:        currentRiff(),
+			{Method: "GET", Path: "/riff/{date}"}: riffForSeed(),
 		},
 	}
 }
@@ -40,11 +42,23 @@ func currentRiff() web.Handler {
 	}
 }
 
+type riffData struct {
+	Scale     *musical.Scale
+	Fretboard *musical.Fretboard
+}
+
 func riffForSeed() web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		date := chi.URLParam(r, "date")
-		scale := riffrobot.RandomScale(date)
 
-		return riffTemplate.Execute(w, scale)
+		scale := riffrobot.RandomScale(date)
+		fretboard := &musical.Fretboard{Tuning: musical.TuningDStandard}
+
+		riffData := riffData{
+			Scale:     scale,
+			Fretboard: fretboard,
+		}
+
+		return riffTemplate.Execute(w, riffData)
 	}
 }

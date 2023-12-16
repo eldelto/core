@@ -58,9 +58,9 @@ func (a Accidental) String() string {
 
 type Note struct {
 	value      uint
-	name       string
 	octave     uint
 	accidental Accidental
+	name       string
 }
 
 var (
@@ -85,7 +85,7 @@ var baseOctave = []Note{
 
 var baseOctaveReversed = ReverseCopy(baseOctave)
 
-func (n *Note) totalValue() uint {
+func (n Note) totalValue() uint {
 	return n.value + uint(n.accidental) + n.octave*(B.value+1)
 }
 
@@ -117,7 +117,7 @@ func NoteFromValue(value uint) Note {
 	return noteFromValue(baseOctave, value, func(a, b uint) bool { return a > b })
 }
 
-func (n Note) ApplyAccidental(a Accidental) Note {
+func (n Note) Accidental(a Accidental) Note {
 	n.accidental = a
 	return n
 }
@@ -145,10 +145,14 @@ func (n Note) TransposeOctave(x int) Note {
 	return n
 }
 
-func (n *Note) ShortName() string {
+func (n Note) Interval(other Note) int {
+	return int(other.totalValue()) - int(n.totalValue())
+}
+
+func (n Note) ShortName() string {
 	return n.name + n.accidental.String()
 }
 
-func (n *Note) String() string {
+func (n Note) String() string {
 	return n.name + n.accidental.String() + strconv.Itoa(int(n.octave))
 }

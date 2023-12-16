@@ -41,3 +41,21 @@ func TestNotesManipulation(t *testing.T) {
 		})
 	}
 }
+
+func TestNoteInterval(t *testing.T) {
+	tests := []struct {
+		note             Note
+		other            Note
+		expectedInterval int
+	}{
+		{note: C, other: F, expectedInterval: 5},
+		{note: G.TransposeOctave(1), other: A, expectedInterval: -10},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.note.ShortName()+" -> "+tt.other.ShortName(), func(t *testing.T) {
+			interval := tt.note.Interval(tt.other)
+			AssertEquals(t, tt.expectedInterval, interval, "note.Interval")
+		})
+	}
+}

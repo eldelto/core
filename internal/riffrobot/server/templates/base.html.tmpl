@@ -2,24 +2,16 @@
 <html lang="en">
 
 <head>
-  <title>{{block "title" .}} eldelto.net {{end}}</title>
+  <title>{{block "title" .}} Riff-Robot {{end}}</title>
   <meta http-equiv="Content-Type" charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name=description content="{{block "description" .}} eldelto's personal blog {{end}}">
+  <meta name=description content="{{block "description" .}} Computer-generated riff parameters {{end}}">
 
   <link rel="stylesheet" href="/assets/main.css">
   <link rel="icon" type="image/svg" href="/assets/favicon.ico">
 </head>
 
 <body>
-  <nav id="nav-bar">
-    <a href="/" id="nav-logo">
-      <img src="/assets/delto-white.svg" alt="Delto logo" width=30>
-    </a>
-    <a href="/articles">Articles</a>
-    <a href="/projects.html">Projects</a>
-    <a href="/cv">CV</a>
-  </nav>
   <div id="content">
     {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
   </div>

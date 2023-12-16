@@ -3,13 +3,13 @@ package musical
 import "strings"
 
 // 1 = a semitone
-type ScaleSteps struct {
+type ScaleDegrees struct {
 	name      string
 	intervals []int
 }
 
 var (
-	MajorSteps = ScaleSteps{
+	MajorScaleDegrees = ScaleDegrees{
 		name:      "major",
 		intervals: []int{2, 2, 1, 2, 2, 2, 1},
 	}
@@ -27,16 +27,32 @@ func notesFromIntervals(tonic Note, intervals []int) []Note {
 }
 
 type Scale struct {
-	Tonic Note
-	Steps ScaleSteps
+	Tonic   Note
+	Degrees ScaleDegrees
 }
 
 func (s *Scale) Name() string {
-	return s.Tonic.ShortName() + " " + s.Steps.name
+	return s.Tonic.ShortName() + " " + s.Degrees.name
 }
 
 func (s *Scale) Notes() []Note {
-	return notesFromIntervals(s.Tonic, s.Steps.intervals)
+	return notesFromIntervals(s.Tonic, s.Degrees.intervals)
+}
+
+func (s *Scale) Chords() []Chord {
+	extendedIntervals := make([]int, len(s.Degrees.intervals))
+	copy(extendedIntervals, s.Degrees.intervals)
+	extendedIntervals = append(extendedIntervals, s.Degrees.intervals...)
+
+	chords := make([]Chord, len(s.Degrees.intervals))
+	notes := s.Notes()
+	for i, root := range notes[:len(notes)-1] {
+		second := root.TransposeSemitone(extendedIntervals[i] + extendedIntervals[i+1])
+		third := second.TransposeSemitone(extendedIntervals[i+2] + extendedIntervals[i+3])
+		chords[i] = NewTriad([3]Note{root, second, third})
+	}
+
+	return chords
 }
 
 func (s *Scale) String() string {
