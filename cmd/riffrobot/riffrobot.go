@@ -4,15 +4,31 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/eldelto/core/internal/riffrobot/server"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 
+const portEnv = "PORT"
+
 func main() {
-	// Controllers
 	port := 8080
+
+	rawPort, ok := os.LookupEnv(portEnv)
+	if !ok {
+		log.Printf("environment variable %q not found, using fallback %d instead", portEnv, port)
+	}
+
+	value, err := strconv.ParseInt(rawPort, 10, 64)
+	if err != nil {
+		log.Fatalf("failed to convert %q to valid port: %v", value, err)
+	}
+	port = int(value)
+
+	// Controllers
 	r := chi.NewRouter()
 
 	sitemapContoller := web.NewSitemapController()
