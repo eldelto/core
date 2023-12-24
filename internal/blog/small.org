@@ -10,6 +10,15 @@
 
    Headline 1.2 text.
 
+** Lists
+
+   - *system* - Applies to every user on the system; usually located
+     at ~/etc/gitconfig~
+   - *global* - Applies to all projects of a single user; usually
+     found at ~$HOME/.gitconfig~
+   - *local* - Applies only to the current Git repository; located
+     at ~<project>/.git/config~
+
 * Headline 2 
 
   Needs to be excluded.

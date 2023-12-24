@@ -360,7 +360,7 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 		trimmedToken := strings.TrimSpace(token)
 
 		if isUnorderedList(token) {
-			node := NewParagraph(trimmedToken[2:])
+			node = NewParagraph(trimmedToken[2:])
 			list.Children = append(list.Children, node)
 		} else {
 			node.Content += " " + trimmedToken
@@ -672,8 +672,11 @@ func replaceInternalLinks() func(string) string {
 	}
 }
 
+// TODO: Eventually replace this hacky way of resolving text emphasis with a
+//
+//	proper parser as this comes with a lot of caveats.
 func replaceWrappedText(symbol, replacement string) func(string) string {
-	r := regexp.MustCompile(`\s` + symbol + `([^` + symbol + `]+)` + symbol)
+	r := regexp.MustCompile(`([^"<>/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
 
 	return func(s string) string {
 		// Add space so the regex also matches when symbol is at the start.
@@ -681,7 +684,7 @@ func replaceWrappedText(symbol, replacement string) func(string) string {
 
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-			replacement := " " + tagged(match[1], replacement)
+			replacement := match[1] + tagged(match[2], replacement)
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
 

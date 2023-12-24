@@ -21,7 +21,7 @@ func TestParseOrgFile(t *testing.T) {
 
 	AssertEquals(t, "Headline 1", headline.GetContent(), "1. headline")
 	AssertEquals(t, uint(1), headline.Level, "1. headline level")
-	AssertEquals(t, 3, len(headline.GetChildren()), "1. headline getchildren() len")
+	AssertEquals(t, 4, len(headline.GetChildren()), "1. headline getchildren() len")
 
 	headlineOneOne := headline.GetChildren()[1].(*Headline)
 	AssertEquals(t, "Headline 1.1", headlineOneOne.GetContent(), "1.1 headline")
@@ -34,6 +34,13 @@ func TestParseOrgFile(t *testing.T) {
 	AssertEquals(t, uint(2), headlineOneTwo.Level, "1.2 headline level")
 	AssertEquals(t, "Headline 1.2 text.", headlineOneTwo.GetChildren()[0].GetContent(),
 		"1.2 headline paragraph")
+
+	lists := headline.GetChildren()[3].(*Headline)
+	unorderedList := lists.GetChildren()[0].(*UnorderedList)
+	AssertEquals(t, "*system* - Applies to every user on the system; usually located at ~/etc/gitconfig~",
+		unorderedList.GetChildren()[0].GetContent(), "first list entry")
+	AssertEquals(t, "*global* - Applies to all projects of a single user; usually found at ~$HOME/.gitconfig~",
+		unorderedList.GetChildren()[1].GetContent(), "second list entry")
 }
 
 func TestArticlesFromOrgFile(t *testing.T) {
@@ -64,6 +71,7 @@ func TestArticlesToHtml(t *testing.T) {
 	html := ArticleToHtml(articles[0])
 	AssertStringContains(t, `<li>Make</li>`, html, "unordered list")
 	AssertStringContains(t, "<li><code>listed code</code></li>", html, "code in list")
+	AssertStringContains(t, `(<cite>italic in parenthesis</cite>)`, html, "nested italics")
 
 	html = ArticleToHtml(articles[1])
 	AssertStringContains(t, "<h1>Raspberry Pi Pico no Hands Flashing</h1>", html, "title")

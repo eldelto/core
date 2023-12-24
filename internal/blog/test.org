@@ -11,6 +11,8 @@
 
     In this article we will checkout the Raspberry Pi Pico setup.
     
+    This should be rendered correctly: (/italic in parenthesis/)
+   
 **** Install required dependencies
 
      First off we have to install a couple of tools so we can actually
