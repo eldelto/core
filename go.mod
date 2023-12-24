@@ -4,14 +4,12 @@ go 1.21
 
 require (
 	github.com/cespare/reflex v0.3.1
-	github.com/gen2brain/raylib-go/raylib v0.0.0-20231112165456-1a9e976d4c0a
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-co-op/gocron v1.36.0
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
-	github.com/jakecoffman/cp v1.2.1
 	go.bug.st/serial v1.6.1
 	go.etcd.io/bbolt v1.3.8
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
