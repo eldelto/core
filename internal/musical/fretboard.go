@@ -2,6 +2,7 @@ package musical
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -52,17 +53,29 @@ func (f *Fretboard) String() string {
 	notes := f.Tuning.Notes()
 	slices.Reverse(notes)
 
+	for fretNumber := 0; fretNumber <= frets; fretNumber++ {
+		name := strconv.FormatInt(int64(fretNumber), 10)
+		if len(name) < 2 {
+			name += "-"
+		}
+		b.WriteString("--")
+		b.WriteString(name)
+		b.WriteString("--|")
+	}
+
 	for _, openNote := range notes {
+		b.WriteByte('\n')
+
 		for fretNumber := 0; fretNumber <= frets; fretNumber++ {
 			note := openNote.TransposeSemitone(fretNumber)
 			name := note.String()
 			if len(name) < 3 {
 				name += "-"
 			}
+			b.WriteString("--")
 			b.WriteString(name)
-			b.WriteString("---")
+			b.WriteString("-|")
 		}
-		b.WriteByte('\n')
 	}
 
 	return b.String()
