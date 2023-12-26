@@ -1,8 +1,8 @@
 package riffrobot
 
 import (
-	"crypto/sha1"
 	"fmt"
+	"hash/fnv"
 	"math/rand"
 
 	"github.com/eldelto/core/internal/musical"
@@ -24,17 +24,17 @@ var (
 )
 
 func RandomScale(seed string) (musical.Scale, error) {
-	hash, err := sha1.New().Write([]byte(seed))
-	if err != nil {
+	hasher := fnv.New32()
+	if _, err := hasher.Write([]byte(seed)); err != nil {
 		return musical.Scale{}, fmt.Errorf("failed to hash seed %q: %w", seed, err)
 	}
 
-	r := rand.New(rand.NewSource(int64(hash)))
+	r := rand.New(rand.NewSource(int64(hasher.Sum32())))
 	randValue := r.Int()
 
-	tonic := tonics[len(tonics)%randValue-1]
+	tonic := tonics[randValue%len(tonics)]
 	// TODO: Add random accidental.
-	degree := degrees[len(degrees)%randValue-1]
+	degree := degrees[randValue%len(degrees)]
 	scale := musical.Scale{Tonic: tonic, Degrees: degree}
 
 	return scale, nil
