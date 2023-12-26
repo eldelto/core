@@ -20,13 +20,13 @@ func main() {
 	rawPort, ok := os.LookupEnv(portEnv)
 	if !ok {
 		log.Printf("environment variable %q not found, using fallback %d instead", portEnv, port)
+	} else {
+		value, err := strconv.ParseInt(rawPort, 10, 64)
+		if err != nil {
+			log.Fatalf("failed to convert %q to valid port: %v", value, err)
+		}
+		port = int(value)
 	}
-
-	value, err := strconv.ParseInt(rawPort, 10, 64)
-	if err != nil {
-		log.Fatalf("failed to convert %q to valid port: %v", value, err)
-	}
-	port = int(value)
 
 	// Controllers
 	r := chi.NewRouter()

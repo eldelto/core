@@ -51,11 +51,15 @@ func riffForSeed() web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		date := chi.URLParam(r, "date")
 
-		scale := riffrobot.RandomScale(date)
+		scale, err := riffrobot.RandomScale(date)
+		if err != nil {
+			return err
+		}
+
 		fretboard := &musical.Fretboard{Tuning: musical.TuningDStandard}
 
 		riffData := riffData{
-			Scale:     scale,
+			Scale:     &scale,
 			Fretboard: fretboard,
 		}
 
