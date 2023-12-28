@@ -31,13 +31,13 @@ func (q Quality) String() string {
 
 type Chord struct {
 	quality Quality
-	notes   []Note
+	Notes   []Note
 }
 
 func NewTriad(notes [3]Note) Chord {
 	return Chord{
 		quality: triadQuality(notes),
-		notes:   notes[:],
+		Notes:   notes[:],
 	}
 }
 
@@ -60,5 +60,5 @@ func triadQuality(notes [3]Note) Quality {
 }
 
 func (c *Chord) Name() string {
-	return c.notes[0].ShortName() + " " + c.quality.String()
+	return c.Notes[0].ShortName() + " " + c.quality.String()
 }
