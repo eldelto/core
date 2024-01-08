@@ -23,6 +23,11 @@ func TestScaleCreation(t *testing.T) {
 			expected: "A - B - C# - D - E - F# - G# - A",
 			scale:    Scale{Tonic: A, Degrees: MajorScaleDegrees},
 		},
+		{
+			name:     "C minor",
+			expected: "C - D - D# - F - G - G# - A# - C",
+			scale:    Scale{Tonic: C, Degrees: MinorScaleDegrees},
+		},
 	}
 
 	for _, tt := range tests {
@@ -45,6 +50,10 @@ func TestScaleChords(t *testing.T) {
 		{
 			scale:    Scale{Tonic: A, Degrees: MajorScaleDegrees},
 			expected: "A major - B minor - C# minor - D major - E major - F# minor - G# diminished",
+		},
+		{
+			scale:    Scale{Tonic: C, Degrees: MinorScaleDegrees},
+			expected: "C minor - D diminished - D# major - F minor - G minor - G# major - A# major",
 		},
 	}
 

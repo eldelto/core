@@ -11,6 +11,7 @@ import (
 var (
 	degrees = []musical.ScaleDegrees{
 		musical.MajorScaleDegrees,
+		musical.MinorScaleDegrees,
 	}
 	tonics = []musical.Note{
 		musical.A,

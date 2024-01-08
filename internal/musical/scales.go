@@ -8,11 +8,29 @@ type ScaleDegrees struct {
 	intervals []int
 }
 
+func (s *ScaleDegrees) Shift(name string, offset int) ScaleDegrees {
+	// Decrease the offset so it is consistent with music literature to start
+	// on the n-th scale degree.
+	offset--
+	intervalLen := len(s.intervals)
+	newIntervals := make([]int, intervalLen)
+
+	for i := 0; i < intervalLen; i++ {
+		newIntervals[i] = s.intervals[(offset+i)%intervalLen]
+	}
+
+	return ScaleDegrees{
+		name:      name,
+		intervals: newIntervals,
+	}
+}
+
 var (
 	MajorScaleDegrees = ScaleDegrees{
 		name:      "major",
 		intervals: []int{2, 2, 1, 2, 2, 2, 1},
 	}
+	MinorScaleDegrees = MajorScaleDegrees.Shift("minor", 6)
 )
 
 func notesFromIntervals(tonic Note, intervals []int) []Note {
