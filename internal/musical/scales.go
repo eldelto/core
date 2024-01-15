@@ -26,11 +26,18 @@ func (s *ScaleDegrees) Shift(name string, offset int) ScaleDegrees {
 }
 
 var (
+	// Also Ionian
 	MajorScaleDegrees = ScaleDegrees{
 		name:      "major",
 		intervals: []int{2, 2, 1, 2, 2, 2, 1},
 	}
-	MinorScaleDegrees = MajorScaleDegrees.Shift("minor", 6)
+	DorianScaleDegrees     = MajorScaleDegrees.Shift("dorian", 2)
+	PhrygianScaleDegrees   = MajorScaleDegrees.Shift("phrygian", 3)
+	LydianScaleDegrees     = MajorScaleDegrees.Shift("lydian", 4)
+	MixolydianScaleDegrees = MajorScaleDegrees.Shift("mixolydian", 5)
+	// Also Aeolian
+	MinorScaleDegrees   = MajorScaleDegrees.Shift("minor", 6)
+	LocrianScaleDegrees = MajorScaleDegrees.Shift("locrian", 7)
 )
 
 func notesFromIntervals(tonic Note, intervals []int) []Note {
