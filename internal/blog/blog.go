@@ -633,7 +633,8 @@ func tagged(s, tag string) string {
 }
 
 var inlineRules = []func(string) string{
-	// replace("[[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]", ""),
+  replaceAudioLinks(),
+  replaceImageLinks(),
 	replaceExternalLinks(),
 	replaceInternalLinks(),
 	replaceWrappedText("~", "code"),
@@ -641,6 +642,38 @@ var inlineRules = []func(string) string{
 	replaceWrappedText("/", "cite"),
 	replaceWrappedText("\\+", "s"),
 	replaceWrappedText("_", "u"),
+}
+
+func replaceAudioLinks() func(string) string {
+	r := regexp.MustCompile(`\[\[file:([^\]]+\.(mp3))\]\]`)
+
+	return func(s string) string {
+		matches := r.FindAllStringSubmatch(s, -1)
+		for _, match := range matches {
+      replacement := fmt.Sprintf(`<audio controls>
+  <source src="%s" type="audio/mpeg">
+  Your browser does not support audio playback :(
+</audio>`, match[1])
+			s = strings.Replace(s, match[0], replacement, 1)
+		}
+
+		return s
+	}
+}
+
+func replaceImageLinks() func(string) string {
+	r := regexp.MustCompile(`\[\[file:(([^\]]+)\.(png|jpg|jpeg|gif))\]\]`)
+
+	return func(s string) string {
+		matches := r.FindAllStringSubmatch(s, -1)
+		for _, match := range matches {
+      replacement := fmt.Sprintf("<img src=\"/dynamic-assets/%s\" alt=\"%s\" style=\"width:auto\">",
+        match[1], match[2])
+			s = strings.Replace(s, match[0], replacement, 1)
+		}
+
+		return s
+	}
 }
 
 func replaceExternalLinks() func(string) string {

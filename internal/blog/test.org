@@ -10,9 +10,9 @@
     :END:
 
     In this article we will checkout the Raspberry Pi Pico setup.
-    
+
     This should be rendered correctly: (/italic in parenthesis/)
-   
+
 **** Install required dependencies
 
      First off we have to install a couple of tools so we can actually
@@ -186,7 +186,7 @@
        cmake ..
        make
      #+end_src
-     
+
      After the compilation has finished we have our finished
      ~picotool~ binary in our build folder. We can verify our build by
      running picotool's ~help~ command:
@@ -210,6 +210,9 @@
      Rebuild our project and we are all set.
 
 **** No-Hands Flashing
+
+     [[file:map-of-control.png]]
+     [[file:riff1.mp3]]
 
      Now the last step to greatness is to keep our Rasberry Pi Pico
      plugged in, point the ~picotool load~ command to our ~.uf2~ file
@@ -241,4 +244,4 @@
      up-to-date and rebuilds it automatically on changes. I'm not
      going into too much detail here but instead just point you to one
      of my [[https://github.com/eldelto/project-ikaros/blob/main/Makefile#L60][projects]] that uses it in a similar way.
- 
+
