@@ -633,8 +633,8 @@ func tagged(s, tag string) string {
 }
 
 var inlineRules = []func(string) string{
-  replaceAudioLinks(),
-  replaceImageLinks(),
+	replaceAudioLinks(),
+	replaceImageLinks(),
 	replaceExternalLinks(),
 	replaceInternalLinks(),
 	replaceWrappedText("~", "code"),
@@ -645,12 +645,12 @@ var inlineRules = []func(string) string{
 }
 
 func replaceAudioLinks() func(string) string {
-	r := regexp.MustCompile(`\[\[file:([^\]]+\.(mp3))\]\]`)
+	r := regexp.MustCompile(`\[\[file:([^\]]+\.(mp3))\]`)
 
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-      replacement := fmt.Sprintf(`<audio controls>
+			replacement := fmt.Sprintf(`<audio controls>
   <source src="%s" type="audio/mpeg">
   Your browser does not support audio playback :(
 </audio>`, match[1])
@@ -662,13 +662,13 @@ func replaceAudioLinks() func(string) string {
 }
 
 func replaceImageLinks() func(string) string {
-	r := regexp.MustCompile(`\[\[file:(([^\]]+)\.(png|jpg|jpeg|gif))\]\]`)
+	r := regexp.MustCompile(`\[\[file:(([^\]]+)\.(png|jpg|jpeg|gif))\]`)
 
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-      replacement := fmt.Sprintf("<img src=\"/dynamic-assets/%s\" alt=\"%s\" style=\"width:auto\">",
-        match[1], match[2])
+			replacement := fmt.Sprintf("<img src=\"/dynamic/assets/%s\" alt=\"%s\" style=\"width:auto\">",
+				match[1], match[2])
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
 

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"path/filepath"
 
-	"go.etcd.io/bbolt"
 	"time"
+
+	"go.etcd.io/bbolt"
 )
 
 type ByteFile struct {
@@ -19,13 +21,34 @@ type ByteFile struct {
 var _ fs.File = &ByteFile{data: []byte{}}
 
 func (bf *ByteFile) Read(data []byte) (int, error) {
-	len := copy(data, bf.data)
+	log.Println("reading")
+	len := copy(data, bf.data[bf.cursor:])
 	if len <= 0 {
 		return 0, io.EOF
 	}
 	bf.cursor += len
 
 	return len, nil
+}
+
+func (bf *ByteFile) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		bf.cursor = int(offset)
+	case io.SeekCurrent:
+		bf.cursor += int(offset)
+	case io.SeekEnd:
+		bf.cursor = (len(bf.data) - 1) - int(offset)
+	default:
+		panic(fmt.Errorf("unknown 'whence': %d", whence))
+	}
+
+	if bf.cursor < 0 || bf.cursor >= len(bf.data) {
+		return 0, fmt.Errorf("cursor value %d is outside of bounds: %w",
+			bf.cursor, io.EOF)
+	}
+
+	return int64(bf.cursor), nil
 }
 
 func (bf *ByteFile) Stat() (fs.FileInfo, error) {
@@ -61,37 +84,39 @@ func (bf *ByteFile) Sys() any {
 }
 
 type BoltFS struct {
-  bucket string
+	bucket []byte
 	*bbolt.DB
 }
 
-func NewBoltFS(db *bbolt.DB, bucketKey string) *BoltFS {
-  return &BoltFS{
-    bucket: bucketKey,
-	  DB: db,
-  }
+func NewBoltFS(db *bbolt.DB, bucketKey []byte) *BoltFS {
+	return &BoltFS{
+		bucket: bucketKey,
+		DB:     db,
+	}
 }
 
 var _ fs.FS = &BoltFS{}
 
 func (f *BoltFS) Open(path string) (fs.File, error) {
-	dir := filepath.Dir(path)
+	log.Println("opening: " + path)
 	filename := filepath.Base(path)
 	file := ByteFile{path: path}
 
 	err := f.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(dir))
+		bucket := tx.Bucket(f.bucket)
 		if bucket == nil {
-			return fmt.Errorf("bucket %q does not exist", dir)
+			return fmt.Errorf("bucket %q does not exist", f.bucket)
 		}
 
 		content := bucket.Get([]byte(filename))
 		if content == nil {
-			return fmt.Errorf("key %q in bucket %q does not exist", filename, dir)
+			return fmt.Errorf("key %q in bucket %q does not exist", filename, f.bucket)
 		}
 
+		log.Println("before copy")
 		file.data = make([]byte, len(content))
 		copy(file.data, content)
+		log.Println("after copy")
 
 		return nil
 	})
@@ -99,5 +124,5 @@ func (f *BoltFS) Open(path string) (fs.File, error) {
 		return nil, fmt.Errorf("failed to start read-only transaction: %w", err)
 	}
 
-	return nil, nil
+	return &file, nil
 }

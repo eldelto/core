@@ -7,12 +7,17 @@ import (
 	"testing"
 
 	. "github.com/eldelto/core/internal/testutils"
+	"go.etcd.io/bbolt"
 )
 
 const dbPath = "blog-test.db"
 
 func TestStoreFetch(t *testing.T) {
-	service, err := NewService("blog-test.db", "", nil)
+	db, err := bbolt.Open("blog-test.db", 0660, nil)
+	AssertNoError(t, err, "bboltOpent")
+	defer db.Close()
+
+	service, err := NewService(db, "", nil)
 	AssertNoError(t, err, "NewService")
 	defer os.Remove(dbPath)
 

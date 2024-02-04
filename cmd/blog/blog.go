@@ -7,20 +7,24 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/eldelto/core/internal/blog"
 	"github.com/eldelto/core/internal/blog/server"
+	"github.com/eldelto/core/internal/boltfs"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron"
+	"go.etcd.io/bbolt"
 )
 
 const (
 	destinationEnv = "REPO_DESTINATION"
 	gitHostEnv     = "GIT_HOST"
 	readOnlyEnv    = "READ_ONLY"
+	dbPath         = "blog.db"
 )
 
 func updateArticles(service *blog.Service, destination string, overwrite bool) {
@@ -45,6 +49,12 @@ func updateArticles(service *blog.Service, destination string, overwrite bool) {
 	}
 
 	if err := service.UpdateArticles(orgFilePath); err != nil {
+		log.Println(err)
+		return
+	}
+
+	assetsDir := filepath.Join(filepath.Dir(orgFilePath), "assets")
+	if err := service.CopyAssets(assetsDir); err != nil {
 		log.Println(err)
 		return
 	}
@@ -74,7 +84,13 @@ func main() {
 	sitemapContoller := web.NewSitemapController()
 
 	// Services
-	service, err := blog.NewService("blog.db", gitHost, sitemapContoller)
+	db, err := bbolt.Open(dbPath, 0600, nil)
+	if err != nil {
+		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
+	}
+	defer db.Close()
+
+	service, err := blog.NewService(db, gitHost, sitemapContoller)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,6 +112,7 @@ func main() {
 
 	sitemapContoller.Register(r)
 	web.NewAssetController(server.AssetsFS).Register(r)
+	web.NewPrefixedAssetController("/dynamic", boltfs.NewBoltFS(db, []byte(blog.AssetBucket))).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
 

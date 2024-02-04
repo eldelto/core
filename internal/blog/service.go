@@ -8,7 +8,9 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/eldelto/core/internal/web"
 	"go.etcd.io/bbolt"
@@ -22,7 +24,16 @@ type Service struct {
 
 const (
 	articleBucket = "articles"
+	AssetBucket   = "assets"
 )
+
+var supportedMediaTypes = []string{
+	".png",
+	".jpg",
+	".jpeg",
+	".gif",
+	".mp3",
+}
 
 func init() {
 	gob.Register(&Headline{})
@@ -33,18 +44,18 @@ func init() {
 	gob.Register(&Properties{})
 }
 
-func NewService(dbPath, gitHost string, sitmapController *web.SitemapController) (*Service, error) {
-	db, err := bbolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bbolt DB %q: %w", dbPath, err)
-	}
-
-	err = db.Update(func(tx *bbolt.Tx) error {
+func NewService(db *bbolt.DB, gitHost string, sitmapController *web.SitemapController) (*Service, error) {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(articleBucket))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte(AssetBucket))
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create bucket %q: %w", articleBucket, err)
+		return nil, fmt.Errorf("failed to create bucket: %w", err)
 	}
 
 	return &Service{
@@ -54,8 +65,19 @@ func NewService(dbPath, gitHost string, sitmapController *web.SitemapController)
 	}, nil
 }
 
-func (s *Service) Close() error {
-	return s.db.Close()
+func (s *Service) storeMedia(name string, content []byte) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(AssetBucket))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket with name %q", AssetBucket)
+		}
+
+		if err := bucket.Put([]byte(name), content); err != nil {
+			return fmt.Errorf("failed to store content of %q: %w", name, err)
+		}
+
+		return nil
+	})
 }
 
 func (s *Service) store(articles ...Article) error {
@@ -158,7 +180,43 @@ func (s *Service) UpdateArticles(orgFile string) error {
 
 		s.sitemapControlle.AddSite(*url)
 	}
+
 	return s.store(articles...)
+}
+
+func isSupportedMedia(name string) bool {
+	for _, t := range supportedMediaTypes {
+		if strings.HasSuffix(name, t) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Service) CopyAssets(assetDir string) error {
+	entries, err := os.ReadDir(assetDir)
+	if err != nil {
+		return fmt.Errorf("failed to get entries for asset directory %q: %w",
+			assetDir, err)
+	}
+
+	for _, e := range entries {
+		if !isSupportedMedia(e.Name()) {
+			continue
+		}
+
+		filepath := filepath.Join(assetDir, e.Name())
+		content, err := os.ReadFile(filepath)
+		if err != nil {
+			return fmt.Errorf("failed to read file %q: %w", filepath, err)
+		}
+
+		if err := s.storeMedia(e.Name(), content); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) CheckoutRepository(destination string) error {
