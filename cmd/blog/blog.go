@@ -111,8 +111,8 @@ func main() {
 	r := chi.NewRouter()
 
 	sitemapContoller.Register(r)
-	web.NewAssetController(server.AssetsFS).Register(r)
-	web.NewPrefixedAssetController("/dynamic", boltfs.NewBoltFS(db, []byte(blog.AssetBucket))).Register(r)
+	web.NewAssetController("", server.AssetsFS).Register(r)
+	web.NewAssetController("/dynamic", boltfs.NewBoltFS(db, []byte(blog.AssetBucket))).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
 

@@ -38,14 +38,20 @@ func (c *Controller) Register(router chi.Router) {
 	}
 }
 
-func NewAssetController(fileSystem fs.FS) *Controller {
-	return &Controller{
+func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
+	c := Controller{
+		BasePath: basePath,
 		Handlers: map[Endpoint]Handler{
-			{Method: "GET", Path: "/assets/*"}:    getAsset(fileSystem),
-			{Method: "GET", Path: "/robots.txt"}:  getFile(fileSystem, "robots.txt"),
-			{Method: "GET", Path: "/favicon.ico"}: getFile(fileSystem, "favicon.ico"),
+			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
 		},
 	}
+
+	if basePath != "" {
+		c.Handlers[Endpoint{Method: "GET", Path: "/robots.txt"}] = getFile(fileSystem, "robots.txt")
+		c.Handlers[Endpoint{Method: "GET", Path: "/favicon.ico"}] = getFile(fileSystem, "favicon.ico")
+	}
+
+	return &c
 }
 
 func getAsset(fileSystem fs.FS) Handler {
@@ -77,32 +83,6 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 		http.ServeContent(w, r, filename, startupTime, file.(io.ReadSeeker))
 
 		return nil
-	}
-}
-
-func getAnyFile(fileSystem fs.FS, prefix string) Handler {
-
-	return func(w http.ResponseWriter, r *http.Request) error {
-		assetPath := strings.TrimPrefix(r.URL.Path, prefix)
-
-		file, err := fileSystem.Open(assetPath)
-		if err != nil {
-			return fmt.Errorf("failed to serve file %q: %w", assetPath, err)
-		}
-		defer file.Close()
-
-		http.ServeContent(w, r, assetPath, startupTime, file.(io.ReadSeeker))
-
-		return nil
-	}
-}
-
-func NewPrefixedAssetController(prefix string, fileSystem fs.FS) *Controller {
-	return &Controller{
-		BasePath: prefix,
-		Handlers: map[Endpoint]Handler{
-			{Method: "GET", Path: "/assets/*"}: getAnyFile(fileSystem, filepath.Join(prefix, "assets")),
-		},
 	}
 }
 

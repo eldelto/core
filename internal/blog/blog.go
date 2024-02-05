@@ -651,7 +651,7 @@ func replaceAudioLinks() func(string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
 			replacement := fmt.Sprintf(`<audio controls>
-  <source src="%s" type="audio/mpeg">
+  <source src="/dynamic/assets/%s" type="audio/mpeg">
   Your browser does not support audio playback :(
 </audio>`, match[1])
 			s = strings.Replace(s, match[0], replacement, 1)

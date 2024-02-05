@@ -85,6 +85,6 @@ func TestArticlesToHtml(t *testing.T) {
 	AssertStringContains(t,
 		`<img src="/dynamic/assets/map-of-control.png" alt="map-of-control" style="width:auto">`,
 		html, "link to a picture")
-	AssertStringContains(t, `<source src="riff1.mp3" type="audio/mpeg">`,
+	AssertStringContains(t, `<source src="/dynamic/assets/riff1.mp3" type="audio/mpeg">`,
 		html, "link to music")
 }

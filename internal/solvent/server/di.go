@@ -25,7 +25,7 @@ func Init() *Container {
 	// Services
 
 	// API
-	assetControler := web.NewAssetController(api.AssetsFS)
+	assetControler := web.NewAssetController("", api.AssetsFS)
 	templateControler := web.NewTemplateController(api.TemplatesFS, nil)
 
 	return &Container{
