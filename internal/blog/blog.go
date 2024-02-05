@@ -632,6 +632,16 @@ func tagged(s, tag string) string {
 	return b.String()
 }
 
+// TODO:Replace this hacky way of resolving text emphasis with a proper
+// parser as this comes with a lot of caveats.
+// The parser currently has to quite a bit of implicit knowledge how the
+// controller and service layer work, which is not really nice. Also I have
+// amassed a ton of ugly Regex replacements which are also pretty crappy.
+//
+// The ideal situation would be a stand-alone parser that returns some simple
+// AST of the .org file and the service layer can then worry about intepreting
+// it to HTML with all links pointing to resources that actually exist.
+
 var inlineRules = []func(string) string{
 	replaceAudioLinks(),
 	replaceImageLinks(),
@@ -645,7 +655,7 @@ var inlineRules = []func(string) string{
 }
 
 func replaceAudioLinks() func(string) string {
-	r := regexp.MustCompile(`\[\[file:([^\]]+\.(mp3))\]`)
+	r := regexp.MustCompile(`\[\[file:([^\]]+\.(mp3))\](\[([^\]]+)\])?\]`)
 
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
@@ -662,13 +672,18 @@ func replaceAudioLinks() func(string) string {
 }
 
 func replaceImageLinks() func(string) string {
-	r := regexp.MustCompile(`\[\[file:(([^\]]+)\.(png|jpg|jpeg|gif))\]`)
+	r := regexp.MustCompile(`\[\[file:(([^\]]+)\.(png|jpg|jpeg|gif))\](\[([^\]]+)\])?\]`)
 
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
+			alt := match[2]
+			if len(match) >= 5 && match[5] != "" {
+				alt = match[5]
+			}
+
 			replacement := fmt.Sprintf("<img src=\"/dynamic/assets/%s\" alt=\"%s\" style=\"width:auto\">",
-				match[1], match[2])
+				match[1], alt)
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
 
@@ -705,9 +720,6 @@ func replaceInternalLinks() func(string) string {
 	}
 }
 
-// TODO: Eventually replace this hacky way of resolving text emphasis with a
-//
-//	proper parser as this comes with a lot of caveats.
 func replaceWrappedText(symbol, replacement string) func(string) string {
 	r := regexp.MustCompile(`([^"<>/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
 
