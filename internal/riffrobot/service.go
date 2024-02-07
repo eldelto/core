@@ -3,6 +3,7 @@ package riffrobot
 import (
 	"fmt"
 	"hash/fnv"
+	// TODO: Move to math/rand/v2
 	"math/rand"
 
 	"github.com/eldelto/core/internal/musical"

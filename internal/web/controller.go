@@ -55,6 +55,7 @@ func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
 }
 
 func getAsset(fileSystem fs.FS) Handler {
+	// TODO: Migrate to http.FileServerFS
 	next := http.FileServer(http.FS(fileSystem))
 	next = StaticContentMiddleware(next)
 
