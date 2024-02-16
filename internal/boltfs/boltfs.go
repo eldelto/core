@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"path/filepath"
 
 	"time"
@@ -21,7 +20,6 @@ type ByteFile struct {
 var _ fs.File = &ByteFile{data: []byte{}}
 
 func (bf *ByteFile) Read(data []byte) (int, error) {
-	log.Println("reading")
 	len := copy(data, bf.data[bf.cursor:])
 	if len <= 0 {
 		return 0, io.EOF
@@ -98,7 +96,6 @@ func NewBoltFS(db *bbolt.DB, bucketKey []byte) *BoltFS {
 var _ fs.FS = &BoltFS{}
 
 func (f *BoltFS) Open(path string) (fs.File, error) {
-	log.Println("opening: " + path)
 	filename := filepath.Base(path)
 	file := ByteFile{path: path}
 
@@ -113,10 +110,8 @@ func (f *BoltFS) Open(path string) (fs.File, error) {
 			return fmt.Errorf("key %q in bucket %q does not exist", filename, f.bucket)
 		}
 
-		log.Println("before copy")
 		file.data = make([]byte, len(content))
 		copy(file.data, content)
-		log.Println("after copy")
 
 		return nil
 	})
