@@ -10,21 +10,23 @@ import (
 )
 
 func TestLexiconConsistency(t *testing.T) {
-	if sanitizeLexicon(plantguild.EmbeddedLexicon) {
-		file, err := os.Create("plants-corrected.yml")
-		if err != nil {
-			t.Fatalf("failed to create plants-corrected.yml: %s", err)
-		}
-		defer file.Close()
+	modified := sanitizeLexicon(plantguild.EmbeddedLexicon)
+	file, err := os.Create("plants-corrected.yml")
+	if err != nil {
+		t.Fatalf("failed to create plants-corrected.yml: %s", err)
+	}
+	defer file.Close()
 
-		listing := plantguild.EmbeddedLexicon.Listing()
-		entries := listing.Entries
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Name < entries[j].Name
-		})
-		if err := yaml.NewEncoder(file).Encode(listing); err != nil {
-			t.Fatalf("failed to serialize to plants-corrected.yml: %s", err)
-		}
+	listing := plantguild.EmbeddedLexicon.Listing()
+	entries := listing.Entries
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name < entries[j].Name
+	})
+	if err := yaml.NewEncoder(file).Encode(listing); err != nil {
+		t.Fatalf("failed to serialize to plants-corrected.yml: %s", err)
+	}
+
+	if modified {
 		t.Fatal("lexicon is not consistent - compare content of plants-corrected.yml with original content")
 	}
 }
