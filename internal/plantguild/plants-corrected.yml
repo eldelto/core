@@ -21,7 +21,11 @@ plants:
         - Melonen
         - Zucchini
         - Kürbis
-      badCompanions: []
+        - Petersilie
+        - Rosmarin
+      badCompanions:
+        - Zitronenmelisse
+        - Minze
     - name: Blaukraut
       height: 0
       width: 0
@@ -97,6 +101,10 @@ plants:
         - Salat
         - Zwiebeln
         - Buschbohnen
+        - Salbei
+        - Ysop
+        - Rosmarin
+        - Thymian
       badCompanions: []
     - name: Borretsch
       height: 0
@@ -105,6 +113,7 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
+        - Buschbohnen
         - Blaukraut
         - Bohnen
         - Erdbeeren
@@ -112,7 +121,7 @@ plants:
         - Kohlrabi
         - Kohlarten
         - Kohl
-        - Buschbohnen
+        - Thymian
       badCompanions: []
     - name: Buschbohnen
       height: 0
@@ -214,7 +223,13 @@ plants:
         - Mais
         - Buschbohnen
         - Spargel
-      badCompanions: []
+        - Kamille
+      badCompanions:
+        - Kresse
+        - Fenchel
+        - Kümmel
+        - Estragon
+        - Petersilie
     - name: Endivien
       height: 0
       width: 0
@@ -290,6 +305,17 @@ plants:
         - Feldsalat
       badCompanions:
         - Kohlarten
+    - name: Estragon
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Petersilie
+        - Thymian
+      badCompanions:
+        - Dill
     - name: Feldsalat
       height: 0
       width: 0
@@ -322,6 +348,8 @@ plants:
         - Erbsen
         - Pflücksalat
         - Pflücksalat
+        - Liebstöckel
+        - Thymian
       badCompanions:
         - Bohnen
         - Tomaten
@@ -329,6 +357,11 @@ plants:
         - Paprika
         - Buschbohnen
         - Stangenbohnen
+        - Koriander
+        - Dill
+        - Kresse
+        - Majoran
+        - Kümmel
     - name: Gurken
       height: 0
       width: 0
@@ -382,9 +415,15 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Sellerie
         - Zwiebeln
-      badCompanions: []
+        - Sellerie
+        - Schnittlauch
+        - Majoran
+        - Kerbel
+        - Pimpinelle
+        - Dill
+      badCompanions:
+        - Pfefferminze
     - name: Kapuzinerkresse
       height: 0
       width: 0
@@ -435,6 +474,17 @@ plants:
         - Melonen
         - Zwiebeln
         - Knollensellerie
+    - name: Kerbel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kamille
+      badCompanions:
+        - Kresse
+        - Petersilie
     - name: Knoblauch
       height: 0
       width: 0
@@ -604,6 +654,18 @@ plants:
         - Kresse
         - Petersilie
         - Sellerie
+    - name: Koriander
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Petersilie
+        - Thymian
+      badCompanions:
+        - Fenchel
+        - Kresse
     - name: Kresse
       height: 0
       width: 0
@@ -613,6 +675,12 @@ plants:
       goodCompanions: []
       badCompanions:
         - Kopfsalat
+        - Dill
+        - Fenchel
+        - Koriander
+        - Petersilie
+        - Rucola
+        - Kerbel
     - name: Kümmel
       height: 0
       width: 0
@@ -624,7 +692,9 @@ plants:
         - Gurken
         - Melonen
         - Kürbis
-      badCompanions: []
+      badCompanions:
+        - Fenchel
+        - Dill
     - name: Kürbis
       height: 0
       width: 0
@@ -651,6 +721,28 @@ plants:
         - Radieschen
         - Rettich
         - Zucchini
+    - name: Lavendel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Salbei
+        - Ysop
+        - Rosmarin
+        - Thymian
+      badCompanions: []
+    - name: Liebstöckel
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+        - Petersilie
+      badCompanions: []
     - name: Lilien
       height: 0
       width: 0
@@ -689,6 +781,17 @@ plants:
         - Raps
         - Senf
         - Rettich
+    - name: Majoran
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kamille
+      badCompanions:
+        - Fenchel
+        - Thymian
     - name: Mangold
       height: 0
       width: 0
@@ -752,6 +855,15 @@ plants:
       goodCompanions:
         - Kartoffeln
       badCompanions: []
+    - name: Minze
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Basilikum
     - name: Möhren
       height: 0
       width: 0
@@ -779,6 +891,15 @@ plants:
       badCompanions:
         - Rote Bete
         - Pfefferminze
+    - name: Oregano
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Salbei
+      badCompanions: []
     - name: Paprika
       height: 0
       width: 0
@@ -821,16 +942,25 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Gurken
+        - Basilikum
+        - Estragon
         - Radieschen
-        - Tomaten
-        - Zwiebeln
         - Rettich
+        - Zwiebeln
+        - Koriander
+        - Pimpinelle
+        - Schnittlauch
         - Porree
         - Spargel
+        - Gurken
+        - Tomaten
+        - Liebstöckel
       badCompanions:
+        - Kerbel
+        - Dill
         - Salat
         - Kopfsalat
+        - Kresse
     - name: Pfefferminze
       height: 0
       width: 0
@@ -841,6 +971,7 @@ plants:
         - Kartoffeln
       badCompanions:
         - Möhren
+        - Kamille
     - name: Pflücksalat
       height: 0
       width: 0
@@ -866,6 +997,16 @@ plants:
       goodCompanions:
         - Blaukraut
         - Blumenkohl
+      badCompanions: []
+    - name: Pimpinelle
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Kamille
+        - Petersilie
       badCompanions: []
     - name: Porree
       height: 0
@@ -1007,6 +1148,20 @@ plants:
       goodCompanions:
         - Knoblauch
       badCompanions: []
+    - name: Rosmarin
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Basilikum
+        - Thymian
+        - Lavendel
+        - Salbei
+        - Ysop
+        - Bohnenkraut
+      badCompanions: []
     - name: Rote Bete
       height: 0
       width: 0
@@ -1040,6 +1195,15 @@ plants:
         - Spinat
         - Tomaten
         - Mangold
+    - name: Rucola
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Kresse
     - name: Salat
       height: 0
       width: 0
@@ -1080,8 +1244,14 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
+        - Oregano
         - Buschbohnen
         - Stangenbohnen
+        - Bohnenkraut
+        - Rosmarin
+        - Thymian
+        - Lavendel
+        - Ysop
       badCompanions: []
     - name: Schnittlauch
       height: 0
@@ -1089,7 +1259,9 @@ plants:
       family: ""
       feederType: ""
       rootType: ""
-      goodCompanions: []
+      goodCompanions:
+        - Kamille
+        - Petersilie
       badCompanions:
         - Kohl
         - Buschbohnen
@@ -1253,6 +1425,24 @@ plants:
         - Kartoffeln
         - Kohl
       badCompanions: []
+    - name: Thymian
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Fenchel
+        - Koriander
+        - Estragon
+        - Borretsch
+        - Rosmarin
+        - Lavendel
+        - Salbei
+        - Ysop
+        - Bohnenkraut
+      badCompanions:
+        - Majoran
     - name: Tomaten
       height: 0
       width: 0
@@ -1312,6 +1502,28 @@ plants:
       goodCompanions:
         - Aubergine
       badCompanions: []
+    - name: Ysop
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions:
+        - Lavendel
+        - Bohnenkraut
+        - Salbei
+        - Rosmarin
+        - Thymian
+      badCompanions: []
+    - name: Zitronenmelisse
+      height: 0
+      width: 0
+      family: ""
+      feederType: ""
+      rootType: ""
+      goodCompanions: []
+      badCompanions:
+        - Basilikum
     - name: Zucchini
       height: 0
       width: 0

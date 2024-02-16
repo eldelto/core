@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
+	"github.com/eldelto/core/internal/collections"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,6 +19,21 @@ type Info struct {
 	BadCompanions  []string `yaml:"badCompanions"`
 }
 
+func mergeInfos(this, other Info) Info {
+	tg := collections.SetFromSlice(this.GoodCompanions)
+	og := collections.SetFromSlice(other.GoodCompanions)
+	mergedGood := tg.Union(og)
+
+	tb := collections.SetFromSlice(this.BadCompanions)
+	ob := collections.SetFromSlice(other.BadCompanions)
+	mergedBad := tb.Union(ob)
+
+	this.GoodCompanions = mergedGood.Slice()
+	this.BadCompanions = mergedBad.Slice()
+
+	return this
+}
+
 type LexiconListing struct {
 	Entries []Info `yaml:"plants"`
 }
@@ -27,6 +43,10 @@ func (l *LexiconListing) Lexicon() *Lexicon {
 		Entries: map[string]Info{},
 	}
 	for _, entry := range l.Entries {
+		existing, ok := lexicon.Entries[entry.Name]
+		if ok {
+			entry = mergeInfos(entry, existing)
+		}
 		lexicon.Entries[entry.Name] = entry
 	}
 

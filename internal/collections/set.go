@@ -1,4 +1,4 @@
-package collection
+package collections
 
 type Set[T comparable] struct {
 	m map[T]struct{}
@@ -34,6 +34,18 @@ func (s *Set[T]) Difference(other Set[T]) []T {
 		if _, ok := other.m[k]; !ok {
 			result = append(result, k)
 		}
+	}
+
+	return result
+}
+
+func (s *Set[T]) Union(other Set[T]) Set[T] {
+	result := NewSet[T]()
+	for k := range s.m {
+		result.m[k] = struct{}{}
+	}
+	for k := range other.m {
+		result.m[k] = struct{}{}
 	}
 
 	return result
