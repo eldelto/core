@@ -29,7 +29,7 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Boretsch
+        - Borretsch
         - Buschbohnen
         - Erbsen
         - Möhren
@@ -42,7 +42,7 @@ plants:
         - Knoblauch
         - Kohl
         - Tomaten
-        - Zwiebel
+        - Zwiebeln
     - name: Blumenkohl
       height: 0
       width: 0
@@ -56,7 +56,7 @@ plants:
         - Sellerie
       badCompanions:
         - Knoblauch
-        - Zwiebel
+        - Zwiebeln
     - name: Bohnen
       height: 0
       width: 0
@@ -71,7 +71,7 @@ plants:
         - Kohlrabi
         - Gurken
         - Schwarzwurzel
-        - Rote
+        - Rote Bete
         - Borretsch
         - Melonen
         - Chinakohl
@@ -97,15 +97,6 @@ plants:
         - Salat
         - Zwiebeln
         - Buschbohnen
-      badCompanions: []
-    - name: Boretsch
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Blaukraut
       badCompanions: []
     - name: Borretsch
       height: 0
@@ -153,7 +144,7 @@ plants:
         - Rhabarber
         - Mangold
         - Pflücksalat
-        - Pfl
+        - Pflücksalat
       badCompanions:
         - Erbsen
         - Fenchel
@@ -212,10 +203,10 @@ plants:
         - Kohlarten
         - Rote Bete
         - Salat
-        - Zwiebel
+        - Zwiebeln
         - Kohl
         - Kohlrabi
-        - Rote
+        - Rote Bete
         - Melonen
         - Zwiebeln
         - Möhren
@@ -223,15 +214,6 @@ plants:
         - Mais
         - Buschbohnen
         - Spargel
-      badCompanions: []
-    - name: Endivie
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Fenchel
       badCompanions: []
     - name: Endivien
       height: 0
@@ -245,15 +227,6 @@ plants:
         - Porree
         - Stangenbohnen
         - Kohl
-      badCompanions: []
-    - name: Erbse
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Fenchel
       badCompanions: []
     - name: Erbsen
       height: 0
@@ -292,7 +265,7 @@ plants:
         - Knoblauch
         - Porree
         - Tomaten
-        - Zwiebel
+        - Zwiebeln
         - Sellerie
         - Paprika
         - Zwiebeln
@@ -311,7 +284,7 @@ plants:
         - Kopfsalat
         - Porree
         - Radieschen
-        - Ringelblume
+        - Ringelblumen
         - Spinat
         - Kohlrabi
         - Feldsalat
@@ -335,10 +308,10 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Endivie
-        - Erbse
+        - Endivien
+        - Erbsen
         - Feldsalat
-        - Gurke
+        - Gurken
         - Salat
         - Sellerie
         - Gurken
@@ -348,7 +321,7 @@ plants:
         - Endivien
         - Erbsen
         - Pflücksalat
-        - Pfl
+        - Pflücksalat
       badCompanions:
         - Bohnen
         - Tomaten
@@ -356,15 +329,6 @@ plants:
         - Paprika
         - Buschbohnen
         - Stangenbohnen
-    - name: Gurke
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Fenchel
-      badCompanions: []
     - name: Gurken
       height: 0
       width: 0
@@ -388,8 +352,8 @@ plants:
         - Kohl
         - Kohlrabi
         - Petersilie
-        - Ringelblume
-        - Rote
+        - Ringelblumen
+        - Rote Bete
         - Knoblauch
         - Sonnenblumen
         - Knollensellerie
@@ -428,20 +392,12 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Kartoffeln
-        - Zucchini
-        - Buschbohnen
-        - Stangenbohnen
-      badCompanions: []
-    - name: Kapuzinnerkresse
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
         - Rettich
         - Radieschen
+        - Stangenbohnen
+        - Kartoffeln
+        - Buschbohnen
+        - Zucchini
       badCompanions: []
     - name: Kartoffeln
       height: 0
@@ -467,14 +423,14 @@ plants:
         - Erbsen
         - Gurken
         - Kürbis
-        - Melone
+        - Melonen
         - Rote Bete
         - Sellerie
-        - Sonnenblume
+        - Sonnenblumen
         - Tomaten
-        - Zwiebel
+        - Zwiebeln
         - Kohl
-        - Rote
+        - Rote Bete
         - Sonnenblumen
         - Melonen
         - Zwiebeln
@@ -501,7 +457,7 @@ plants:
         - Erbsen
         - Buschbohnen
         - Kohlarten
-        - Stangenbohne
+        - Stangenbohnen
         - Kohl
         - Blaukraut
         - Blumenkohl
@@ -545,7 +501,7 @@ plants:
         - Tagetes
         - Tomaten
         - Rettich
-        - Rote
+        - Rote Bete
         - Knollensellerie
         - Radieschen
       badCompanions:
@@ -555,7 +511,7 @@ plants:
         - Kohlrabi
         - Rhabarber
         - Schnittlauch
-        - Zwiebel
+        - Zwiebeln
         - Blaukraut
     - name: Kohlarten
       height: 0
@@ -565,7 +521,7 @@ plants:
       rootType: ""
       goodCompanions:
         - Paprika
-        - Ringelblume
+        - Ringelblumen
         - Gurken
         - Rhabarber
         - Borretsch
@@ -581,7 +537,7 @@ plants:
         - Stangenbohnen
         - Erbsen
         - Pflücksalat
-        - Pfl
+        - Pflücksalat
       badCompanions:
         - Kohl
         - Knoblauch
@@ -609,7 +565,7 @@ plants:
         - Sellerie
         - Spargel
         - Spinat
-        - Rote
+        - Rote Bete
         - Knollensellerie
         - Kopfsalat
         - Buschbohnen
@@ -638,7 +594,7 @@ plants:
         - Rettich
         - Schwarzwurzel
         - Tomaten
-        - Zwiebel
+        - Zwiebeln
         - Pastinaken
         - Mais
         - Melonen
@@ -749,8 +705,8 @@ plants:
         - Möhren
         - Mais
       badCompanions:
-        - Rote Beete
-        - Rote
+        - Rote Bete
+        - Rote Bete
         - Spinat
     - name: Meerrettich
       height: 0
@@ -761,19 +717,6 @@ plants:
       goodCompanions:
         - Kartoffeln
       badCompanions: []
-    - name: Melone
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions: []
-      badCompanions:
-        - Kartoffeln
-        - Rettich
-        - Zucchini
-        - Tomaten
-        - Radieschen
     - name: Melonen
       height: 0
       width: 0
@@ -799,6 +742,7 @@ plants:
         - Kartoffeln
         - Radieschen
         - Rettich
+        - Zucchini
     - name: Merrettich
       height: 0
       width: 0
@@ -824,7 +768,7 @@ plants:
         - Radieschen
         - Rettich
         - Salat
-        - Schwarzwurzeln
+        - Schwarzwurzel
         - Spinat
         - Tomaten
         - Zwiebeln
@@ -852,19 +796,6 @@ plants:
         - Buschbohnen
         - Stangenbohnen
         - Aubergine
-    - name: Pastinake
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Sellerie
-        - Zwiebeln
-        - Tomaten
-        - Pflücksalat
-        - Pfl
-      badCompanions: []
     - name: Pastinaken
       height: 0
       width: 0
@@ -880,6 +811,8 @@ plants:
         - Rote Bete
         - Sellerie
         - Spinat
+        - Tomaten
+        - Zwiebeln
       badCompanions: []
     - name: Petersilie
       height: 0
@@ -896,7 +829,7 @@ plants:
         - Porree
         - Spargel
       badCompanions:
-        - Salate
+        - Salat
         - Kopfsalat
     - name: Pfefferminze
       height: 0
@@ -908,21 +841,6 @@ plants:
         - Kartoffeln
       badCompanions:
         - Möhren
-    - name: Pfl
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Buschbohnen
-        - Fenchel
-        - Kohlarten
-        - Radieschen
-        - Rote Bete
-        - Stangen Bohnen
-        - Pastinake
-      badCompanions: []
     - name: Pflücksalat
       height: 0
       width: 0
@@ -934,8 +852,8 @@ plants:
         - Fenchel
         - Rote Bete
         - Kohlarten
-        - Pastinake
-        - Stangen Bohnen
+        - Pastinaken
+        - Stangenbohnen
         - Buschbohnen
         - Radieschen
       badCompanions: []
@@ -963,7 +881,7 @@ plants:
         - Möhren
         - Petersilie
         - Salat
-        - Schwarzwurzeln
+        - Schwarzwurzel
         - Sellerie
         - Spinat
         - Tomaten
@@ -980,7 +898,7 @@ plants:
         - Erbsen
         - Rote Bete
         - Stangenbohnen
-        - Rote
+        - Rote Bete
         - Zwiebeln
         - Buschbohnen
     - name: Radieschen
@@ -992,7 +910,7 @@ plants:
       goodCompanions:
         - Bohnen
         - Erbsen
-        - Kapuzinnerkresse
+        - Kapuzinerkresse
         - Kohl
         - Mangold
         - Möhren
@@ -1009,12 +927,12 @@ plants:
         - Erdbeeren
         - Stangenbohnen
         - Pflücksalat
-        - Pfl
+        - Pflücksalat
       badCompanions:
         - Gurken
         - Chinakohl
         - Kürbis
-        - Melone
+        - Melonen
         - Melonen
     - name: Raps
       height: 0
@@ -1034,7 +952,7 @@ plants:
       goodCompanions:
         - Bohnen
         - Erbsen
-        - Kapuzinnerkresse
+        - Kapuzinerkresse
         - Kohl
         - Mangold
         - Möhren
@@ -1050,7 +968,7 @@ plants:
         - Gurken
         - Chinakohl
         - Kürbis
-        - Melone
+        - Melonen
         - Melonen
         - Mais
     - name: Rhabarber
@@ -1067,19 +985,6 @@ plants:
         - Spinat
       badCompanions:
         - Kohl
-    - name: Ringelblume
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Erdbeeren
-        - Gurken
-        - Kohlarten
-        - Salate
-        - Tomaten
-      badCompanions: []
     - name: Ringelblumen
       height: 0
       width: 0
@@ -1088,6 +993,10 @@ plants:
       rootType: ""
       goodCompanions:
         - Tomaten
+        - Erdbeeren
+        - Gurken
+        - Kohlarten
+        - Salat
       badCompanions: []
     - name: Rosen
       height: 0
@@ -1098,35 +1007,6 @@ plants:
       goodCompanions:
         - Knoblauch
       badCompanions: []
-    - name: Rote
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Bohnen
-        - Dill
-        - Gurken
-        - Kohl
-        - Kohlrabi
-        - Salat
-        - Zucchini
-        - Zwiebeln
-      badCompanions:
-        - Kartoffeln
-        - Mangold
-        - Porree
-        - Spinat
-    - name: Rote Beete
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions: []
-      badCompanions:
-        - Mangold
     - name: Rote Bete
       height: 0
       width: 0
@@ -1147,7 +1027,10 @@ plants:
         - Buschbohnen
         - Stangenbohnen
         - Pflücksalat
-        - Pfl
+        - Pflücksalat
+        - Salat
+        - Zucchini
+        - Bohnen
       badCompanions:
         - Mais
         - Kartoffeln
@@ -1156,6 +1039,7 @@ plants:
         - Porree
         - Spinat
         - Tomaten
+        - Mangold
     - name: Salat
       height: 0
       width: 0
@@ -1163,40 +1047,32 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Bohnenkraut
+        - Ringelblumen
+        - Kohl
+        - Radieschen
+        - Tomaten
+        - Buschbohnen
+        - Chinakohl
+        - Fenchel
+        - Stangenbohnen
+        - Dill
         - Sellerie
         - Rettich
-        - Kohl
         - Kohlrabi
-        - Blaukraut
-        - Fenchel
-        - Rhabarber
         - Schwarzwurzel
-        - Rote
-        - Dill
-        - Zwiebeln
-        - Chinakohl
-        - Möhren
-        - Mangold
         - Mais
-        - Buschbohnen
-        - Porree
-        - Stangenbohnen
-        - Tomaten
-        - Radieschen
         - Spargel
-      badCompanions:
-        - Knollensellerie
-    - name: Salate
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Ringelblume
+        - Möhren
+        - Zwiebeln
+        - Mangold
+        - Rote Bete
+        - Porree
+        - Blaukraut
+        - Bohnenkraut
+        - Rhabarber
       badCompanions:
         - Petersilie
+        - Knollensellerie
     - name: Salbei
       height: 0
       width: 0
@@ -1225,21 +1101,12 @@ plants:
       feederType: ""
       rootType: ""
       goodCompanions:
-        - Bohnen
-        - Kohlrabi
-        - Porree
-        - Salat
-        - Kopfsalat
-      badCompanions: []
-    - name: Schwarzwurzeln
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
         - Möhren
         - Porree
+        - Kopfsalat
+        - Kohlrabi
+        - Salat
+        - Bohnen
       badCompanions: []
     - name: Sellerie
       height: 0
@@ -1255,7 +1122,7 @@ plants:
         - Kamille
         - Kohl
         - Kohlrabi
-        - Pastinake
+        - Pastinaken
         - Porree
         - Salat
         - Spinat
@@ -1281,15 +1148,6 @@ plants:
       goodCompanions: []
       badCompanions:
         - Mais
-    - name: Sonnenblume
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions: []
-      badCompanions:
-        - Kartoffeln
     - name: Sonnenblumen
       height: 0
       width: 0
@@ -1344,26 +1202,7 @@ plants:
       badCompanions:
         - Rote Bete
         - Mangold
-        - Rote
-    - name: Stangen Bohnen
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Pflücksalat
-        - Pfl
-      badCompanions: []
-    - name: Stangenbohne
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions: []
-      badCompanions:
-        - Knoblauch
+        - Rote Bete
     - name: Stangenbohnen
       height: 0
       width: 0
@@ -1385,6 +1224,7 @@ plants:
         - Spinat
         - Zucchini
         - Endivien
+        - Pflücksalat
       badCompanions:
         - Buschbohnen
         - Erbsen
@@ -1425,7 +1265,7 @@ plants:
         - Knoblauch
         - Kohlrabi
         - Möhren
-        - Pastinake
+        - Pastinaken
         - Petersilie
         - Porree
         - Radieschen
@@ -1438,7 +1278,7 @@ plants:
         - Paprika
         - Rettich
         - Kohl
-        - Ringelblume
+        - Ringelblumen
         - Möhren
         - Knollensellerie
         - Kopfsalat
@@ -1451,7 +1291,7 @@ plants:
         - Kartoffeln
         - Rote Bete
         - Kürbis
-        - Melone
+        - Melonen
         - Melonen
         - Aubergine
     - name: Weiß- und Rotkohl
@@ -1484,27 +1324,12 @@ plants:
         - Stangenbohnen
         - Zwiebeln
         - Mais
-        - Rote
+        - Rote Bete
         - Erbsen
       badCompanions:
         - Gurken
         - Kürbis
-        - Melone
-    - name: Zwiebel
-      height: 0
-      width: 0
-      family: ""
-      feederType: ""
-      rootType: ""
-      goodCompanions:
-        - Dill
-        - Kopfsalat
-      badCompanions:
-        - Kartoffeln
-        - Kohl
-        - Blaukraut
-        - Blumenkohl
-        - Erbsen
+        - Melonen
     - name: Zwiebeln
       height: 0
       width: 0
@@ -1518,16 +1343,17 @@ plants:
         - Kamille
         - Knoblauch
         - Möhren
-        - Pastinake
+        - Pastinaken
         - Rote Bete
         - Salat
         - Tomaten
         - Zucchini
         - Petersilie
-        - Rote
+        - Rote Bete
         - Melonen
         - Möhren
         - Kürbis
+        - Kopfsalat
       badCompanions:
         - Bohnen
         - Erbsen
@@ -1536,3 +1362,6 @@ plants:
         - Porree
         - Buschbohnen
         - Stangenbohnen
+        - Kohl
+        - Blumenkohl
+        - Blaukraut
