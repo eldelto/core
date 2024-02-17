@@ -9,18 +9,28 @@ import (
 	. "github.com/eldelto/core/internal/testutils"
 )
 
-func TestAssembler(t *testing.T) {
-  in := bytes.NewBufferString(
-    `const -1 cjmp @start
-    ( This is just a comment )
+func TestExpandMacro(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          string
+		expected    string
+		expectError bool
+	}{
+		{"remove comment", "const ( this will be gone ) 10", "const\n10\n", false},
+		{"invalid comment", "const ( no end", "", true},
+	}
 
-    .codeword double
-       dup dup +
-    .end`)
-  out := &bytes.Buffer{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := bytes.Buffer{}
 
-  err := diatom.ExpandMacros(in, out)
-  AssertNoError(t, err, "ExpandMacros")
-
-
+			err := diatom.ExpandMacros(bytes.NewBufferString(tt.in), &out)
+			if tt.expectError {
+				AssertError(t, err, "ExpandMacro")
+			} else {
+				AssertNoError(t, err, "ExpandMacro")
+				AssertEquals(t, tt.expected, out.String(), "ExpandMacro output")
+			}
+		})
+	}
 }

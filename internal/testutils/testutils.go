@@ -58,6 +58,15 @@ func AssertNoError(t *testing.T, err error, title string) {
 	}
 }
 
+
+func AssertError(t *testing.T, err error, title string) {
+	t.Helper()
+
+	if err == nil {
+		t.Errorf("%s should return an error but returned nil", title)
+	}
+}
+
 type Response struct {
 	response   *http.Response
 	T          *testing.T
