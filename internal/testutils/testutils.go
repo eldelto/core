@@ -58,7 +58,6 @@ func AssertNoError(t *testing.T, err error, title string) {
 	}
 }
 
-
 func AssertError(t *testing.T, err error, title string) {
 	t.Helper()
 

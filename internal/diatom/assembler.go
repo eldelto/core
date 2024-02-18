@@ -1,25 +1,58 @@
 package diatom
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"text/scanner"
 )
 
+type pos struct {
+	line   uint
+	column uint
+}
+
 type tokenScanner struct {
-	currentToken string
-	scanner.Scanner
+	pos   pos
+	token []byte
+	err   error
+	r     *bufio.Reader
 }
 
 func (s *tokenScanner) Token() string {
-	return s.currentToken
+	return string(s.token)
 }
 
 func (s *tokenScanner) Scan() bool {
-	r := s.Scanner.Scan()
-	s.currentToken = s.Scanner.TokenText()
-	return r != scanner.EOF
+	s.token = s.token[:0]
+
+	var b byte
+	for {
+		b, s.err = s.r.ReadByte()
+		if s.err != nil {
+			return false
+		}
+
+		s.pos.column++
+
+		if b < 33 {
+			if b == '\n' {
+				s.pos.line++
+				s.pos.column = 0
+			}
+			// Skip initial whitespace else finish token.
+			if len(s.token) == 0 {
+				continue
+			} else {
+				break
+			}
+		}
+
+		s.token = append(s.token, b)
+	}
+
+	return true
 }
 
 type assembler struct {
@@ -29,8 +62,8 @@ type assembler struct {
 
 func scanError(asm *assembler, err error) error {
 	return fmt.Errorf("line %d, pos %d: %w",
-		asm.scanner.Pos().Line,
-		asm.scanner.Pos().Column,
+		asm.scanner.pos.line,
+		asm.scanner.pos.column,
 		err)
 }
 
@@ -81,7 +114,17 @@ func nonMacro(token string) error {
 	return nil
 }
 
-func parseComment(asm *assembler) error {
+func anyOf(asm *assembler, parsers ...func(asm *assembler) error) error {
+	for _, parser := range parsers {
+		if err := parser(asm); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func expandComment(asm *assembler) error {
 	if asm.scanner.Token() != "(" {
 		return nil
 	}
@@ -90,7 +133,19 @@ func parseComment(asm *assembler) error {
 	return doUntil(asm, ")", dropToken)
 }
 
-func parseCodeWord(asm *assembler) error {
+func expandWordCall(asm *assembler) error {
+	token := asm.scanner.Token()
+	if !strings.HasPrefix(token, "!") {
+		return nil
+	}
+
+	asm.scanner.Scan()
+
+	_, err := fmt.Fprintln(asm.writer, "call @_dict"+token[1:])
+	return err
+}
+
+func expandCodeWord(asm *assembler) error {
 	if asm.scanner.Token() != ".codeword" {
 		return nil
 	}
@@ -106,41 +161,47 @@ func parseCodeWord(asm *assembler) error {
 	return doUntil(asm, ".end", passTokenThrough)
 }
 
-func anyOf(asm *assembler, parsers ...func(asm *assembler) error) error {
-  for _, parser := range parsers {
-    if err := parser(asm); err != nil {
-      return err
-    }
-  }
-
-  return nil
-}
-
 func ExpandMacros(r io.Reader, w io.Writer) error {
 	asm := &assembler{
-		scanner: &tokenScanner{Scanner: scanner.Scanner{}},
-		writer:  w,
+		scanner: &tokenScanner{
+			token: []byte{},
+			r:     bufio.NewReader(r),
+		},
+		writer: w,
 	}
-	asm.scanner.Init(r)
 
 	asm.scanner.Scan()
 	for {
-		pos := asm.scanner.Pos()
-    if err := anyOf(asm, parseComment); err != nil {
-      return err
+		pos := asm.scanner.pos
+
+		if err := anyOf(asm,
+			expandComment,
+			expandCodeWord,
+			expandWordCall,
+		); err != nil {
+			return err
+		}
+
+    if asm.scanner.err != nil {
+      break
     }
 
 		// Start parsing from the top if any parser made progress.
-		if asm.scanner.Pos() != pos {
+		if asm.scanner.pos != pos {
 			continue
 		}
 
 		if err := passTokenThrough(asm.scanner.Token(), asm.writer); err != nil {
 			return err
 		}
+
 		if !asm.scanner.Scan() {
 			break
 		}
+	}
+
+	if asm.scanner.err != nil && !errors.Is(asm.scanner.err, io.EOF) {
+		return scanError(asm, asm.scanner.err)
 	}
 
 	return nil

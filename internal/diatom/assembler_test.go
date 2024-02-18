@@ -18,6 +18,7 @@ func TestExpandMacro(t *testing.T) {
 	}{
 		{"remove comment", "const ( this will be gone ) 10", "const\n10\n", false},
 		{"invalid comment", "const ( no end", "", true},
+    {"word call", "!double", "call @_dictdouble\n", false},
 	}
 
 	for _, tt := range tests {
