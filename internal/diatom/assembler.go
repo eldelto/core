@@ -16,22 +16,21 @@ type pos struct {
 type tokenScanner struct {
 	pos   pos
 	token []byte
-	err   error
 	r     *bufio.Reader
 }
 
-func (s *tokenScanner) Token() string {
-	return string(s.token)
-}
-
-func (s *tokenScanner) Scan() bool {
+func (s *tokenScanner) scan() error {
 	s.token = s.token[:0]
 
 	var b byte
+	var err error
 	for {
-		b, s.err = s.r.ReadByte()
-		if s.err != nil {
-			return false
+		b, err = s.r.ReadByte()
+		if err != nil {
+			if errors.Is(err, io.EOF) && len(s.token) > 0 {
+				return nil
+			}
+			return err
 		}
 
 		s.pos.column++
@@ -52,7 +51,24 @@ func (s *tokenScanner) Scan() bool {
 		s.token = append(s.token, b)
 	}
 
-	return true
+	return nil
+}
+
+func (s *tokenScanner) Token() (string, error) {
+	if len(s.token) > 0 {
+		return string(s.token), nil
+	}
+
+	err := s.scan()
+	return string(s.token), err
+}
+
+func (s *tokenScanner) Consume() {
+	s.token = s.token[:0]
+}
+
+func (s *tokenScanner) Consumed() bool {
+	return len(s.token) == 0
 }
 
 type assembler struct {
@@ -68,23 +84,22 @@ func scanError(asm *assembler, err error) error {
 }
 
 func doUntil(asm *assembler, delimiter string, f func(token string, w io.Writer) error) error {
-	if asm.scanner.Token() == delimiter {
-		asm.scanner.Scan()
-		return nil
-	}
+	for {
+		token, err := asm.scanner.Token()
+		if err != nil {
+			return fmt.Errorf("expected delimiter %q", delimiter)
+		}
 
-	for asm.scanner.Scan() {
-		if asm.scanner.Token() == delimiter {
-			asm.scanner.Scan()
+		if token == delimiter {
+			asm.scanner.Consume()
 			return nil
 		}
 
-		if err := f(asm.scanner.Token(), asm.writer); err != nil {
-			return scanError(asm, err)
+		if err := f(token, asm.writer); err != nil {
+			return err
 		}
+		asm.scanner.Consume()
 	}
-
-	return scanError(asm, fmt.Errorf("expected delimiter %q", delimiter))
 }
 
 func dropToken(token string, w io.Writer) error {
@@ -97,12 +112,16 @@ func passTokenThrough(token string, w io.Writer) error {
 }
 
 func expectToken(asm *assembler, f func(token string) error) (string, error) {
-	token := asm.scanner.Token()
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return "", err
+	}
+
 	if err := f(token); err != nil {
 		return "", err
 	}
 
-	asm.scanner.Scan()
+	asm.scanner.Consume()
 	return token, nil
 }
 
@@ -125,32 +144,45 @@ func anyOf(asm *assembler, parsers ...func(asm *assembler) error) error {
 }
 
 func expandComment(asm *assembler) error {
-	if asm.scanner.Token() != "(" {
-		return nil
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
 	}
 
-	asm.scanner.Scan()
+	if token != "(" {
+		return nil
+	}
+	asm.scanner.Consume()
+
 	return doUntil(asm, ")", dropToken)
 }
 
 func expandWordCall(asm *assembler) error {
-	token := asm.scanner.Token()
-	if !strings.HasPrefix(token, "!") {
-		return nil
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
 	}
 
-	asm.scanner.Scan()
+	if token[0] != '!' {
+		return nil
+	}
+	asm.scanner.Consume()
 
-	_, err := fmt.Fprintln(asm.writer, "call @_dict"+token[1:])
+	_, err = fmt.Fprintln(asm.writer, "call @_dict"+token[1:])
 	return err
 }
 
 func expandCodeWord(asm *assembler) error {
-	if asm.scanner.Token() != ".codeword" {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	if token != ".codeword" {
 		return nil
 	}
 
-	token, err := expectToken(asm, nonMacro)
+	token, err = expectToken(asm, nonMacro)
 	if err != nil {
 		return err
 	}
@@ -159,6 +191,32 @@ func expandCodeWord(asm *assembler) error {
 	fmt.Fprintln(asm.writer, token)
 
 	return doUntil(asm, ".end", passTokenThrough)
+}
+
+func expandMacros(asm *assembler) error {
+	if err := anyOf(asm,
+		expandComment,
+		expandCodeWord,
+		expandWordCall,
+	); err != nil {
+		return err
+	}
+
+	if asm.scanner.Consumed() {
+		return nil
+	}
+
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	if err := passTokenThrough(token, asm.writer); err != nil {
+		return err
+	}
+
+	asm.scanner.Consume()
+	return nil
 }
 
 func ExpandMacros(r io.Reader, w io.Writer) error {
@@ -170,39 +228,13 @@ func ExpandMacros(r io.Reader, w io.Writer) error {
 		writer: w,
 	}
 
-	asm.scanner.Scan()
 	for {
-		pos := asm.scanner.pos
+		if err := expandMacros(asm); err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
 
-		if err := anyOf(asm,
-			expandComment,
-			expandCodeWord,
-			expandWordCall,
-		); err != nil {
-			return err
-		}
-
-    if asm.scanner.err != nil {
-      break
-    }
-
-		// Start parsing from the top if any parser made progress.
-		if asm.scanner.pos != pos {
-			continue
-		}
-
-		if err := passTokenThrough(asm.scanner.Token(), asm.writer); err != nil {
-			return err
-		}
-
-		if !asm.scanner.Scan() {
-			break
+			return scanError(asm, err)
 		}
 	}
-
-	if asm.scanner.err != nil && !errors.Is(asm.scanner.err, io.EOF) {
-		return scanError(asm, asm.scanner.err)
-	}
-
-	return nil
 }
