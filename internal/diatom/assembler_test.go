@@ -9,7 +9,7 @@ import (
 	. "github.com/eldelto/core/internal/testutils"
 )
 
-func TestExpandMacro(t *testing.T) {
+func TestExpandMacros(t *testing.T) {
 	tests := []struct {
 		name        string
 		in          string
@@ -19,6 +19,11 @@ func TestExpandMacro(t *testing.T) {
 		{"remove comment", "const ( this will be gone ) 10", "const\n10\n", false},
 		{"invalid comment", "const ( no end", "", true},
 		{"word call", "!double", "call @_dictdouble\n", false},
+		{"codeword macro",
+			".codeword exit exit .end",
+			":exit\n0\n4 101 120 105 116\n:_dictexit\nexit\nret\n",
+			false},
+		// TODO: Invalid codeword, invalid identifier, too long identifier
 	}
 
 	for _, tt := range tests {

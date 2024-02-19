@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 )
 
 type pos struct {
@@ -72,8 +71,9 @@ func (s *tokenScanner) Consumed() bool {
 }
 
 type assembler struct {
-	scanner *tokenScanner
-	writer  io.Writer
+	scanner      *tokenScanner
+	writer       io.Writer
+	lastWordName string
 }
 
 func scanError(asm *assembler, err error) error {
@@ -125,9 +125,13 @@ func expectToken(asm *assembler, f func(token string) error) (string, error) {
 	return token, nil
 }
 
-func nonMacro(token string) error {
-	if strings.HasPrefix(token, ".") {
+func identifier(token string) error {
+	if token[0] == '.' {
 		return fmt.Errorf("expected non-macro identifier but got %q", token)
+	}
+
+	if len(token) > 127 {
+	return fmt.Errorf("%q exceeds the maximum identifier length of %d characters", token, maxTokenLen)
 	}
 
 	return nil
@@ -172,25 +176,96 @@ func expandWordCall(asm *assembler) error {
 	return err
 }
 
+type word int32
+const (
+	wordSize = 4
+	maxTokenLen = 127
+)
+
+func wordToBytes(w word) [wordSize]byte {
+	bytes := [wordSize]byte{}
+
+	for i := 0; i < wordSize; i++ {
+		bytes[i] = byte((w >> (i * 8)) & 0xFF)
+	}
+
+	return bytes
+}
+
+
+func outputAsBytes(w io.Writer, value word) error {
+	bytes := wordToBytes(value)
+
+	for  _, b := range bytes {
+		if _, err := fmt.Fprintf(w, "%d\n", b); err != nil {
+			return err
+		}
+	}
+
+  return nil;
+}
+
+
 func expandCodeWord(asm *assembler) error {
 	token, err := asm.scanner.Token()
 	if err != nil {
 		return err
 	}
 
+
 	if token != ".codeword" {
 		return nil
 	}
+	asm.scanner.Consume()
 
-	token, err = expectToken(asm, nonMacro)
+	name, err := expectToken(asm, identifier)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Emit dictionary header
-	fmt.Fprintln(asm.writer, token)
+	// Label of the dictionary entry.
+	if _, err := fmt.Fprintln(asm.writer, ":"+name); err != nil {
+		return err
+	}
 
-	return doUntil(asm, ".end", passTokenThrough)
+	// The pointer to the previous word.
+	if asm.lastWordName == "" {
+		if _, err := fmt.Fprintln(asm.writer, "0"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := fmt.Fprintln(asm.writer, "@_dict"+asm.lastWordName); err != nil {
+			return err
+		}
+	}
+	asm.lastWordName = name
+
+	// Lenght and characters of the current word's name.
+	if _, err := fmt.Fprintf(asm.writer, "%d", len(name)); err != nil {
+		return err
+	}
+
+	for _, c := range []byte(name) {
+		if _, err := fmt.Fprintf(asm.writer, " %d", c); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintln(asm.writer); err != nil {
+		return err
+	}
+
+	// Label of the first code pointer.
+	if _, err := fmt.Fprintln(asm.writer, ":_dict"+name); err != nil {
+		return err
+	}
+
+	if err := doUntil(asm, ".end", passTokenThrough); err != nil {
+		return nil
+	}
+
+	// Returning from the word.
+	_, err = fmt.Fprintln(asm.writer, "ret")
+	return err
 }
 
 func expandMacros(asm *assembler) error {
