@@ -131,7 +131,7 @@ func identifier(token string) error {
 	}
 
 	if len(token) > 127 {
-	return fmt.Errorf("%q exceeds the maximum identifier length of %d characters", token, maxTokenLen)
+		return fmt.Errorf("%q exceeds the maximum identifier length of %d characters", token, maxTokenLen)
 	}
 
 	return nil
@@ -177,8 +177,9 @@ func expandWordCall(asm *assembler) error {
 }
 
 type word int32
+
 const (
-	wordSize = 4
+	wordSize    = 4
 	maxTokenLen = 127
 )
 
@@ -192,37 +193,23 @@ func wordToBytes(w word) [wordSize]byte {
 	return bytes
 }
 
-
-func outputAsBytes(w io.Writer, value word) error {
+func writeAsBytes(w io.Writer, value word) error {
 	bytes := wordToBytes(value)
 
-	for  _, b := range bytes {
-		if _, err := fmt.Fprintf(w, "%d\n", b); err != nil {
+	for _, b := range bytes[:wordSize-1] {
+		if _, err := fmt.Fprintf(w, "%d ", b); err != nil {
 			return err
 		}
 	}
 
-  return nil;
+	if _, err := fmt.Fprintf(w, "%d\n", bytes[wordSize-1]); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-
-func expandCodeWord(asm *assembler) error {
-	token, err := asm.scanner.Token()
-	if err != nil {
-		return err
-	}
-
-
-	if token != ".codeword" {
-		return nil
-	}
-	asm.scanner.Consume()
-
-	name, err := expectToken(asm, identifier)
-	if err != nil {
-		return err
-	}
-
+func writeDictionaryHeader(asm *assembler, name string) error {
 	// Label of the dictionary entry.
 	if _, err := fmt.Fprintln(asm.writer, ":"+name); err != nil {
 		return err
@@ -230,7 +217,7 @@ func expandCodeWord(asm *assembler) error {
 
 	// The pointer to the previous word.
 	if asm.lastWordName == "" {
-		if _, err := fmt.Fprintln(asm.writer, "0"); err != nil {
+		if err := writeAsBytes(asm.writer, 0); err != nil {
 			return err
 		}
 	} else {
@@ -250,7 +237,27 @@ func expandCodeWord(asm *assembler) error {
 			return err
 		}
 	}
-	if _, err := fmt.Fprintln(asm.writer); err != nil {
+	_, err := fmt.Fprintln(asm.writer)
+	return err
+}
+
+func expandCodeWord(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	if token != ".codeword" {
+		return nil
+	}
+	asm.scanner.Consume()
+
+	name, err := expectToken(asm, identifier)
+	if err != nil {
+		return err
+	}
+
+	if err := writeDictionaryHeader(asm, name); err != nil {
 		return err
 	}
 

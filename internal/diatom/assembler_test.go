@@ -21,7 +21,7 @@ func TestExpandMacros(t *testing.T) {
 		{"word call", "!double", "call @_dictdouble\n", false},
 		{"codeword macro",
 			".codeword exit exit .end",
-			":exit\n0\n4 101 120 105 116\n:_dictexit\nexit\nret\n",
+			":exit\n0 0 0 0\n4 101 120 105 116\n:_dictexit\nexit\nret\n",
 			false},
 		// TODO: Invalid codeword, invalid identifier, too long identifier
 	}
