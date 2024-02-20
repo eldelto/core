@@ -23,7 +23,18 @@ func TestExpandMacros(t *testing.T) {
 			".codeword exit exit .end",
 			":exit\n0 0 0 0\n4 101 120 105 116\n:_dictexit\nexit\nret\n",
 			false},
-		// TODO: Invalid codeword, invalid identifier, too long identifier
+		{"invalid codeword", ".codeword .test exit .end", "", true},
+		{"codeword without end", ".codeword test exit", "", true},
+		{"codeword identifier too long",
+			".codeword pvxmqnruzygjozkxhsemztscrrlgnxntmfhwkhedphlvnbtajdzqzjkhjfdwpaxngttkpcynhhcrenkxwkqlqljmzpstkigepqtvtzbpcmimmkrnycavkuetcrovrnwk exit .end",
+			"",
+			true},
+		{"var macro",
+			".var test 3 .end",
+			":test\n0 0 0 0\n4 116 101 115 116\n:_dicttest\nconst\n@_vartest\nret\n:_vartest\n0\n0\n0\n",
+			false},
+		{"var invalid size", ".var test -2 .end", "", true},
+		{"var without end", ".var test 2", "", true},
 	}
 
 	for _, tt := range tests {

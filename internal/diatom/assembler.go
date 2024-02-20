@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"strconv"
 )
 
 type pos struct {
@@ -111,30 +113,59 @@ func passTokenThrough(token string, w io.Writer) error {
 	return err
 }
 
-func expectToken(asm *assembler, f func(token string) error) (string, error) {
+func expectToken[T any](asm *assembler, f func(token string) (T, error)) (T, error) {
+	var result T
 	token, err := asm.scanner.Token()
 	if err != nil {
-		return "", err
+		return result, fmt.Errorf("unexpected end of expression")
 	}
 
-	if err := f(token); err != nil {
-		return "", err
+	result, err = f(token)
+	if err != nil {
+		return result, err
 	}
 
 	asm.scanner.Consume()
-	return token, nil
+	return result, nil
 }
 
-func identifier(token string) error {
+func match(want string) func(string) (string, error) {
+	return func(token string) (string, error) {
+		if token != want {
+			return "", fmt.Errorf("expected %q but got %q", want, token)
+		}
+
+		return token, nil
+	}
+}
+
+func identifier(token string) (string, error) {
 	if token[0] == '.' {
-		return fmt.Errorf("expected non-macro identifier but got %q", token)
+		return "", fmt.Errorf("expected non-macro identifier but got %q", token)
 	}
 
 	if len(token) > 127 {
-		return fmt.Errorf("%q exceeds the maximum identifier length of %d characters", token, maxTokenLen)
+		return "", fmt.Errorf("%q exceeds the maximum identifier length of %d characters", token, maxTokenLen)
 	}
 
-	return nil
+	return token, nil
+}
+
+func positiveNumber(token string) (byte, error) {
+	number, err := strconv.Atoi(token)
+	if err != nil {
+		return 0, fmt.Errorf("%q is not a valid positive number", token)
+	}
+
+	if number > math.MaxUint8 {
+		return 0, fmt.Errorf("%q exceeds the maximum allowed value of %d", token, math.MaxUint8)
+	}
+
+	if number < 0 {
+		return 0, fmt.Errorf("%q exceeds the minimum allowed value of 0", token)
+	}
+
+	return byte(number), nil
 }
 
 func anyOf(asm *assembler, parsers ...func(asm *assembler) error) error {
@@ -267,7 +298,7 @@ func expandCodeWord(asm *assembler) error {
 	}
 
 	if err := doUntil(asm, ".end", passTokenThrough); err != nil {
-		return nil
+		return err
 	}
 
 	// Returning from the word.
@@ -275,11 +306,64 @@ func expandCodeWord(asm *assembler) error {
 	return err
 }
 
+func expandVar(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	if token != ".var" {
+		return nil
+	}
+	asm.scanner.Consume()
+
+	name, err := expectToken(asm, identifier)
+	if err != nil {
+		return err
+	}
+
+	size, err := expectToken(asm, positiveNumber)
+	if err != nil {
+		return err
+	}
+
+	if _, err := expectToken(asm, match(".end")); err != nil {
+		return err
+	}
+
+	if err := writeDictionaryHeader(asm, name); err != nil {
+		return err
+	}
+
+	// Label of the first code pointer.
+	if _, err := fmt.Fprintln(asm.writer, ":_dict"+name); err != nil {
+		return err
+	}
+
+	// Code for storing the variable address on the stack.
+	if _, err := fmt.Fprintf(asm.writer, "const\n@_var%s\nret\n", name); err != nil {
+		return err
+	}
+
+	// Label and storage for the actual variable.
+	if _, err := fmt.Fprintln(asm.writer, ":_var"+name); err != nil {
+		return err
+	}
+	for i := 0; i < int(size); i++ {
+		if _, err := fmt.Fprintln(asm.writer, "0"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func expandMacros(asm *assembler) error {
 	if err := anyOf(asm,
 		expandComment,
-		expandCodeWord,
 		expandWordCall,
+		expandCodeWord,
+		expandVar,
 	); err != nil {
 		return err
 	}
