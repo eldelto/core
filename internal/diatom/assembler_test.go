@@ -43,6 +43,10 @@ func TestExpandMacros(t *testing.T) {
 			false},
 		{"var invalid size", ".var test -2 .end", "", true},
 		{"var without end", ".var test 2", "", true},
+		{"immediate-codeword macro",
+			".immediate-codeword exit exit .end",
+			":exit\n0 0 0 0\n132 101 120 105 116\n:_dictexit\nexit\nret\n",
+			false},
 	}
 
 	for _, tt := range tests {

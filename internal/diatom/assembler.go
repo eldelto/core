@@ -9,6 +9,39 @@ import (
 	"strconv"
 )
 
+type word int32
+
+const (
+	wordSize    = 4
+	maxTokenLen = 127
+)
+
+func wordToBytes(w word) [wordSize]byte {
+	bytes := [wordSize]byte{}
+
+	for i := 0; i < wordSize; i++ {
+		bytes[i] = byte((w >> (i * 8)) & 0xFF)
+	}
+
+	return bytes
+}
+
+func writeAsBytes(w io.Writer, value word) error {
+	bytes := wordToBytes(value)
+
+	for _, b := range bytes[:wordSize-1] {
+		if _, err := fmt.Fprintf(w, "%d ", b); err != nil {
+			return err
+		}
+	}
+
+	if _, err := fmt.Fprintf(w, "%d\n", bytes[wordSize-1]); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type pos struct {
 	line   uint
 	column uint
@@ -207,40 +240,7 @@ func expandWordCall(asm *assembler) error {
 	return err
 }
 
-type word int32
-
-const (
-	wordSize    = 4
-	maxTokenLen = 127
-)
-
-func wordToBytes(w word) [wordSize]byte {
-	bytes := [wordSize]byte{}
-
-	for i := 0; i < wordSize; i++ {
-		bytes[i] = byte((w >> (i * 8)) & 0xFF)
-	}
-
-	return bytes
-}
-
-func writeAsBytes(w io.Writer, value word) error {
-	bytes := wordToBytes(value)
-
-	for _, b := range bytes[:wordSize-1] {
-		if _, err := fmt.Fprintf(w, "%d ", b); err != nil {
-			return err
-		}
-	}
-
-	if _, err := fmt.Fprintf(w, "%d\n", bytes[wordSize-1]); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func writeDictionaryHeader(asm *assembler, name string) error {
+func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
 	// Label of the dictionary entry.
 	if _, err := fmt.Fprintln(asm.writer, ":"+name); err != nil {
 		return err
@@ -259,7 +259,11 @@ func writeDictionaryHeader(asm *assembler, name string) error {
 	asm.lastWordName = name
 
 	// Lenght and characters of the current word's name.
-	if _, err := fmt.Fprintf(asm.writer, "%d", len(name)); err != nil {
+	nameLen := len(name)
+	if immediate {
+		nameLen |= 128
+	}
+	if _, err := fmt.Fprintf(asm.writer, "%d", nameLen); err != nil {
 		return err
 	}
 
@@ -278,7 +282,13 @@ func expandCodeWord(asm *assembler) error {
 		return err
 	}
 
-	if token != ".codeword" {
+	immediate := false
+
+	switch {
+	case token == ".codeword":
+	case token == ".immediate-codeword":
+		immediate = true
+	default:
 		return nil
 	}
 	asm.scanner.Consume()
@@ -288,7 +298,7 @@ func expandCodeWord(asm *assembler) error {
 		return err
 	}
 
-	if err := writeDictionaryHeader(asm, name); err != nil {
+	if err := writeDictionaryHeader(asm, name, immediate); err != nil {
 		return err
 	}
 
@@ -336,7 +346,7 @@ func expandVar(asm *assembler) error {
 		return err
 	}
 
-	if err := writeDictionaryHeader(asm, name); err != nil {
+	if err := writeDictionaryHeader(asm, name, false); err != nil {
 		return err
 	}
 
