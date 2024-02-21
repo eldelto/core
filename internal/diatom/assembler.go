@@ -252,7 +252,7 @@ func writeDictionaryHeader(asm *assembler, name string) error {
 			return err
 		}
 	} else {
-		if _, err := fmt.Fprintln(asm.writer, "@_dict"+asm.lastWordName); err != nil {
+		if _, err := fmt.Fprintln(asm.writer, "@"+asm.lastWordName); err != nil {
 			return err
 		}
 	}
@@ -297,7 +297,12 @@ func expandCodeWord(asm *assembler) error {
 		return err
 	}
 
-	if err := doUntil(asm, ".end", passTokenThrough); err != nil {
+	if err := doUntil(asm, ".end", func(token string, w io.Writer) error {
+		if token[0] == '!' {
+			return expandWordCall(asm)
+		}
+		return passTokenThrough(token, w)
+	}); err != nil {
 		return err
 	}
 
@@ -359,6 +364,7 @@ func expandVar(asm *assembler) error {
 }
 
 func expandMacros(asm *assembler) error {
+	pos := asm.scanner.pos
 	if err := anyOf(asm,
 		expandComment,
 		expandWordCall,
@@ -368,7 +374,8 @@ func expandMacros(asm *assembler) error {
 		return err
 	}
 
-	if asm.scanner.Consumed() {
+	// Pass token through if no previous function could make progress.
+	if pos != asm.scanner.pos {
 		return nil
 	}
 
