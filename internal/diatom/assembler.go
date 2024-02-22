@@ -118,7 +118,7 @@ func scanError(asm *assembler, err error) error {
 		err)
 }
 
-func doUntil(asm *assembler, delimiter string, f func(token string, w io.Writer) error) error {
+func doUntil(asm *assembler, delimiter string, f func(asm *assembler) error) error {
 	for {
 		token, err := asm.scanner.Token()
 		if err != nil {
@@ -130,19 +130,25 @@ func doUntil(asm *assembler, delimiter string, f func(token string, w io.Writer)
 			return nil
 		}
 
-		if err := f(token, asm.writer); err != nil {
+		if err := f(asm); err != nil {
 			return err
 		}
-		asm.scanner.Consume()
 	}
 }
 
-func dropToken(token string, w io.Writer) error {
+func dropToken(asm *assembler) error {
+	asm.scanner.Consume()
 	return nil
 }
 
-func passTokenThrough(token string, w io.Writer) error {
-	_, err := fmt.Fprintln(w, token)
+func passTokenThrough(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+	asm.scanner.Consume()
+
+	_, err = fmt.Fprintln(asm.writer, token)
 	return err
 }
 
@@ -209,6 +215,26 @@ func anyOf(asm *assembler, parsers ...func(asm *assembler) error) error {
 	}
 
 	return nil
+}
+
+func expectEither(asm *assembler, parsers ...func(asm *assembler) error) func(asm *assembler) error {
+	return func(asm *assembler) error {
+		for _, parser := range parsers {
+			if err := parser(asm); err != nil {
+				return err
+			}
+
+			if asm.scanner.Consumed() {
+				return nil
+			}
+		}
+
+		token, err := asm.scanner.Token()
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("expected expression but got %q", token)
+	}
 }
 
 func expandComment(asm *assembler) error {
@@ -307,12 +333,7 @@ func expandCodeWord(asm *assembler) error {
 		return err
 	}
 
-	if err := doUntil(asm, ".end", func(token string, w io.Writer) error {
-		if token[0] == '!' {
-			return expandWordCall(asm)
-		}
-		return passTokenThrough(token, w)
-	}); err != nil {
+	if err := doUntil(asm, ".end", expectEither(asm, expandWordCall, passTokenThrough)); err != nil {
 		return err
 	}
 
@@ -389,12 +410,7 @@ func expandMacros(asm *assembler) error {
 		return nil
 	}
 
-	token, err := asm.scanner.Token()
-	if err != nil {
-		return err
-	}
-
-	if err := passTokenThrough(token, asm.writer); err != nil {
+	if err := passTokenThrough(asm); err != nil {
 		return err
 	}
 
