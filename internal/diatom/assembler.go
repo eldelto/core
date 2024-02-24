@@ -1,7 +1,6 @@
 package diatom
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -29,13 +28,13 @@ func wordToBytes(w word) [wordSize]byte {
 func writeAsBytes(w io.Writer, value word) error {
 	bytes := wordToBytes(value)
 
-	for _, b := range bytes[:wordSize-1] {
-		if _, err := fmt.Fprintf(w, "%d ", b); err != nil {
+	for i := wordSize - 1; i > 0; i-- {
+		if _, err := fmt.Fprintf(w, "%d ", bytes[i]); err != nil {
 			return err
 		}
 	}
 
-	if _, err := fmt.Fprintf(w, "%d\n", bytes[wordSize-1]); err != nil {
+	if _, err := fmt.Fprintf(w, "%d\n", bytes[0]); err != nil {
 		return err
 	}
 
@@ -50,22 +49,34 @@ type pos struct {
 type tokenScanner struct {
 	pos   pos
 	token []byte
-	r     *bufio.Reader
+	r     io.ReadSeeker
+}
+
+func (s *tokenScanner) reset() error {
+	s.pos.line = 0
+	s.pos.column = 0
+	s.token = s.token[:0]
+	_, err := s.r.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("failed to reset underlying io.Reader: %w", err)
+	}
+
+	return nil
 }
 
 func (s *tokenScanner) scan() error {
-	s.token = s.token[:0]
 
-	var b byte
+	var buffer [1]byte
 	var err error
 	for {
-		b, err = s.r.ReadByte()
+		_, err = s.r.Read(buffer[:])
 		if err != nil {
 			if errors.Is(err, io.EOF) && len(s.token) > 0 {
 				return nil
 			}
 			return err
 		}
+		b := buffer[0]
 
 		s.pos.column++
 
@@ -109,6 +120,18 @@ type assembler struct {
 	scanner      *tokenScanner
 	writer       io.Writer
 	lastWordName string
+	labels       map[string]word
+}
+
+func newAssembler(r io.ReadSeeker, w io.Writer) *assembler {
+	return &assembler{
+		scanner: &tokenScanner{
+			token: []byte{},
+			r:     r,
+		},
+		writer: w,
+		labels: map[string]word{},
+	}
 }
 
 func scanError(asm *assembler, err error) error {
@@ -418,17 +441,103 @@ func expandMacros(asm *assembler) error {
 	return nil
 }
 
-func ExpandMacros(r io.Reader, w io.Writer) error {
-	asm := &assembler{
-		scanner: &tokenScanner{
-			token: []byte{},
-			r:     bufio.NewReader(r),
-		},
-		writer: w,
-	}
+func ExpandMacros(r io.ReadSeeker, w io.Writer) error {
+	asm := newAssembler(r, w)
 
 	for {
 		if err := expandMacros(asm); err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+
+			return scanError(asm, err)
+		}
+	}
+}
+
+// TODO: Macro expansion needs to handle number to byte conversion.
+
+func readLabels(asm *assembler) error {
+	var address word = 0
+	for {
+		token, err := asm.scanner.Token()
+		if err != nil {
+			return err
+		}
+
+		if token[0] == ':' {
+			label := token[1:]
+			prevAddress, ok := asm.labels[label]
+			if ok {
+				return fmt.Errorf("label %q already declared at address '%d'", label, prevAddress)
+			}
+			asm.labels[label] = address
+		}
+
+		if token[0] == '@' {
+			address += wordSize
+		} else {
+			address++
+		}
+		asm.scanner.Consume()
+	}
+}
+
+func resolveLabel(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+	label := token[1:]
+
+	switch token[0] {
+	case ':':
+		address, ok := asm.labels[label]
+		if !ok {
+			return fmt.Errorf("no previous declaration of label %q found", label)
+		}
+
+		if _, err := fmt.Fprintf(asm.writer, "( ':%s' at address '%d' )\n", label, address); err != nil {
+			return err
+		}
+	case '@':
+		address, ok := asm.labels[label]
+		if !ok {
+			return fmt.Errorf("no declaration of label %q found", label)
+		}
+
+		if _, err := fmt.Fprintf(asm.writer, "( '@%s' at address '%d' )\n", label, address); err != nil {
+			return err
+		}
+
+		if err := writeAsBytes(asm.writer, address); err != nil {
+			return err
+		}
+	default:
+		return nil
+	}
+
+	asm.scanner.Consume()
+	return nil
+}
+
+func expandLabels(asm *assembler) error {
+	return expectEither(asm, resolveLabel, passTokenThrough)(asm)
+}
+
+func ExpandLabels(r io.ReadSeeker, w io.Writer) error {
+	asm := newAssembler(r, w)
+
+	if err := readLabels(asm); err != nil && !errors.Is(err, io.EOF) {
+		return scanError(asm, err)
+	}
+
+	if err := asm.scanner.reset(); err != nil {
+		return err
+	}
+
+	for {
+		if err := expandLabels(asm); err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
 			}

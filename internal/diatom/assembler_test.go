@@ -51,14 +51,44 @@ func TestExpandMacros(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			in := bytes.NewReader([]byte(tt.in))
 			out := bytes.Buffer{}
 
-			err := diatom.ExpandMacros(bytes.NewBufferString(tt.in), &out)
+			err := diatom.ExpandMacros(in, &out)
 			if tt.expectError {
 				AssertError(t, err, "ExpandMacro")
 			} else {
 				AssertNoError(t, err, "ExpandMacro")
 				AssertEquals(t, tt.expected, out.String(), "ExpandMacro output")
+			}
+		})
+	}
+}
+
+func TestExpandLabels(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          string
+		expected    string
+		expectError bool
+	}{
+		{"backward reference", "dup :test @test",
+			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n", false},
+		{"no declaration", "dup @test", "", true},
+		{"double declaration", "dup :test @test :test", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := bytes.NewReader([]byte(tt.in))
+			out := bytes.Buffer{}
+
+			err := diatom.ExpandLabels(in, &out)
+			if tt.expectError {
+				AssertError(t, err, "ExpandLabels")
+			} else {
+				AssertNoError(t, err, "ExpandLabels")
+				AssertEquals(t, tt.expected, out.String(), "ExpandLabels output")
 			}
 		})
 	}
