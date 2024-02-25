@@ -203,3 +203,7 @@ r2 █        █ r2
 		fmt.Print(output)
 	}
 }
+
+// TODO: Add conversion from farad to ampere
+// TODO: Add calculation for LED serial resistor
+
