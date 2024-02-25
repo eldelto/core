@@ -16,7 +16,7 @@ func TestExpandMacros(t *testing.T) {
 		expected    string
 		expectError bool
 	}{
-		{"remove comment", "const ( this will be gone ) 10", "const\n10\n", false},
+		{"remove comment", "const ( this will be gone ) 10", "const\n0 0 0 10\n", false},
 		{"invalid comment", "const ( no end", "", true},
 		{"word call", "!double", "call @_dictdouble\n", false},
 		{"codeword macro",
@@ -33,10 +33,15 @@ func TestExpandMacros(t *testing.T) {
 			false},
 		{"invalid codeword", ".codeword .test exit .end", "", true},
 		{"codeword without end", ".codeword test exit", "", true},
-		{"codeword identifier too long",
+		{"codeword too long identifier",
 			".codeword pvxmqnruzygjozkxhsemztscrrlgnxntmfhwkhedphlvnbtajdzqzjkhjfdwpaxngttkpcynhhcrenkxwkqlqljmzpstkigepqtvtzbpcmimmkrnycavkuetcrovrnwk exit .end",
 			"",
 			true},
+
+		{"codeword with number",
+			"577 .codeword test const -77 .end",
+			"0 0 2 65\n:test\n0 0 0 0\n4 116 101 115 116\n:_dicttest\nconst\n255 255 255 179\nret\n",
+			false},
 		{"var macro",
 			".var test 3 .end",
 			":test\n0 0 0 0\n4 116 101 115 116\n:_dicttest\nconst\n@_vartest\nret\n:_vartest\n0\n0\n0\n",

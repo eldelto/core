@@ -289,6 +289,21 @@ func expandWordCall(asm *assembler) error {
 	return err
 }
 
+func expandNumber(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	number, err := strconv.ParseInt(token, 10, 32)
+	if err != nil {
+		return nil
+	}
+	asm.scanner.Consume()
+
+	return writeAsBytes(asm.writer, word(number))
+}
+
 func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
 	// Label of the dictionary entry.
 	if _, err := fmt.Fprintln(asm.writer, ":"+name); err != nil {
@@ -356,7 +371,11 @@ func expandCodeWord(asm *assembler) error {
 		return err
 	}
 
-	if err := doUntil(asm, ".end", expectEither(asm, expandWordCall, passTokenThrough)); err != nil {
+	if err := doUntil(asm, ".end", expectEither(asm,
+		expandWordCall,
+		expandNumber,
+		passTokenThrough,
+	)); err != nil {
 		return err
 	}
 
@@ -424,6 +443,7 @@ func expandMacros(asm *assembler) error {
 		expandWordCall,
 		expandCodeWord,
 		expandVar,
+		expandNumber,
 	); err != nil {
 		return err
 	}
@@ -454,8 +474,6 @@ func ExpandMacros(r io.ReadSeeker, w io.Writer) error {
 		}
 	}
 }
-
-// TODO: Macro expansion needs to handle number to byte conversion.
 
 func readLabels(asm *assembler) error {
 	var address word = 0
