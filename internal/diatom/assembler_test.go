@@ -77,7 +77,7 @@ func TestExpandLabels(t *testing.T) {
 		expected    string
 		expectError bool
 	}{
-		{"backward reference", "dup :test @test",
+		{"backward reference", "dup ( test label ) :test @test",
 			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n", false},
 		{"no declaration", "dup @test", "", true},
 		{"double declaration", "dup :test @test :test", "", true},
@@ -88,7 +88,7 @@ func TestExpandLabels(t *testing.T) {
 			in := bytes.NewReader([]byte(tt.in))
 			out := bytes.Buffer{}
 
-			err := diatom.ExpandLabels(in, &out)
+			err := diatom.ResolveLabels(in, &out)
 			if tt.expectError {
 				AssertError(t, err, "ExpandLabels")
 			} else {

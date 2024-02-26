@@ -8,39 +8,6 @@ import (
 	"strconv"
 )
 
-type word int32
-
-const (
-	wordSize    = 4
-	maxTokenLen = 127
-)
-
-func wordToBytes(w word) [wordSize]byte {
-	bytes := [wordSize]byte{}
-
-	for i := 0; i < wordSize; i++ {
-		bytes[i] = byte((w >> (i * 8)) & 0xFF)
-	}
-
-	return bytes
-}
-
-func writeAsBytes(w io.Writer, value word) error {
-	bytes := wordToBytes(value)
-
-	for i := wordSize - 1; i > 0; i-- {
-		if _, err := fmt.Fprintf(w, "%d ", bytes[i]); err != nil {
-			return err
-		}
-	}
-
-	if _, err := fmt.Fprintf(w, "%d\n", bytes[0]); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type pos struct {
 	line   uint
 	column uint
@@ -220,7 +187,7 @@ func positiveNumber(token string) (byte, error) {
 	}
 
 	if number > math.MaxUint8 {
-		return 0, fmt.Errorf("%q exceeds the maximum allowed value of %d", token, math.MaxUint8)
+		return 0, fmt.Errorf("%d exceeds the maximum allowed value of %d", number, math.MaxUint8)
 	}
 
 	if number < 0 {
@@ -483,18 +450,21 @@ func readLabels(asm *assembler) error {
 			return err
 		}
 
-		if token[0] == ':' {
+		switch token[0] {
+		case ':':
 			label := token[1:]
 			prevAddress, ok := asm.labels[label]
 			if ok {
 				return fmt.Errorf("label %q already declared at address '%d'", label, prevAddress)
 			}
 			asm.labels[label] = address
-		}
-
-		if token[0] == '@' {
+		case '@':
 			address += wordSize
-		} else {
+		case '(':
+			if err := expandComment(asm); err != nil {
+				return err
+			}
+		default:
 			address++
 		}
 		asm.scanner.Consume()
@@ -539,11 +509,8 @@ func resolveLabel(asm *assembler) error {
 	return nil
 }
 
-func expandLabels(asm *assembler) error {
-	return expectEither(asm, resolveLabel, passTokenThrough)(asm)
-}
-
-func ExpandLabels(r io.ReadSeeker, w io.Writer) error {
+// TODO: Handle comments
+func ResolveLabels(r io.ReadSeeker, w io.Writer) error {
 	asm := newAssembler(r, w)
 
 	if err := readLabels(asm); err != nil && !errors.Is(err, io.EOF) {
@@ -555,7 +522,64 @@ func ExpandLabels(r io.ReadSeeker, w io.Writer) error {
 	}
 
 	for {
-		if err := expandLabels(asm); err != nil {
+		if err := expectEither(asm, expandComment, resolveLabel, passTokenThrough)(asm); err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+
+			return scanError(asm, err)
+		}
+	}
+}
+
+func writeNumber(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	opcode, err := positiveNumber(token)
+	if err != nil {
+		return err
+	}
+
+	_, err = asm.writer.Write([]byte{opcode})
+	if err != nil {
+		return fmt.Errorf("failed to write opcode for %q: %w", token, err)
+	}
+
+	return nil
+}
+
+func resolveInstruction(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+	asm.scanner.Consume()
+
+	opcode, ok := instructions[token]
+	if !ok {
+		return fmt.Errorf("%q is not a valid instruction", token)
+	}
+
+	_, err = asm.writer.Write([]byte{opcode})
+	if err != nil {
+		return fmt.Errorf("failed to write opcode for %q: %w", token, err)
+	}
+
+	return nil
+}
+
+func GenerateMachineCode(r io.ReadSeeker, w io.Writer) error {
+	asm := newAssembler(r, w)
+
+	for {
+		if err := expectEither(asm,
+			expandComment,
+			writeNumber,
+			resolveInstruction,
+		)(asm); err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
 			}

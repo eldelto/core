@@ -206,4 +206,3 @@ r2 █        █ r2
 
 // TODO: Add conversion from farad to ampere
 // TODO: Add calculation for LED serial resistor
-
