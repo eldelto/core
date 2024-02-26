@@ -77,8 +77,10 @@ func TestExpandLabels(t *testing.T) {
 		expected    string
 		expectError bool
 	}{
-		{"backward reference", "dup ( test label ) :test @test",
-			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n", false},
+		{"backward reference",
+			"dup ( test label ) :test @test",
+			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n",
+			false},
 		{"no declaration", "dup @test", "", true},
 		{"double declaration", "dup :test @test :test", "", true},
 	}
@@ -94,6 +96,37 @@ func TestExpandLabels(t *testing.T) {
 			} else {
 				AssertNoError(t, err, "ExpandLabels")
 				AssertEquals(t, tt.expected, out.String(), "ExpandLabels output")
+			}
+		})
+	}
+}
+
+func TestGenerateMachineCode(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          string
+		expected    []byte
+		expectError bool
+	}{
+		{"valid instructions", "const 0 0 0 10 ( jump ) dup * exit",
+			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
+			false},
+		{"invalid instructions", "const invalid ret", []byte{}, true},
+		{"invalid number", "const 0 0 0 -2 ret", []byte{}, true},
+		{"too large number", "const 0 0 0 300 ret", []byte{}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := bytes.NewReader([]byte(tt.in))
+			out := bytes.Buffer{}
+
+			err := diatom.GenerateMachineCode(in, &out)
+			if tt.expectError {
+				AssertError(t, err, "ExpandLabels")
+			} else {
+				AssertNoError(t, err, "ExpandLabels")
+				AssertEquals(t, tt.expected, out.Bytes(), "ExpandLabels output")
 			}
 		})
 	}

@@ -538,6 +538,11 @@ func writeNumber(asm *assembler) error {
 		return err
 	}
 
+	if _, err := strconv.Atoi(token); err != nil {
+		return nil
+	}
+	asm.scanner.Consume()
+
 	opcode, err := positiveNumber(token)
 	if err != nil {
 		return err
