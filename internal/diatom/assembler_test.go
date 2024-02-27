@@ -78,8 +78,8 @@ func TestExpandLabels(t *testing.T) {
 		expectError bool
 	}{
 		{"backward reference",
-			"dup ( test label ) :test @test",
-			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n",
+			"dup ( test label ) :test @test 2",
+			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n2\n",
 			false},
 		{"no declaration", "dup @test", "", true},
 		{"double declaration", "dup :test @test :test", "", true},
@@ -139,9 +139,10 @@ func TestAssemble(t *testing.T) {
 		expected    []byte
 		expectError bool
 	}{
-		{"valid instructions", "const 0 0 0 10 ( jump ) dup * exit",
+		{"valid instructions", "const 10 ( jump ) dup * exit",
 			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
 			false},
+		// TODO: Add more complex tests.
 	}
 
 	for _, tt := range tests {

@@ -589,14 +589,10 @@ func GenerateMachineCode(r io.Reader, w io.Writer) error {
 	}
 }
 
-func pipeThrough(r io.Reader, w io.Writer, stages ...func(r io.Reader, w io.Writer) error)error {
-
-	for _, 
-}
-
 func Assemble(r io.Reader, w io.Writer) error {
 	labelIn, macroOut := io.Pipe()
-	
+	machineCodeIn, labelOut := io.Pipe()
+
 	group := errgroup.Group{}
 	group.Go(func() error {
 		defer macroOut.Close()
@@ -606,8 +602,16 @@ func Assemble(r io.Reader, w io.Writer) error {
 		return nil
 	})
 	group.Go(func() error {
-	defer labelIn.Close()
-		if err := GenerateMachineCode(labelIn, w); err != nil {
+		defer labelIn.Close()
+		defer labelOut.Close()
+		if err := ResolveLabels(labelIn, labelOut); err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	})
+	group.Go(func() error {
+		defer machineCodeIn.Close()
+		if err := GenerateMachineCode(machineCodeIn, w); err != nil {
 			log.Fatal(err)
 		}
 		return nil
