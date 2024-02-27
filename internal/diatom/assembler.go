@@ -1,11 +1,15 @@
 package diatom
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"strconv"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type pos struct {
@@ -16,19 +20,7 @@ type pos struct {
 type tokenScanner struct {
 	pos   pos
 	token []byte
-	r     io.ReadSeeker
-}
-
-func (s *tokenScanner) reset() error {
-	s.pos.line = 0
-	s.pos.column = 0
-	s.token = s.token[:0]
-	_, err := s.r.Seek(0, io.SeekStart)
-	if err != nil {
-		return fmt.Errorf("failed to reset underlying io.Reader: %w", err)
-	}
-
-	return nil
+	r     io.Reader
 }
 
 func (s *tokenScanner) scan() error {
@@ -90,7 +82,7 @@ type assembler struct {
 	labels       map[string]word
 }
 
-func newAssembler(r io.ReadSeeker, w io.Writer) *assembler {
+func newAssembler(r io.Reader, w io.Writer) *assembler {
 	return &assembler{
 		scanner: &tokenScanner{
 			token: []byte{},
@@ -428,7 +420,7 @@ func expandMacros(asm *assembler) error {
 	return nil
 }
 
-func ExpandMacros(r io.ReadSeeker, w io.Writer) error {
+func ExpandMacros(r io.Reader, w io.Writer) error {
 	asm := newAssembler(r, w)
 
 	for {
@@ -464,10 +456,14 @@ func readLabels(asm *assembler) error {
 			if err := expandComment(asm); err != nil {
 				return err
 			}
+			continue
 		default:
 			address++
 		}
-		asm.scanner.Consume()
+
+		if err := passTokenThrough(asm); err != nil {
+			return err
+		}
 	}
 }
 
@@ -509,18 +505,17 @@ func resolveLabel(asm *assembler) error {
 	return nil
 }
 
-// TODO: Handle comments
-func ResolveLabels(r io.ReadSeeker, w io.Writer) error {
-	asm := newAssembler(r, w)
+func ResolveLabels(r io.Reader, w io.Writer) error {
+	labelBuf := &bytes.Buffer{}
+	asm := newAssembler(r, labelBuf)
 
 	if err := readLabels(asm); err != nil && !errors.Is(err, io.EOF) {
 		return scanError(asm, err)
 	}
 
-	if err := asm.scanner.reset(); err != nil {
-		return err
-	}
-
+	labels := asm.labels
+	asm = newAssembler(labelBuf, w)
+	asm.labels = labels
 	for {
 		if err := expectEither(asm, expandComment, resolveLabel, passTokenThrough)(asm); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -576,7 +571,7 @@ func resolveInstruction(asm *assembler) error {
 	return nil
 }
 
-func GenerateMachineCode(r io.ReadSeeker, w io.Writer) error {
+func GenerateMachineCode(r io.Reader, w io.Writer) error {
 	asm := newAssembler(r, w)
 
 	for {
@@ -592,4 +587,31 @@ func GenerateMachineCode(r io.ReadSeeker, w io.Writer) error {
 			return scanError(asm, err)
 		}
 	}
+}
+
+func pipeThrough(r io.Reader, w io.Writer, stages ...func(r io.Reader, w io.Writer) error)error {
+
+	for _, 
+}
+
+func Assemble(r io.Reader, w io.Writer) error {
+	labelIn, macroOut := io.Pipe()
+	
+	group := errgroup.Group{}
+	group.Go(func() error {
+		defer macroOut.Close()
+		if err := ExpandMacros(r, macroOut); err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	})
+	group.Go(func() error {
+	defer labelIn.Close()
+		if err := GenerateMachineCode(labelIn, w); err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	})
+
+	return group.Wait()
 }

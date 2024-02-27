@@ -123,10 +123,38 @@ func TestGenerateMachineCode(t *testing.T) {
 
 			err := diatom.GenerateMachineCode(in, &out)
 			if tt.expectError {
-				AssertError(t, err, "ExpandLabels")
+				AssertError(t, err, "GenerateMachineCode")
 			} else {
-				AssertNoError(t, err, "ExpandLabels")
-				AssertEquals(t, tt.expected, out.Bytes(), "ExpandLabels output")
+				AssertNoError(t, err, "GenerateMachineCode")
+				AssertEquals(t, tt.expected, out.Bytes(), "GenerateMachineCode output")
+			}
+		})
+	}
+}
+
+func TestAssemble(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          string
+		expected    []byte
+		expectError bool
+	}{
+		{"valid instructions", "const 0 0 0 10 ( jump ) dup * exit",
+			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
+			false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := bytes.NewReader([]byte(tt.in))
+			out := bytes.Buffer{}
+
+			err := diatom.Assemble(in, &out)
+			if tt.expectError {
+				AssertError(t, err, "Assemble")
+			} else {
+				AssertNoError(t, err, "Assemble")
+				AssertEquals(t, tt.expected, out.Bytes(), "Assemble output")
 			}
 		})
 	}
