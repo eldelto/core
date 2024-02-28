@@ -142,7 +142,10 @@ func TestAssemble(t *testing.T) {
 		{"valid instructions", "const 10 ( jump ) dup * exit",
 			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
 			false},
-		// TODO: Add more complex tests.
+		{"valid program",
+			"const -1 cjmp @start .codeword double dup dup + .end :start const 11 call @_dictdouble exit",
+			[]byte{3, 255, 255, 255, 255, 15, 0, 0, 0, 25, 0, 0, 0, 0, 6, 100, 111, 117, 98, 108, 101, 11, 11, 6, 2, 3, 0, 0, 0, 11, 16, 0, 0, 0, 21, 0},
+			false},
 	}
 
 	for _, tt := range tests {
