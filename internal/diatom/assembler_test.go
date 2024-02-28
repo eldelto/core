@@ -151,14 +151,13 @@ func TestAssemble(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			in := bytes.NewReader([]byte(tt.in))
-			out := bytes.Buffer{}
 
-			err := diatom.Assemble(in, &out)
+			_, _, out, err := diatom.Assemble(in)
 			if tt.expectError {
 				AssertError(t, err, "Assemble")
 			} else {
 				AssertNoError(t, err, "Assemble")
-				AssertEquals(t, tt.expected, out.Bytes(), "Assemble output")
+				AssertEquals(t, tt.expected, out, "Assemble output")
 			}
 		})
 	}
