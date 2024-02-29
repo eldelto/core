@@ -79,7 +79,7 @@ type assembler struct {
 	scanner      *tokenScanner
 	writer       io.Writer
 	lastWordName string
-	labels       map[string]word
+	labels       map[string]Word
 }
 
 func newAssembler(r io.Reader, w io.Writer) *assembler {
@@ -89,7 +89,7 @@ func newAssembler(r io.Reader, w io.Writer) *assembler {
 			r:     r,
 		},
 		writer: w,
-		labels: map[string]word{},
+		labels: map[string]Word{},
 	}
 }
 
@@ -260,7 +260,7 @@ func expandNumber(asm *assembler) error {
 	}
 	asm.scanner.Consume()
 
-	return writeAsBytes(asm.writer, word(number))
+	return writeAsBytes(asm.writer, Word(number))
 }
 
 func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
@@ -435,7 +435,7 @@ func ExpandMacros(r io.Reader, w io.Writer) error {
 }
 
 func readLabels(asm *assembler) error {
-	var address word = 0
+	var address Word = 0
 	for {
 		token, err := asm.scanner.Token()
 		if err != nil {
@@ -451,7 +451,7 @@ func readLabels(asm *assembler) error {
 			}
 			asm.labels[label] = address
 		case '@':
-			address += wordSize
+			address += WordSize
 		case '(':
 			if err := expandComment(asm); err != nil {
 				return err

@@ -5,27 +5,27 @@ import (
 	"io"
 )
 
-type word int32
+type Word int32
 
 const (
-	wordSize    = 4
+	WordSize    = 4
 	maxTokenLen = 127
 )
 
-func wordToBytes(w word) [wordSize]byte {
-	bytes := [wordSize]byte{}
+func wordToBytes(w Word) [WordSize]byte {
+	bytes := [WordSize]byte{}
 
-	for i := 0; i < wordSize; i++ {
+	for i := 0; i < WordSize; i++ {
 		bytes[i] = byte((w >> (i * 8)) & 0xFF)
 	}
 
 	return bytes
 }
 
-func writeAsBytes(w io.Writer, value word) error {
+func writeAsBytes(w io.Writer, value Word) error {
 	bytes := wordToBytes(value)
 
-	for i := wordSize - 1; i > 0; i-- {
+	for i := WordSize - 1; i > 0; i-- {
 		if _, err := fmt.Fprintf(w, "%d ", bytes[i]); err != nil {
 			return err
 		}
