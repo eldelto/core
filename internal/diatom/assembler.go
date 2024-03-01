@@ -236,7 +236,7 @@ func expandWordCall(asm *assembler) error {
 		return err
 	}
 
-	if token[0] != '!' {
+	if token[0] != '!' || len(token) < 2 {
 		return nil
 	}
 	asm.scanner.Consume()
@@ -433,23 +433,28 @@ func ExpandMacros(r io.Reader, w io.Writer) error {
 
 func readLabels(asm *assembler) error {
 	var address Word = 0
+
 	for {
 		token, err := asm.scanner.Token()
 		if err != nil {
 			return err
 		}
 
-		switch token[0] {
-		case ':':
+		first := token[0]
+		longEnough := len(token) > 1
+
+		switch {
+		case longEnough && first == ':':
 			label := token[1:]
 			prevAddress, ok := asm.labels[label]
 			if ok {
-				return fmt.Errorf("label %q already declared at address '%d'", label, prevAddress)
+				return fmt.Errorf("label %q already declared at address '%d'",
+					label, prevAddress)
 			}
 			asm.labels[label] = address
-		case '@':
+		case longEnough && first == '@':
 			address += WordSize
-		case '(':
+		case first == '(':
 			if err := expandComment(asm); err != nil {
 				return err
 			}
@@ -468,6 +473,10 @@ func resolveLabel(asm *assembler) error {
 	token, err := asm.scanner.Token()
 	if err != nil {
 		return err
+	}
+
+	if len(token) < 2 {
+		return nil
 	}
 	label := token[1:]
 

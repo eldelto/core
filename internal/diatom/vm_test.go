@@ -9,17 +9,30 @@ import (
 
 func TestVM(t *testing.T) {
 	tests := []struct {
-		name                string
 		assembly            string
 		expectedDataStack   []Word
 		expectedReturnStack []Word
 		expectError         bool
 	}{
-		{"exit", "exit", []Word{}, []Word{}, false},
+		{"exit", []Word{}, []Word{}, false},
+		{"nop", []Word{}, []Word{}, false},
+		//{"const @x rput ret exit :x const 11", []Word{11}, []Word{}, false},
+		{"const 11", []Word{11}, []Word{}, false},
+		//{"const @x @ exit :x 11", []Word{11}, []Word{}, false},
+		//{"const 22 const @x dup ! @ exit :x 11", []Word{22}, []Word{}, false},
+		//{"const 5 const -3 +", []Word{2}, []Word{}, false},
+		//{"const 5 const -3 -", []Word{8}, []Word{}, false},
+		//{"const 5 const -3 *", []Word{-15}, []Word{}, false},
+		//{"const 7 const -3 /", []Word{-2}, []Word{}, false},
+		//{"const 7 const -3 %", []Word{1}, []Word{}, false},
+		//{"const 7 dup", []Word{7, 7}, []Word{}, false},
+		//{"const 7 dup drop", []Word{7}, []Word{}, false},
+		//{"const 7 const 2 swap", []Word{2, 7}, []Word{}, false},
+		//{"const 7 const 2 over", []Word{7, 2, 7}, []Word{}, false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.assembly, func(t *testing.T) {
 			_, _, program, err := Assemble(bytes.NewBufferString(tt.assembly))
 			AssertNoError(t, err, "Assemble")
 

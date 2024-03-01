@@ -23,8 +23,8 @@ func (s *Stack) Push(value Word) error {
 			s.cursor, len(s.data))
 	}
 
-	s.cursor++
 	s.data[s.cursor] = value
+	s.cursor++
 	return nil
 }
 
@@ -91,6 +91,47 @@ func NewVM(program []byte) (*VM, error) {
 	return &vm, nil
 }
 
+func (vm *VM) validateMemoryAccess(addr Word) error {
+	if addr >= Word(len(vm.memory)) || addr < 0 {
+		return fmt.Errorf("out of bound memory access: programCounter=%d address=%d",
+			vm.programCounter, addr)
+	}
+
+	return nil
+}
+
+func (vm *VM) fetchByte(addr Word) (byte, error) {
+	if err := vm.validateMemoryAccess(addr); err != nil {
+		return 0, err
+	}
+
+	return vm.memory[addr], nil
+}
+
+//func (vm *VM) storeByte(addr Word, b byte) error {
+//	if err := vm.validateMemoryAccess(addr); err != nil {
+//		return err
+//	}
+//
+//	vm.memory[addr] = b
+//	return nil
+//}
+
+func (vm *VM) fetchWord(addr Word) (Word, error) {
+	var w Word
+	for i := 0; i < WordSize; i++ {
+		b, err := vm.fetchByte(addr + Word(i))
+		if err != nil {
+			return w, err
+		}
+
+		shift := (WordSize - (i + 1)) * 8
+		w = w | (Word(b) << shift)
+	}
+
+	return w, nil
+}
+
 func (vm *VM) Execute() error {
 	for {
 		instruction := vm.memory[vm.programCounter]
@@ -98,10 +139,7 @@ func (vm *VM) Execute() error {
 		switch instruction {
 		case EXIT:
 			return nil
-		case DROP:
-			if _, err := vm.dataStack.Pop(); err != nil {
-				return err
-			}
+		case NOP:
 		case RET:
 			addr, err := vm.returnStack.Pop()
 			if err != nil {
@@ -109,6 +147,35 @@ func (vm *VM) Execute() error {
 			}
 			vm.programCounter = addr
 			continue
+		case CONST:
+			vm.programCounter++
+			w, err := vm.fetchWord(vm.programCounter)
+			if err != nil {
+				return err
+			}
+
+			if err := vm.dataStack.Push(w); err != nil {
+				return err
+			}
+
+			vm.programCounter += WordSize
+			continue
+		case FETCH:
+			addr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			w, err := vm.fetchWord(addr)
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(w); err != nil {
+				return err
+			}
+		case DROP:
+			if _, err := vm.dataStack.Pop(); err != nil {
+				return err
+			}
 		case KEY:
 			b, err := vm.inputBuffer.NextChar()
 			if err != nil {
