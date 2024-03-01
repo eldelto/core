@@ -5,11 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"strconv"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type pos struct {
@@ -589,33 +586,24 @@ func GenerateMachineCode(r io.Reader, w io.Writer) error {
 	}
 }
 
-func Assemble(r io.Reader, w io.Writer) error {
-	labelIn, macroOut := io.Pipe()
-	machineCodeIn, labelOut := io.Pipe()
+func Assemble(r io.Reader) (dexp, dins string, dopc []byte, err error) {
+	out := bytes.Buffer{}
+	if err := ExpandMacros(r, &out); err != nil {
+		return "", "", nil, err
+	}
+	dexp = out.String()
 
-	group := errgroup.Group{}
-	group.Go(func() error {
-		defer macroOut.Close()
-		if err := ExpandMacros(r, macroOut); err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	})
-	group.Go(func() error {
-		defer labelIn.Close()
-		defer labelOut.Close()
-		if err := ResolveLabels(labelIn, labelOut); err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	})
-	group.Go(func() error {
-		defer machineCodeIn.Close()
-		if err := GenerateMachineCode(machineCodeIn, w); err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	})
+	out.Reset()
+	if err := ResolveLabels(bytes.NewBufferString(dexp), &out); err != nil {
+		return "", "", nil, err
+	}
+	dins = out.String()
 
-	return group.Wait()
+	out.Reset()
+	if err := GenerateMachineCode(bytes.NewBufferString(dins), &out); err != nil {
+		return "", "", nil, err
+	}
+	dopc = out.Bytes()
+
+	return
 }
