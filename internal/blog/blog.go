@@ -104,7 +104,7 @@ func findArticles(h *Headline, path string) ([]Article, error) {
 		}
 
 		childArticles, err := findArticles(childHeadline, article.UrlEncodedTitle())
-		if err == nil && !errors.Is(err, errSkipped) {
+		if err != nil && !errors.Is(err, errSkipped) {
 			return nil, err
 		}
 
