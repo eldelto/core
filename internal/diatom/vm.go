@@ -96,6 +96,8 @@ func (vm *VM) Execute() error {
 		instruction := vm.memory[vm.programCounter]
 
 		switch instruction {
+		case EXIT:
+			return nil
 		case DROP:
 			if _, err := vm.dataStack.Pop(); err != nil {
 				return err

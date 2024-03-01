@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +31,7 @@ func AssertNotEquals(t *testing.T, expected, actual any, title string) {
 	}
 }
 
-func AssertContains(t *testing.T, expected any, testee []any, title string) {
+func AssertContains[T comparable](t *testing.T, expected T, testee []T, title string) {
 	t.Helper()
 
 	for _, actual := range testee {
@@ -40,6 +41,14 @@ func AssertContains(t *testing.T, expected any, testee []any, title string) {
 	}
 
 	t.Errorf("%s did not contain a value '%v': %v", title, expected, testee)
+}
+
+func AssertContainsAll[T comparable](t *testing.T, expected []T, testee []T, title string) {
+	t.Helper()
+
+	for i := range expected {
+		AssertEquals(t, expected[i], testee[i], fmt.Sprintf("%s: at index %d", title, i))
+	}
 }
 
 func AssertStringContains(t *testing.T, expected, testee, title string) {
