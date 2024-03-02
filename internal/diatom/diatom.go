@@ -49,7 +49,7 @@ const (
 	SUBTRACT
 	MULTIPLY
 	DIVIDE
-	MOD
+	MODULO
 	DUP
 	DROP
 	SWAP
@@ -83,7 +83,7 @@ var instructions map[string]byte = map[string]byte{
 	"-":     SUBTRACT,
 	"*":     MULTIPLY,
 	"/":     DIVIDE,
-	"%":     MOD,
+	"%":     MODULO,
 	"dup":   DUP,
 	"drop":  DROP,
 	"swap":  SWAP,

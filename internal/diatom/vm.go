@@ -172,10 +172,152 @@ func (vm *VM) Execute() error {
 			if err := vm.dataStack.Push(w); err != nil {
 				return err
 			}
+		case STORE:
+		case ADD:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b + a); err != nil {
+				return err
+			}
+		case SUBTRACT:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b - a); err != nil {
+				return err
+			}
+		case MULTIPLY:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b * a); err != nil {
+				return err
+			}
+		case DIVIDE:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b / a); err != nil {
+				return err
+			}
+		case MODULO:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b % a); err != nil {
+				return err
+			}
+		case DUP:
+			a, err := vm.dataStack.Peek()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
 		case DROP:
 			if _, err := vm.dataStack.Pop(); err != nil {
 				return err
 			}
+		case SWAP:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b); err != nil {
+				return err
+			}
+		case OVER:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b); err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b); err != nil {
+				return err
+			}
+		case CJMP:
+			vm.programCounter++
+			conditional, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+
+			if conditional == -1 {
+				vm.programCounter, err = vm.fetchWord(vm.programCounter)
+				if err != nil {
+					return err
+				}
+			} else {
+				vm.programCounter += WordSize
+			}
+			continue
+		case CALL:
+			vm.programCounter++
+			if err := vm.returnStack.Push(vm.programCounter + WordSize); err != nil {
+				return err
+			}
+
+			target, err := vm.fetchWord(vm.programCounter)
+			if err != nil {
+				return err
+			}
+			vm.programCounter = target
+			continue
+		case SCALL:
+			vm.programCounter++
+			if err := vm.returnStack.Push(vm.programCounter ); err != nil {
+				return err
+			}
+
+			target, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			vm.programCounter = target
+			continue
 		case KEY:
 			b, err := vm.inputBuffer.NextChar()
 			if err != nil {
@@ -184,6 +326,18 @@ func (vm *VM) Execute() error {
 			if err := vm.dataStack.Push(Word(b)); err != nil {
 				return err
 			}
+		case EMIT:
+		case EQUALS:
+		case NOT:
+		case AND:
+		case OR:
+		case LT:
+		case GT:
+		case RPOP:
+		case RPUT:
+		case RPEEK:
+		case BFETCH:
+		case BSTORE:
 		default:
 			return fmt.Errorf("unknown instruction '%d' at memory address '%d' - terminating",
 				instruction, vm.programCounter)
