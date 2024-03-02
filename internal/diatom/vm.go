@@ -117,6 +117,14 @@ func (vm *VM) fetchByte(addr Word) (byte, error) {
 //	return nil
 //}
 
+func boolToWord(b bool) Word {
+  if b {
+    return -1
+  }
+
+  return 0
+}
+
 func (vm *VM) fetchWord(addr Word) (Word, error) {
 	var w Word
 	for i := 0; i < WordSize; i++ {
@@ -328,11 +336,73 @@ func (vm *VM) Execute() error {
 			}
 		case EMIT:
 		case EQUALS:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(boolToWord(b == a)); err != nil {
+				return err
+			}
 		case NOT:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(^a); err != nil {
+				return err
+			}
 		case AND:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b & a); err != nil {
+				return err
+			}
 		case OR:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(b | a); err != nil {
+				return err
+			}
 		case LT:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(boolToWord(b < a)); err != nil {
+				return err
+			}
 		case GT:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(boolToWord(a < b)); err != nil {
+				return err
+			}
 		case RPOP:
 		case RPUT:
 		case RPEEK:

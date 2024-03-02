@@ -35,6 +35,15 @@ func TestVM(t *testing.T) {
 		{"call @x const 22 exit :x ret const 11", []Word{22}, []Word{}, false},
 		{"const @x scall const 22 exit :x const 11", []Word{11}, []Word{6}, false},
 		{"const @x scall const 22 exit :x ret const 11", []Word{22}, []Word{}, false},
+		{"const 5 const 5 =", []Word{-1}, []Word{}, false},
+		{"const 5 const 4 =", []Word{0}, []Word{}, false},
+		{"const 0 ~", []Word{-1}, []Word{}, false},
+		{"const 3 const 5 &", []Word{1}, []Word{}, false},
+		{"const 1 const 6 |", []Word{7}, []Word{}, false},
+		{"const 5 const 5 <", []Word{0}, []Word{}, false},
+		{"const 4 const 5 <", []Word{-1}, []Word{}, false},
+		{"const 5 const 5 >", []Word{0}, []Word{}, false},
+		{"const 5 const 4 >", []Word{-1}, []Word{}, false},
 	}
 
 	for _, tt := range tests {
@@ -55,4 +64,8 @@ func TestVM(t *testing.T) {
 			}
 		})
 	}
+
 }
+
+// TODO: KEY & EMIT
+
