@@ -118,11 +118,11 @@ func (vm *VM) fetchByte(addr Word) (byte, error) {
 //}
 
 func boolToWord(b bool) Word {
-  if b {
-    return -1
-  }
+	if b {
+		return -1
+	}
 
-  return 0
+	return 0
 }
 
 func (vm *VM) fetchWord(addr Word) (Word, error) {
@@ -316,7 +316,7 @@ func (vm *VM) Execute() error {
 			continue
 		case SCALL:
 			vm.programCounter++
-			if err := vm.returnStack.Push(vm.programCounter ); err != nil {
+			if err := vm.returnStack.Push(vm.programCounter); err != nil {
 				return err
 			}
 
@@ -403,9 +403,30 @@ func (vm *VM) Execute() error {
 			if err := vm.dataStack.Push(boolToWord(a < b)); err != nil {
 				return err
 			}
-		case RPOP:
 		case RPUT:
+			a, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.returnStack.Push(a); err != nil {
+				return err
+			}
+		case RPOP:
+			a, err := vm.returnStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
 		case RPEEK:
+			a, err := vm.returnStack.Peek()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
 		case BFETCH:
 		case BSTORE:
 		default:

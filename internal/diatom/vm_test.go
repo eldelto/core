@@ -44,6 +44,11 @@ func TestVM(t *testing.T) {
 		{"const 4 const 5 <", []Word{-1}, []Word{}, false},
 		{"const 5 const 5 >", []Word{0}, []Word{}, false},
 		{"const 5 const 4 >", []Word{-1}, []Word{}, false},
+		{"const 5 rput", []Word{}, []Word{5}, false},
+		{"const 5 rput rpop", []Word{5}, []Word{}, false},
+		{"const 5 rput rpeek", []Word{5}, []Word{5}, false},
+
+		// TODO: Test failure modes
 	}
 
 	for _, tt := range tests {
@@ -68,4 +73,3 @@ func TestVM(t *testing.T) {
 }
 
 // TODO: KEY & EMIT
-
