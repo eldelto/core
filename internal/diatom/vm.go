@@ -181,6 +181,7 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case STORE:
+      panic("not implemented")
 		case ADD:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -335,6 +336,7 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case EMIT:
+      panic("not implemented")
 		case EQUALS:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -428,7 +430,9 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case BFETCH:
+      panic("not implemented")
 		case BSTORE:
+      panic("not implemented")
 		default:
 			return fmt.Errorf("unknown instruction '%d' at memory address '%d' - terminating",
 				instruction, vm.programCounter)
