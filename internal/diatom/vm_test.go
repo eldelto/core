@@ -47,6 +47,8 @@ func TestVM(t *testing.T) {
 		{"const 5 rput", []Word{}, []Word{5}, false},
 		{"const 5 rput rpop", []Word{5}, []Word{}, false},
 		{"const 5 rput rpeek", []Word{5}, []Word{5}, false},
+		{"const 10 b@ exit 5", []Word{5}, []Word{0}, false},
+		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{0}, false},
 
 		// TODO: Test failure modes
 	}

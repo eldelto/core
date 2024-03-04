@@ -108,14 +108,14 @@ func (vm *VM) fetchByte(addr Word) (byte, error) {
 	return vm.memory[addr], nil
 }
 
-//func (vm *VM) storeByte(addr Word, b byte) error {
-//	if err := vm.validateMemoryAccess(addr); err != nil {
-//		return err
-//	}
-//
-//	vm.memory[addr] = b
-//	return nil
-//}
+func (vm *VM) storeByte(addr Word, b byte) error {
+	if err := vm.validateMemoryAccess(addr); err != nil {
+		return err
+	}
+
+	vm.memory[addr] = b
+	return nil
+}
 
 func boolToWord(b bool) Word {
 	if b {
@@ -181,7 +181,7 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case STORE:
-      panic("not implemented")
+			panic("not implemented")
 		case ADD:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -336,7 +336,7 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case EMIT:
-      panic("not implemented")
+			panic("not implemented")
 		case EQUALS:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -430,9 +430,29 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case BFETCH:
-      panic("not implemented")
+			addr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			b, err := vm.fetchByte(addr)
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(Word(b)); err != nil {
+				return err
+			}
 		case BSTORE:
-      panic("not implemented")
+			addr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			value, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.storeByte(addr, byte(value)); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown instruction '%d' at memory address '%d' - terminating",
 				instruction, vm.programCounter)

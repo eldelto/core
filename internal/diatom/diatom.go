@@ -102,6 +102,6 @@ var instructions map[string]byte = map[string]byte{
 	"rpop":  RPOP,
 	"rput":  RPUT,
 	"rpeek": RPEEK,
-	"b@":    BSTORE,
-	"b!":    BFETCH,
+	"b@":    BFETCH,
+	"b!":    BSTORE,
 }
