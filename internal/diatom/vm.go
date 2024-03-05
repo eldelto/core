@@ -53,11 +53,11 @@ type Input struct {
 	buffer [IOBufferSize]byte
 }
 
-func (i *Input) NextChar() (byte, error) {
+func (i *Input) nextChar(r io.Reader) (byte, error) {
 	if i.cursor >= i.len {
-		read, err := io.ReadAtLeast(os.Stdin, i.buffer[:], 1)
+		read, err := io.ReadAtLeast(r, i.buffer[:], 1)
 		if read == 0 || err != nil {
-			return 0, fmt.Errorf("failed to read from stdin: %w", err)
+			return 0, fmt.Errorf("failed to read from input: %w", err)
 		}
 
 		i.len = read
@@ -75,20 +75,29 @@ type VM struct {
 	dataStack      Stack
 	returnStack    Stack
 	inputBuffer    Input
+	input          io.Reader
+	output         io.Writer
 	memory         [MemorySize]byte
 }
 
-func NewVM(program []byte) (*VM, error) {
+func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 	programLen := len(program)
 	if programLen > MemorySize {
 		return nil, fmt.Errorf("program length (%d bytes) exceeds available memory (%d bytes)",
 			programLen, MemorySize)
 	}
 
-	vm := VM{}
+	vm := VM{
+		input:  input,
+		output: output,
+	}
 	copy(vm.memory[:], program)
 
 	return &vm, nil
+}
+
+func NewDefaultVM(program []byte) (*VM, error) {
+	return NewVM(program, os.Stdin, os.Stdout)
 }
 
 func (vm *VM) validateMemoryAccess(addr Word) error {
@@ -117,14 +126,6 @@ func (vm *VM) storeByte(addr Word, b byte) error {
 	return nil
 }
 
-func boolToWord(b bool) Word {
-	if b {
-		return -1
-	}
-
-	return 0
-}
-
 func (vm *VM) fetchWord(addr Word) (Word, error) {
 	var w Word
 	for i := 0; i < WordSize; i++ {
@@ -138,6 +139,40 @@ func (vm *VM) fetchWord(addr Word) (Word, error) {
 	}
 
 	return w, nil
+}
+
+func (vm *VM) storeWord(addr Word, w Word) error {
+	var b byte
+	for i := 0; i < WordSize; i++ {
+		shift := (WordSize - (i + 1)) * 8
+		b = byte(w & (0xff << shift))
+
+		if err := vm.storeByte(addr+Word(i), b); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (vm *VM) key() (byte, error) {
+	return vm.inputBuffer.nextChar(vm.input)
+}
+
+func (vm *VM) emit(b byte) error {
+	if _, err := vm.output.Write([]byte{b}); err != nil {
+		return fmt.Errorf("failed to write %q to the VM output: %w", b, err)
+	}
+
+	return nil
+}
+
+func boolToWord(b bool) Word {
+	if b {
+		return -1
+	}
+
+	return 0
 }
 
 func (vm *VM) Execute() error {
@@ -181,7 +216,17 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case STORE:
-			panic("not implemented")
+			addr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			value, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.storeWord(addr, value); err != nil {
+				return err
+			}
 		case ADD:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -328,7 +373,7 @@ func (vm *VM) Execute() error {
 			vm.programCounter = target
 			continue
 		case KEY:
-			b, err := vm.inputBuffer.NextChar()
+			b, err := vm.key()
 			if err != nil {
 				return err
 			}
@@ -336,7 +381,13 @@ func (vm *VM) Execute() error {
 				return err
 			}
 		case EMIT:
-			panic("not implemented")
+			value, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.emit(byte(value)); err != nil {
+				return err
+			}
 		case EQUALS:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
