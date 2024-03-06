@@ -44,7 +44,6 @@ func assemble(path string, intermediate bool) error {
 	return nil
 }
 
-// TODO: Add flags to output intermediate states as well.
 var assembleCmd = &cobra.Command{
 	Use:   "assemble [path]",
 	Args:  cobra.MatchAll(cobra.ExactArgs(1)),
