@@ -16,10 +16,10 @@ func TestVM(t *testing.T) {
 	}{
 		{"exit", []Word{}, []Word{}, false},
 		{"nop", []Word{}, []Word{}, false},
-		//{"const @x rput ret exit :x const 11", []Word{11}, []Word{}, false},
+		{"const @x rput ret exit :x const 11", []Word{11}, []Word{}, false},
 		{"const 11", []Word{11}, []Word{}, false},
-		//{"const @x @ exit :x 11", []Word{11}, []Word{}, false},
-		//{"const 22 const @x dup ! @ exit :x 11", []Word{22}, []Word{}, false},
+		{"const @x @ exit :x 11", []Word{11}, []Word{}, false},
+		{"const 22 const @x ! const @x @ exit :x 11", []Word{22}, []Word{}, false},
 		{"const 5 const -3 +", []Word{2}, []Word{}, false},
 		{"const 5 const -3 -", []Word{8}, []Word{}, false},
 		{"const 5 const -3 *", []Word{-15}, []Word{}, false},
@@ -58,7 +58,7 @@ func TestVM(t *testing.T) {
 			_, _, program, err := Assemble(bytes.NewBufferString(tt.assembly))
 			AssertNoError(t, err, "Assemble")
 
-			vm, err := NewVM(program)
+			vm, err := NewDefaultVM(program)
 			AssertNoError(t, err, "NewVM")
 
 			err = vm.Execute()
@@ -71,7 +71,21 @@ func TestVM(t *testing.T) {
 			}
 		})
 	}
-
 }
 
-// TODO: KEY & EMIT
+func TestVMIO(t *testing.T) {
+	input := "ABC"
+	output := &bytes.Buffer{}
+	assembly := bytes.NewBufferString("key emit key emit key emit")
+
+	_, _, program, err := Assemble(assembly)
+	AssertNoError(t, err, "Assemble")
+
+	vm, err := NewVM(program, bytes.NewBufferString(input), output)
+	AssertNoError(t, err, "NewVM")
+
+	err = vm.Execute()
+	AssertNoError(t, err, "vm.Execute")
+
+	AssertEquals(t, input, output.String(), "output")
+}
