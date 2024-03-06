@@ -72,6 +72,15 @@ h1 {
     margin: .3em .3em;
 }
 
+#selected-plants > li::after {
+  content: '⨯';
+  font-size: 1.8em;
+  color: var(--dblue);
+  line-height: .1em;
+  padding-left: .3em;
+  cursor: pointer;
+}
+
 .suggestion-area {
   overflow-y: auto;
   height: auto;
