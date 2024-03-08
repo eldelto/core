@@ -46,6 +46,9 @@ func AssertContains[T comparable](t *testing.T, expected T, testee []T, title st
 func AssertContainsAll[T comparable](t *testing.T, expected []T, testee []T, title string) {
 	t.Helper()
 
+	// TODO: Think about if this is a good idea or not.
+	// AssertEquals(t, len(expected), len(testee), "length of " + title)
+
 	for i := range expected {
 		AssertEquals(t, expected[i], testee[i], fmt.Sprintf("%s at index %d", title, i))
 	}

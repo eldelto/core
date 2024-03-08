@@ -1,0 +1,44 @@
+const
+-1
+cjmp
+@start
+
+( Instructions )
+.codeword exit exit .end
+.codeword @ @ .end
+.codeword ! ! .end
+.codeword + + .end
+.codeword - - .end
+.codeword * * .end
+.codeword / / .end
+.codeword % % .end
+.codeword dup dup .end
+.codeword drop drop .end
+.codeword swap swap .end
+.codeword over over .end
+.codeword scall scall .end
+.codeword ret ret .end
+.codeword key key .end
+.codeword emit emit .end
+.codeword = = .end
+.codeword ~ ~ .end
+.codeword & & .end
+.codeword | | .end
+.codeword < < .end
+.codeword > > .end
+.codeword b@ b@ .end
+.codeword b! b! .end
+
+( Utilities )
+.codeword constw const 4 .end
+.codeword w+ !constw + .end
+.codeword 1+ const 1 + .end
+.codeword 1- const 1 - .end
+.codeword !1+ dup @ const 1 + swap ! .end
+.codeword 2dup over over .end
+.codeword 2drop drop drop .end
+.codeword true const -1 .end
+.codeword false const 0 .end
+.codeword newline const 10 emit .end
+.codeword spc const 32 emit .end
+

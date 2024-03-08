@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
+
+	"github.com/eldelto/core/internal/collections"
 )
 
 const (
@@ -47,6 +51,17 @@ func (s *Stack) Peek() (Word, error) {
 	return s.data[s.cursor-1], nil
 }
 
+func (s *Stack) String() string {
+	b := strings.Builder{}
+
+	for _, w := range s.data {
+		b.WriteString(strconv.Itoa(int(w)))
+		b.WriteString(", ")
+	}
+
+	return b.String()
+}
+
 type Input struct {
 	cursor int
 	len    int
@@ -78,6 +93,7 @@ type VM struct {
 	input          io.Reader
 	output         io.Writer
 	memory         [MemorySize]byte
+	executionTrace collections.RingBuffer[byte]
 }
 
 func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
@@ -88,8 +104,9 @@ func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 	}
 
 	vm := VM{
-		input:  input,
-		output: output,
+		input:          input,
+		output:         output,
+		executionTrace: collections.NewRingBuffer[byte](StackSize),
 	}
 	copy(vm.memory[:], program)
 
@@ -175,9 +192,10 @@ func boolToWord(b bool) Word {
 	return 0
 }
 
-func (vm *VM) Execute() error {
+func (vm *VM) execute() error {
 	for {
 		instruction := vm.memory[vm.programCounter]
+		vm.executionTrace.Append(instruction)
 
 		switch instruction {
 		case EXIT:
@@ -511,4 +529,30 @@ func (vm *VM) Execute() error {
 
 		vm.programCounter++
 	}
+}
+
+func (vm *VM) StackTrace() string {
+	b := strings.Builder{}
+
+	b.WriteString("Data stack: ")
+	b.WriteString(vm.dataStack.String())
+
+	b.WriteString("\nReturn stack: ")
+	b.WriteString(vm.returnStack.String())
+
+	b.WriteString("\n\nInstruction trace:\n")
+	for _, i := range vm.executionTrace.Slice() {
+		b.WriteString(instructionFromOpcode(i))
+		b.WriteRune('\n')
+	}
+
+	return b.String()
+}
+
+func (vm *VM) Execute() error {
+	if err := vm.execute(); err != nil {
+		return fmt.Errorf("%w:\n\n%s", err, vm.StackTrace())
+	}
+
+	return nil
 }
