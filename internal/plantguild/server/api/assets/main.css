@@ -69,16 +69,26 @@ h1 {
     list-style: none;
     border-radius: 2px;
     padding: .2em .5em;
+    padding-right: .2em;
     margin: .3em .3em;
+    display: flex;
 }
 
-#selected-plants > li::after {
-  content: '⨯';
+#selected-plants > li > span {
+  border-right: 1px solid var(--dblue);
+  padding-right: .4em;
+}
+
+#selected-plants > li > button {
   font-size: 1.8em;
   color: var(--dblue);
-  line-height: .1em;
-  padding-left: .3em;
+  line-height: .3em;
+  padding: 0 .1em;
+  padding-bottom: .3em;
+  margin-left: .1em;
   cursor: pointer;
+  border: none;
+  background-color: var(--lblue);
 }
 
 .suggestion-area {
@@ -148,4 +158,5 @@ h1 {
   border-right: 0;
   border-radius: 2px;
 }
+
 
