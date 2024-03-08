@@ -105,3 +105,14 @@ var instructions map[string]byte = map[string]byte{
 	"b@":    BFETCH,
 	"b!":    BSTORE,
 }
+
+// TODO: Make this more efficient.
+func instructionFromOpcode(b byte) string {
+	for k, v := range instructions {
+		if v == b {
+			return k
+		}
+	}
+
+	return "UNKNOWN"
+}
