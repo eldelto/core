@@ -122,7 +122,19 @@ func TestPreamble(t *testing.T) {
 		{".codeword main const 5 const 4 !> .end", []Word{-1}, []Word{}},
 
 		// Utilities
-		// TODO: Add test cases
+		{".codeword main !constw .end", []Word{4}, []Word{}},
+		{".codeword main const 5 !w+ .end", []Word{9}, []Word{}},
+		{".codeword main const 5 !1+ .end", []Word{6}, []Word{}},
+		{".codeword main const 5 !1- .end", []Word{4}, []Word{}},
+		{".codeword main const 0 dup dup dup ! !!1+ @ .end", []Word{1}, []Word{}},
+		{".codeword main const 2 const 3 !2dup .end", []Word{2, 3, 2 ,3}, []Word{}},
+		{".codeword main const 1 const 2 const 3 !2drop .end", []Word{1}, []Word{}},
+		{".codeword main !true .end", []Word{-1}, []Word{}},
+		{".codeword main !false .end", []Word{0}, []Word{}},
+		// newline
+		// spc
+
+		// TODO: Other codewords
 	}
 
 	for _, tt := range tests {
