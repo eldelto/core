@@ -17,7 +17,6 @@ cjmp
 .codeword swap swap .end
 .codeword over over .end
 .codeword scall scall .end
-.codeword ret ret .end
 .codeword key key .end
 .codeword emit emit .end
 .codeword = = .end

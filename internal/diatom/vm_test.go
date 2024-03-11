@@ -2,18 +2,20 @@ package diatom
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	_ "embed"
+
 	. "github.com/eldelto/core/internal/testutils"
 )
 
 func TestVM(t *testing.T) {
 	tests := []struct {
-		assembly            string
-		expectedDataStack   []Word
-		expectedReturnStack []Word
-		expectError         bool
+		assembly        string
+		wantDataStack   []Word
+		wantReturnStack []Word
+		expectError     bool
 	}{
 		{"exit", []Word{}, []Word{}, false},
 		{"nop", []Word{}, []Word{}, false},
@@ -67,8 +69,8 @@ func TestVM(t *testing.T) {
 				AssertError(t, err, "vm.Execute")
 			} else {
 				AssertNoError(t, err, "vm.Execute")
-				AssertContainsAll(t, tt.expectedDataStack, vm.dataStack.data[:], "vm.dataStack")
-				AssertContainsAll(t, tt.expectedReturnStack, vm.returnStack.data[:], "vm.returnStack")
+				AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
+				AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
 			}
 		})
 	}
@@ -96,61 +98,70 @@ var preamble string
 
 func TestPreamble(t *testing.T) {
 	tests := []struct {
-		assembly            string
-		expectedDataStack   []Word
-		expectedReturnStack []Word
+		assembly        string
+		wantDataStack   []Word
+		wantReturnStack []Word
+		input           string
+		wantOutput      string
 	}{
 		// Instructions
-		{".codeword main !exit .end", []Word{}, []Word{}},
-		{".codeword main const 5 const -3 !+ .end", []Word{2}, []Word{}},
-		{".codeword main const 5 const -3 !- .end", []Word{8}, []Word{}},
-		{".codeword main const 5 const -3 !* .end", []Word{-15}, []Word{}},
-		{".codeword main const 7 const -3 !/ .end", []Word{-2}, []Word{}},
-		{".codeword main const 7 const -3 !% .end", []Word{1}, []Word{}},
-		{".codeword main const 7 !dup .end", []Word{7, 7}, []Word{}},
-		{".codeword main const 7 !dup @drop .end", []Word{7}, []Word{}},
-		{".codeword main const 7 const 2 !swap .end", []Word{2, 7}, []Word{}},
-		{".codeword main const 7 const 2 !over .end", []Word{7, 2, 7}, []Word{}},
-		{".codeword main const 5 const 5 != .end", []Word{-1}, []Word{}},
-		{".codeword main const 5 const 4 != .end", []Word{0}, []Word{}},
-		{".codeword main const 0 !~ .end", []Word{-1}, []Word{}},
-		{".codeword main const 3 const 5 !& .end", []Word{1}, []Word{}},
-		{".codeword main const 1 const 6 !| .end", []Word{7}, []Word{}},
-		{".codeword main const 5 const 5 !< .end", []Word{0}, []Word{}},
-		{".codeword main const 4 const 5 !< .end", []Word{-1}, []Word{}},
-		{".codeword main const 5 const 5 !> .end", []Word{0}, []Word{}},
-		{".codeword main const 5 const 4 !> .end", []Word{-1}, []Word{}},
+		{"!exit", []Word{}, []Word{}, "", ""},
+		{"const 5 const -3 !+", []Word{2}, []Word{}, "", ""},
+		{"const 5 const -3 !-", []Word{8}, []Word{}, "", ""},
+		{"const 5 const -3 !*", []Word{-15}, []Word{}, "", ""},
+		{"const 7 const -3 !/", []Word{-2}, []Word{}, "", ""},
+		{"const 7 const -3 !%", []Word{1}, []Word{}, "", ""},
+		{"const 7 !dup", []Word{7, 7}, []Word{}, "", ""},
+		{"const 7 !dup @drop", []Word{7}, []Word{}, "", ""},
+		{"const 7 const 2 !swap", []Word{2, 7}, []Word{}, "", ""},
+		{"const 7 const 2 !over", []Word{7, 2, 7}, []Word{}, "", ""},
+		{"key", []Word{65}, []Word{}, "A", ""},
+		{"const 65 emit", []Word{}, []Word{}, "", "A"},
+		{"const 5 const 5 !=", []Word{-1}, []Word{}, "", ""},
+		{"const 5 const 4 !=", []Word{0}, []Word{}, "", ""},
+		{"const 0 !~", []Word{-1}, []Word{}, "", ""},
+		{"const 3 const 5 !&", []Word{1}, []Word{}, "", ""},
+		{"const 1 const 6 !|", []Word{7}, []Word{}, "", ""},
+		{"const 5 const 5 !<", []Word{0}, []Word{}, "", ""},
+		{"const 4 const 5 !<", []Word{-1}, []Word{}, "", ""},
+		{"const 5 const 5 !>", []Word{0}, []Word{}, "", ""},
+		{"const 5 const 4 !>", []Word{-1}, []Word{}, "", ""},
 
 		// Utilities
-		{".codeword main !constw .end", []Word{4}, []Word{}},
-		{".codeword main const 5 !w+ .end", []Word{9}, []Word{}},
-		{".codeword main const 5 !1+ .end", []Word{6}, []Word{}},
-		{".codeword main const 5 !1- .end", []Word{4}, []Word{}},
-		{".codeword main const 0 dup dup dup ! !!1+ @ .end", []Word{1}, []Word{}},
-		{".codeword main const 2 const 3 !2dup .end", []Word{2, 3, 2 ,3}, []Word{}},
-		{".codeword main const 1 const 2 const 3 !2drop .end", []Word{1}, []Word{}},
-		{".codeword main !true .end", []Word{-1}, []Word{}},
-		{".codeword main !false .end", []Word{0}, []Word{}},
-		// newline
-		// spc
+		{"!constw", []Word{4}, []Word{}, "", ""},
+		{"const 5 !w+", []Word{9}, []Word{}, "", ""},
+		{"const 5 !1+", []Word{6}, []Word{}, "", ""},
+		{"const 5 !1-", []Word{4}, []Word{}, "", ""},
+		{"const 0 dup dup dup ! !!1+ @", []Word{1}, []Word{}, "", ""},
+		{"const 2 const 3 !2dup", []Word{2, 3, 2, 3}, []Word{}, "", ""},
+		{"const 1 const 2 const 3 !2drop", []Word{1}, []Word{}, "", ""},
+		{"!true", []Word{-1}, []Word{}, "", ""},
+		{"!false", []Word{0}, []Word{}, "", ""},
+		{"!newline", []Word{}, []Word{}, "", "\n"},
+		{"!spc", []Word{}, []Word{}, "", " "},
 
-		// TODO: Other codewords
+		// TODO: Word related codewords
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.assembly, func(t *testing.T) {
-			assembly := preamble + " :start call @_dictmain exit " + tt.assembly
+			main := fmt.Sprintf(".codeword main %s .end", tt.assembly)
+			assembly := preamble + " :start call @_dictmain exit " + main
 
 			_, _, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")
 
-			vm, err := NewDefaultVM(program)
+			input := bytes.NewBufferString(tt.input)
+			output := &bytes.Buffer{}
+
+			vm, err := NewVM(program, input, output)
 			AssertNoError(t, err, "NewVM")
 
 			err = vm.Execute()
 			AssertNoError(t, err, "vm.Execute")
-			AssertContainsAll(t, tt.expectedDataStack, vm.dataStack.data[:], "vm.dataStack")
-			AssertContainsAll(t, tt.expectedReturnStack, vm.returnStack.data[:], "vm.returnStack")
+			AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
+			AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
+			AssertEquals(t, tt.wantOutput, output.String(), "output")
 		})
 	}
 }
