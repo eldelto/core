@@ -41,3 +41,38 @@ cjmp
 .codeword newline const 10 emit .end
 .codeword spc const 32 emit .end
 
+( Word Handling )
+.var word-buffer 32 .end
+
+.var word-cursor 4 .end
+.codeword reset-word-cursor const 0 !word-cursor ! .end
+
+.codeword is-blank? const 33 < .end
+.codeword non-blank-key
+  key dup !is-blank? ~ cjmp @nbk1
+  drop const -1 cjmp @_dictnon-blank-key :nbk1
+.end
+
+.codeword store-in-word
+  !word-buffer !word-cursor @ !w+ + b!
+  !word-cursor !!1+
+.end
+.codeword finish-word !word-cursor @ !word-buffer ! !reset-word-cursor .end
+.codeword word
+  !non-blank-key
+  :word1 !store-in-word
+  key dup !is-blank? ~ cjmp @word1
+  drop !finish-word !word-buffer
+.end
+
+.var emit-word-cursor 4 .end
+.codeword reset-emit-word-cursor const 0 !emit-word-cursor ! .end
+.codeword emit-word
+  !reset-emit-word-cursor
+  :emit-word1 !word-buffer @ !emit-word-cursor @ > ~ cjmp @emit-word2
+  !word-buffer !emit-word-cursor @ !w+ + b@ emit
+  !emit-word-cursor !!1+
+  const -1 cjmp @emit-word1
+  :emit-word2
+.end
+

@@ -140,7 +140,18 @@ func TestPreamble(t *testing.T) {
 		{"!newline", []Word{}, []Word{}, "", "\n"},
 		{"!spc", []Word{}, []Word{}, "", " "},
 
-		// TODO: Word related codewords
+		// Word Handling
+		{"!word-cursor @", []Word{0}, []Word{}, "", ""},
+		{"const 5 !word-cursor ! !reset-word-cursor !word-cursor @", []Word{0}, []Word{}, "", ""},
+		{"const 5 !is-blank? const 65 !is-blank?", []Word{-1, 0}, []Word{}, "", ""},
+		{"!non-blank-key", []Word{65}, []Word{}, " \nA B", ""},
+		{"const 65 !store-in-word !word-buffer !w+ b@ !word-cursor @", []Word{65, 1}, []Word{}, "", ""},
+		{"const 65 !store-in-word !finish-word !word-buffer @ !word-cursor @", []Word{1, 0}, []Word{}, "", ""},
+		{"!word dup @ swap !w+ b@", []Word{4, 116}, []Word{}, " test ", ""},
+		{"!emit-word-cursor @", []Word{0}, []Word{}, "", ""},
+		{"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
+
+		// TODO: Test number parsing
 	}
 
 	for _, tt := range tests {
