@@ -3,6 +3,7 @@ const
 cjmp
 @start
 
+
 ( Instructions )
 .codeword exit exit .end
 .codeword @ @ .end
@@ -28,6 +29,7 @@ cjmp
 .codeword b@ b@ .end
 .codeword b! b! .end
 
+
 ( Utilities )
 .codeword constw const 4 .end
 .codeword w+ !constw + .end
@@ -40,6 +42,7 @@ cjmp
 .codeword false const 0 .end
 .codeword newline const 10 emit .end
 .codeword spc const 32 emit .end
+
 
 ( Word Handling )
 .var word-buffer 32 .end
@@ -75,4 +78,129 @@ cjmp
   const -1 cjmp @emit-word1
   :emit-word2
 .end
+
+
+( Number Parsing )
+
+( base exponent -- number )
+( Negative exponents will return the unmodified base. )
+.codeword pow
+  dup const 0 = cjmp @pow-1
+  swap dup rput swap
+:pow-loop
+  dup const 2 < cjmp @pow-end
+  swap
+  rpop dup rput *
+  swap const 1 -
+  const -1 cjmp @pow-loop
+:pow-end
+  drop
+  rpop
+  drop
+  ret
+:pow-1
+  drop
+  drop
+  const 1
+.end
+
+( char -- bool )
+( Tests if the given character represents a digit. )
+.codeword number?
+  dup const 47 > swap const 58 < &
+.end
+
+( char -- bool )
+( Tests if the given char equals "-". )
+.codeword minus?
+  const 45 =
+.end
+
+( -- bool )
+( Tests the first character of "word-buffer" to be equal to "-". )
+.codeword negative-number?
+  !word-buffer !w+ b@ !minus?
+.end
+
+( number -- number ) 
+( Returns the unit value of the number preserving its sign. )
+.codeword unit
+  const 0 < cjmp @unit-t
+  const 1
+  ret
+:unit-t
+  const -1
+.end
+
+( -- number error )
+( Converts the content of "word-buffer" to a number and puts it on the stack.
+  If the string is not a valid number or exceeds the maximum representable
+  range, error will be -1 and the result should be discarded. )
+.codeword number
+  !negative-number?
+  dup const -1 * rput	( Skip the first char if it is '-' )
+  !unit			( 1 or -1 if '-' )
+  const 0		( Init result )
+:number-loop
+  !word-buffer !w+ rpeek + b@				( Read char at offset rpeek )
+  dup !number? ~ cjmp @number-err
+  const 48 -
+  const 10 !word-buffer @ const 1 - rpeek - !pow * +	( Scale digit at offset )
+  rpop const 1 + rput
+  rpeek !word-buffer @ < cjmp @number-loop
+  *		  ( Negate if word started with '-' )
+  const 0	  ( 0 to indicate no error )
+  rpop drop
+  ret
+:number-err
+  drop drop drop	( Cleanup )
+  rpop drop
+  const -1		( -1 to indicate error )
+.end
+
+
+( Number Printing )
+.codeword digit-to-char
+  const 10 %	( Get last digit )
+  const 48 +	( Add '0' to it )
+.end
+
+.codeword digit-count
+  dup const -1 > const 1 +
+  swap
+
+:digit-count-loop
+  swap const 1 + swap
+  const 10 /
+  dup const 0 = ~ cjmp @digit-count-loop
+  drop
+.end
+
+.codeword last-digit-to-word
+  dup dup
+  !digit-count const 1 -
+  swap !digit-to-char
+  swap !w+ !word-buffer + b!
+  const 10 /
+.end
+.codeword number-to-word
+  dup !digit-count	( Get number of digits )
+  !word-buffer !	( Store future len in word-buffer )
+
+:number-to-word-loop
+  !last-digit-to-word
+  dup const 0 > cjmp @number-to-word-loop
+
+  drop !word-buffer
+.end
+
+.codeword char-at
+  !1- !w+ + b@
+.end
+
+( TODO: Doesn't properly print negative numbers. )
+.codeword .
+  !number-to-word drop !emit-word
+.end
+
 

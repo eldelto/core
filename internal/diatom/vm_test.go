@@ -151,7 +151,20 @@ func TestPreamble(t *testing.T) {
 		{"!emit-word-cursor @", []Word{0}, []Word{}, "", ""},
 		{"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
 
-		// TODO: Test number parsing
+		// Number Parsing
+		{"const 10 const 2 !pow", []Word{100}, []Word{}, "", ""},
+		{"const -3 const 3 !pow", []Word{-27}, []Word{}, "", ""},
+		{"const 3 const -2 !pow", []Word{3}, []Word{}, "", ""},
+		{"key !number? key !number?", []Word{0, -1}, []Word{}, "A9", ""},
+		{"key !minus? key !minus?", []Word{0, -1}, []Word{}, "+-", ""},
+		{"!word drop !negative-number? !word drop !negative-number?", []Word{0, -1}, []Word{}, "5 -5 ", ""},
+		{"const 3 !unit const -3 !unit", []Word{1, -1}, []Word{}, "", ""},
+		{"!word drop !number", []Word{99, 0}, []Word{}, "99 ", ""},
+		{"!word drop !number", []Word{-99, 0}, []Word{}, "-99 ", ""},
+		// TODO: Actually support this case.
+		//{"!word drop !number", []Word{2147483647, -1}, []Word{}, "3147483647 ", ""},
+
+		// TODO: Teest number printing.
 	}
 
 	for _, tt := range tests {

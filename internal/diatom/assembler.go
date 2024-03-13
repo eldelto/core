@@ -158,7 +158,7 @@ func match(want string) func(string) (string, error) {
 }
 
 func identifier(token string) (string, error) {
-	if token[0] == '.' {
+	if token[0] == '.' && len(token) > 1 {
 		return "", fmt.Errorf("expected non-macro identifier but got %q", token)
 	}
 
