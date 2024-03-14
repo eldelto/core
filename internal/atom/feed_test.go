@@ -6,6 +6,8 @@ import (
 	. "github.com/eldelto/core/internal/testutils"
 )
 
+// TODO: Write one happy path test to check the rendering
+// TODO: Write table-driven test for validations
 func TestFeed(t *testing.T) {
 	t.Skip()
 	url := "www.eldelto.net"
