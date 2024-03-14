@@ -164,7 +164,17 @@ func TestPreamble(t *testing.T) {
 		// TODO: Actually support this case.
 		//{"!word drop !number", []Word{2147483647, -1}, []Word{}, "3147483647 ", ""},
 
-		// TODO: Teest number printing.
+		// Number Printing
+		{"const 13 !digit-to-char", []Word{51}, []Word{}, "", ""},
+		{"const -13 !digit-to-char", []Word{51}, []Word{}, "", ""},
+		{"const 13 !digit-count", []Word{2}, []Word{}, "", ""},
+		{"const -13 !digit-count", []Word{3}, []Word{}, "", ""},
+		{"const 23 !last-digit-to-word !word-buffer !w+ const 1 + b@", []Word{2, 51}, []Word{}, "", ""},
+		{"const -23 !last-digit-to-word !word-buffer !w+ const 2 + b@", []Word{-2, 51}, []Word{}, "", ""},
+		{"const 13 !number-to-word !emit-word", []Word{}, []Word{}, "", "13"},
+		// TODO: Fix handling negative numbers.
+		//{"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
+		{"const 13 !.", []Word{}, []Word{}, "", "13"},
 	}
 
 	for _, tt := range tests {

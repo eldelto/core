@@ -160,11 +160,19 @@ cjmp
 
 
 ( Number Printing )
+
+( number -- char )
+( Takes the last digit of a number and converts it to its
+  ASCII representation. )
 .codeword digit-to-char
   const 10 %	( Get last digit )
+  dup !unit *   ( Convert to positive number )
   const 48 +	( Add '0' to it )
 .end
 
+( number -- number ) 
+( Returns the count of digits of the given number. The count will include the
+  minus sign of negative numbers. )
 .codeword digit-count
   dup const -1 > const 1 +
   swap
@@ -176,6 +184,9 @@ cjmp
   drop
 .end
 
+( number -- number)
+( Stores the last digit of the given number in "word-buffer" at the offset it
+  appears in the number. Leaves number / 10 on the stack. )
 .codeword last-digit-to-word
   dup dup
   !digit-count const 1 -
@@ -183,6 +194,9 @@ cjmp
   swap !w+ !word-buffer + b!
   const 10 /
 .end
+
+( number -- )
+( Stores a number's ASCII representation in "word-buffer". )
 .codeword number-to-word
   dup !digit-count	( Get number of digits )
   !word-buffer !	( Store future len in word-buffer )
@@ -199,6 +213,8 @@ cjmp
 .end
 
 ( TODO: Doesn't properly print negative numbers. )
+( number -- )
+( Emits a number's ASCII representation. )
 .codeword .
   !number-to-word drop !emit-word
 .end
