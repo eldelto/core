@@ -160,7 +160,7 @@ func (f *Feed) Validate() error {
 	return errors.Join(errs...)
 }
 
-func (f *Feed) Render()(string, error) {
+func (f *Feed) Render() (string, error) {
 	if err := f.Validate(); err != nil {
 		return "", err
 	}

@@ -12,7 +12,7 @@ func NewFeedController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/feed",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}:        getFeed(service),
+			{Method: "GET", Path: "/"}: getFeed(service),
 		},
 	}
 }

@@ -23,6 +23,7 @@ import (
 const (
 	destinationEnv = "REPO_DESTINATION"
 	gitHostEnv     = "GIT_HOST"
+	hostEnv        = "HOST"
 	readOnlyEnv    = "READ_ONLY"
 	dbPath         = "blog.db"
 )
@@ -73,7 +74,7 @@ func main() {
 		gitHost = "github.com"
 	}
 
-	host, ok := os.LookupEnv(gitHostEnv)
+	host, ok := os.LookupEnv(hostEnv)
 	if !ok {
 		host = fmt.Sprintf("localhost:%d", port)
 	}
