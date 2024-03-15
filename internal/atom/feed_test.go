@@ -16,7 +16,7 @@ func feed(updateFn func(f *Feed)) Feed {
 		Title:   "Entry 1",
 		Updated: now,
 		Summary: "Cool things",
-		Content: &Content{Src: "https://www.eldelto.net/entry1"},
+		Link:    Link{Href: "https://www.eldelto.net/entry1"},
 	}
 	feed := Feed{
 		ID:      "https://www.eldelto.net/",
@@ -47,7 +47,7 @@ func TestFeed(t *testing.T) {
         <id>https://www.eldelto.net/entry1</id>
         <updated>%s</updated>
         <summary>Cool things</summary>
-        <content type="text/html" src="https://www.eldelto.net/entry1"></content>
+        <link rel="alternate" href="https://www.eldelto.net/entry1"></link>
     </entry>
 </feed>`, updated, updated)
 
@@ -77,8 +77,7 @@ func TestFeedValidations(t *testing.T) {
 		{"no entry title", feed(func(f *Feed) { f.Entries[0].Title = "" }), true},
 		{"no entry updated", feed(func(f *Feed) { f.Entries[0].Updated = time.Time{} }), true},
 		{"no entry summary", feed(func(f *Feed) { f.Entries[0].Summary = "" }), true},
-		{"no entry content", feed(func(f *Feed) { f.Entries[0].Content = nil }), true},
-		{"no content src", feed(func(f *Feed) { f.Entries[0].Content.Src = "" }), true},
+		{"no entry link href", feed(func(f *Feed) { f.Entries[0].Link.Href = "" }), true},
 	}
 
 	for _, tt := range tests {

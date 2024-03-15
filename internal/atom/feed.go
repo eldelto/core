@@ -16,11 +16,6 @@ const (
 
 var PrettyPrint = false
 
-type Validatable interface {
-	comparable
-	Validate() error
-}
-
 func isDefaultValue[T comparable](x T) bool {
 	var defaultValue T
 	return x == defaultValue
@@ -32,14 +27,6 @@ func require[T comparable](x T, name string) error {
 	}
 
 	return nil
-}
-
-func requireValid[T Validatable](x T, name string) error {
-	if isDefaultValue(x) {
-		return fmt.Errorf("field %q is required but was '%v'", name, x)
-	}
-
-	return x.Validate()
 }
 
 type Link struct {
@@ -89,7 +76,7 @@ type Entry struct {
 	ID      string    `xml:"id"`
 	Updated time.Time `xml:"updated"`
 	Summary string    `xml:"summary"`
-	Content *Content  `xml:"content"`
+	Link    Link      `xml:"link"`
 }
 
 func (e *Entry) Validate() error {
@@ -106,7 +93,11 @@ func (e *Entry) Validate() error {
 	if err := require(e.Summary, "Summary"); err != nil {
 		errs = append(errs, err)
 	}
-	if err := requireValid(e.Content, "Content"); err != nil {
+
+	if e.Link.Rel == "" {
+		e.Link.Rel = "alternate"
+	}
+	if err := e.Link.Validate(); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -151,8 +142,8 @@ func (f *Feed) Validate() error {
 		errs = append(errs, err)
 	}
 
-	for i, e := range f.Entries {
-		if err := e.Validate(); err != nil {
+	for i := range f.Entries {
+		if err := f.Entries[i].Validate(); err != nil {
 			errs = append(errs, fmt.Errorf("entry at index %d: %w", i, err))
 		}
 	}

@@ -242,7 +242,7 @@ func (s *Service) articleToFeedEntry(a Article) atom.Entry {
 		Title:   a.Title,
 		Updated: a.LastUpdate(),
 		Summary: a.Introduction(),
-		Content: &atom.Content{Src: permalink},
+		Link:    atom.Link{Href: permalink},
 	}
 }
 
