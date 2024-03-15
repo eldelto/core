@@ -142,6 +142,12 @@ cjmp
   const -1
 .end
 
+( number -- bool ) 
+( Tests if the given number is negative. )
+.codeword negative?
+	const 0 <
+.end
+
 ( -- number error )
 ( Converts the content of "word-buffer" to a number and puts it on the stack.
   If the string is not a valid number or exceeds the maximum representable
@@ -197,13 +203,32 @@ cjmp
 
 ( number -- number)
 ( Stores the last digit of the given number in "word-buffer" at the offset it
-  appears in the number. Leaves number / 10 on the stack. )
+  appears in the number. Leaves number / 10 on the stack or "word-min" if the
+  last digit has been converted. )
 .codeword last-digit-to-word
-  dup dup
-  !digit-count const 1 -
-  swap !digit-to-char
-  swap !w+ !word-buffer + b!
+  dup
+  dup !digit-count rput
+  !digit-to-char
+  !word-buffer !w+
+  rpeek !1-
+  + b!
   const 10 /
+
+  rpeek const 1 = cjmp @ldtw-last-digit
+
+  dup const 0 =
+  rpeek const 2 =
+  & cjmp @ldtw-last-negative-digit
+
+  rpop drop
+  ret
+
+:ldtw-last-negative-digit
+  const 45 !word-buffer !w+ b!
+
+:ldtw-last-digit
+  rpop drop
+  drop !word-min
 .end
 
 ( number -- )
@@ -214,7 +239,7 @@ cjmp
 
 :number-to-word-loop
   !last-digit-to-word
-  dup const 0 > cjmp @number-to-word-loop
+  dup !word-min = ~ cjmp @number-to-word-loop
 
   drop !word-buffer
 .end

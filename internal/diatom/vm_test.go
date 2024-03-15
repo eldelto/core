@@ -128,8 +128,8 @@ func TestPreamble(t *testing.T) {
 		{"const 5 const 4 !>", []Word{-1}, []Word{}, "", ""},
 
 		// Utilities
-		{"!word-max", []Word{2147483647}, []Word{}, "", ""},
-		{"!word-min", []Word{-2147483648}, []Word{}, "", ""},
+		{"!word-max", []Word{WordMax}, []Word{}, "", ""},
+		{"!word-min", []Word{WordMin}, []Word{}, "", ""},
 		{"!constw", []Word{4}, []Word{}, "", ""},
 		{"const 5 !w+", []Word{9}, []Word{}, "", ""},
 		{"const 5 !1+", []Word{6}, []Word{}, "", ""},
@@ -146,8 +146,8 @@ func TestPreamble(t *testing.T) {
 		{"!word-cursor @", []Word{0}, []Word{}, "", ""},
 		{"const 5 !word-cursor ! !reset-word-cursor !word-cursor @", []Word{0}, []Word{}, "", ""},
 		{"const 5 !is-blank? const 65 !is-blank?", []Word{-1, 0}, []Word{}, "", ""},
-		{"!non-blank-key", []Word{65}, []Word{}, " \nA B", ""},
-		{"const 65 !store-in-word !word-buffer !w+ b@ !word-cursor @", []Word{65, 1}, []Word{}, "", ""},
+		{"!non-blank-key", []Word{'A'}, []Word{}, " \nA B", ""},
+		{"const 65 !store-in-word !word-buffer !w+ b@ !word-cursor @", []Word{'A', 1}, []Word{}, "", ""},
 		{"const 65 !store-in-word !finish-word !word-buffer @ !word-cursor @", []Word{1, 0}, []Word{}, "", ""},
 		{"!word dup @ swap !w+ b@", []Word{4, 116}, []Word{}, " test ", ""},
 		{"!emit-word-cursor @", []Word{0}, []Word{}, "", ""},
@@ -166,21 +166,26 @@ func TestPreamble(t *testing.T) {
 		{"key !minus? key !minus?", []Word{0, -1}, []Word{}, "+-", ""},
 		{"!word drop !negative-number? !word drop !negative-number?", []Word{0, -1}, []Word{}, "5 -5 ", ""},
 		{"const 3 !unit const -3 !unit", []Word{1, -1}, []Word{}, "", ""},
+		{"const 3 !negative? const -3 !negative?", []Word{0, -1}, []Word{}, "", ""},
 		{"!word drop !number", []Word{99, 0}, []Word{}, "99 ", ""},
 		{"!word drop !number", []Word{-99, 0}, []Word{}, "-99 ", ""},
-		{"!word drop !number", []Word{2147483647, -1}, []Word{}, "3147483647 ", ""},
+		{"!word drop !number", []Word{WordMax, -1}, []Word{}, "3147483647 ", ""},
 
 		// Number Printing
-		{"const 13 !digit-to-char", []Word{51}, []Word{}, "", ""},
-		{"const -13 !digit-to-char", []Word{51}, []Word{}, "", ""},
+		{"const 13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
+		{"const -13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
+		{"const -3 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
 		{"const 13 !digit-count", []Word{2}, []Word{}, "", ""},
 		{"const -13 !digit-count", []Word{3}, []Word{}, "", ""},
-		{"const 23 !last-digit-to-word !word-buffer !w+ const 1 + b@", []Word{2, 51}, []Word{}, "", ""},
-		{"const -23 !last-digit-to-word !word-buffer !w+ const 2 + b@", []Word{-2, 51}, []Word{}, "", ""},
+		{"const 0 !digit-count", []Word{1}, []Word{}, "", ""},
+		{"const 23 !last-digit-to-word !word-buffer !w+ const 1 + b@", []Word{2, '3'}, []Word{}, "", ""},
+		{"const -23 !last-digit-to-word !word-buffer !w+ const 2 + b@", []Word{-2, '3'}, []Word{}, "", ""},
+		{"const -3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '-'}, []Word{}, "", ""},
+		{"const 3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '3'}, []Word{}, "", ""},
 		{"const 13 !number-to-word !emit-word", []Word{}, []Word{}, "", "13"},
-		// TODO: Fix handling negative numbers.
-		//{"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
+		{"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
 		{"const 13 !.", []Word{}, []Word{}, "", "13"},
+		{"const -13 !.", []Word{}, []Word{}, "", "-13"},
 	}
 
 	for _, tt := range tests {
