@@ -12,5 +12,7 @@
   - [x] XML serialization
   - [x] Validate required fields
   - [ ] Tests
+  - [ ] Check against [validtor](https://validator.w3.org/feed/check.cgi)
 - [ ] Implement `Service.AtomFeed()`
-- [ ] Implement `/atom/feed.xml` route
+- [ ] Implement `/atom/feed.xml` route with content-type `application/atom+xml`
+

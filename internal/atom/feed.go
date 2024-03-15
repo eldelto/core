@@ -5,6 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/eldelto/core/internal/web"
+)
+
+const (
+	xmlHeader = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+	atomXmlns = "http://www.w3.org/2005/Atom"
 )
 
 var PrettyPrint = false
@@ -27,15 +34,16 @@ func require[T comparable](x T, name string) error {
 	return nil
 }
 
-func validateIfSet[T Validatable](x T) error {
+func requireValid[T Validatable](x T, name string) error {
 	if isDefaultValue(x) {
-		return nil
+		return fmt.Errorf("field %q is required but was '%v'", name, x)
 	}
 
 	return x.Validate()
 }
 
 type Link struct {
+	Rel  string `xml:"rel,attr"`
 	Href string `xml:"href,attr"`
 }
 
@@ -59,12 +67,29 @@ func (a *Author) Validate() error {
 	return nil
 }
 
+type Content struct {
+	Type string `xml:"type,attr"`
+	Src  string `xml:"src,attr"`
+}
+
+func (c *Content) Validate() error {
+	if c.Type == "" {
+		c.Type = web.ContentTypeHTML
+	}
+
+	if err := require(c.Src, "Src"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type Entry struct {
 	Title   string    `xml:"title"`
-	Link    Link      `xml:"link"`
 	ID      string    `xml:"id"`
 	Updated time.Time `xml:"updated"`
 	Summary string    `xml:"summary"`
+	Content *Content  `xml:"content"`
 }
 
 func (e *Entry) Validate() error {
@@ -78,8 +103,10 @@ func (e *Entry) Validate() error {
 	if err := require(e.Updated, "Updated"); err != nil {
 		errs = append(errs, err)
 	}
-
-	if err := validateIfSet(&e.Link); err != nil {
+	if err := require(e.Summary, "Summary"); err != nil {
+		errs = append(errs, err)
+	}
+	if err := requireValid(e.Content, "Content"); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -98,6 +125,10 @@ type Feed struct {
 }
 
 func (f *Feed) Validate() error {
+	if f.Xmlns == "" {
+		f.Xmlns = atomXmlns
+	}
+
 	errs := []error{}
 	if err := require(f.ID, "ID"); err != nil {
 		errs = append(errs, err)
@@ -109,7 +140,14 @@ func (f *Feed) Validate() error {
 		errs = append(errs, err)
 	}
 
-	if err := validateIfSet(&f.Author); err != nil {
+	if f.Link.Rel == "" {
+		f.Link.Rel = "self"
+	}
+	if err := f.Link.Validate(); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := f.Author.Validate(); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -139,5 +177,5 @@ func RenderFeed(feed *Feed) (string, error) {
 		return "", fmt.Errorf("failed to encode feed: %w", err)
 	}
 
-	return string(data), nil
+	return xmlHeader + string(data), nil
 }
