@@ -234,8 +234,12 @@ func (s *Service) CheckoutRepository(destination string) error {
 	return nil
 }
 
-func (s *Service) articleToFeedEntry(a Article) atom.Entry {
-	permalink := filepath.Join(s.host, "articles", a.UrlEncodedTitle())
+func (s *Service) articleToFeedEntry(a Article) (atom.Entry, error) {
+	permalink, err := url.JoinPath(s.host, "articles", a.UrlEncodedTitle())
+	if err != nil {
+		return atom.Entry{}, fmt.Errorf("failed to create permalink for article %q: %w",
+			a.Title, err)
+	}
 
 	return atom.Entry{
 		ID:      permalink,
@@ -243,7 +247,7 @@ func (s *Service) articleToFeedEntry(a Article) atom.Entry {
 		Updated: a.LastUpdate(),
 		Summary: a.Introduction(),
 		Link:    atom.Link{Href: permalink},
-	}
+	}, nil
 }
 
 func (s *Service) AtomFeed() (atom.Feed, error) {
@@ -256,7 +260,10 @@ func (s *Service) AtomFeed() (atom.Feed, error) {
 
 	entries := make([]atom.Entry, len(articles))
 	for i := range articles {
-		entry := s.articleToFeedEntry(articles[i])
+		entry, err := s.articleToFeedEntry(articles[i])
+		if err != nil {
+			return atom.Feed{}, err
+		}
 		entries[i] = entry
 
 		if entry.Updated.After(updated) {

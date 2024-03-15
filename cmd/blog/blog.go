@@ -76,7 +76,7 @@ func main() {
 
 	host, ok := os.LookupEnv(hostEnv)
 	if !ok {
-		host = fmt.Sprintf("localhost:%d", port)
+		host = fmt.Sprintf("http://localhost:%d", port)
 	}
 
 	readOnly := false

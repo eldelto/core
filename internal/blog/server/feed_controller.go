@@ -10,14 +10,14 @@ import (
 
 func NewFeedController(service *blog.Service) *web.Controller {
 	return &web.Controller{
-		BasePath: "/feed",
+		BasePath: "/feeds",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}: getFeed(service),
+			{Method: "GET", Path: "/atom.xml"}: getAtomFeed(service),
 		},
 	}
 }
 
-func getFeed(service *blog.Service) web.Handler {
+func getAtomFeed(service *blog.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		feed, err := service.AtomFeed()
 		if err != nil {
