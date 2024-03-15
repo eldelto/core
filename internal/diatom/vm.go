@@ -192,6 +192,45 @@ func boolToWord(b bool) Word {
 	return 0
 }
 
+func add(a, b Word) Word {
+	la, lb := int64(a), int64(b)
+	lc := la + lb
+
+	if lc > WordMax {
+		return WordMax
+	} else if lc < WordMin {
+		return WordMin
+	} else {
+		return Word(lc)
+	}
+}
+
+func subtract(a, b Word) Word {
+	la, lb := int64(a), int64(b)
+	lc := la - lb
+
+	if lc > WordMax {
+		return WordMax
+	} else if lc < WordMin {
+		return WordMin
+	} else {
+		return Word(lc)
+	}
+}
+
+func multiply(a, b Word) Word {
+	la, lb := int64(a), int64(b)
+	lc := la * lb
+
+	if lc > WordMax {
+		return WordMax
+	} else if lc < WordMin {
+		return WordMin
+	} else {
+		return Word(lc)
+	}
+}
+
 func (vm *VM) execute() error {
 	for {
 		instruction := vm.memory[vm.programCounter]
@@ -254,7 +293,7 @@ func (vm *VM) execute() error {
 			if err != nil {
 				return err
 			}
-			if err := vm.dataStack.Push(b + a); err != nil {
+			if err := vm.dataStack.Push(add(b, a)); err != nil {
 				return err
 			}
 		case SUBTRACT:
@@ -266,7 +305,7 @@ func (vm *VM) execute() error {
 			if err != nil {
 				return err
 			}
-			if err := vm.dataStack.Push(b - a); err != nil {
+			if err := vm.dataStack.Push(subtract(b, a)); err != nil {
 				return err
 			}
 		case MULTIPLY:
@@ -278,7 +317,7 @@ func (vm *VM) execute() error {
 			if err != nil {
 				return err
 			}
-			if err := vm.dataStack.Push(b * a); err != nil {
+			if err := vm.dataStack.Push(multiply(b, a)); err != nil {
 				return err
 			}
 		case DIVIDE:

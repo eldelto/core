@@ -3,12 +3,16 @@ package diatom
 import (
 	"fmt"
 	"io"
+	"math"
 )
 
 type Word int32
 
 const (
-	WordSize    = 4
+	WordSize = 4
+	WordMax  = math.MaxInt32
+	WordMin  = math.MinInt32
+
 	maxTokenLen = 127
 )
 

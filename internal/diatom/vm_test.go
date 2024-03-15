@@ -128,6 +128,8 @@ func TestPreamble(t *testing.T) {
 		{"const 5 const 4 !>", []Word{-1}, []Word{}, "", ""},
 
 		// Utilities
+		{"!word-max", []Word{2147483647}, []Word{}, "", ""},
+		{"!word-min", []Word{-2147483648}, []Word{}, "", ""},
 		{"!constw", []Word{4}, []Word{}, "", ""},
 		{"const 5 !w+", []Word{9}, []Word{}, "", ""},
 		{"const 5 !1+", []Word{6}, []Word{}, "", ""},
@@ -152,6 +154,11 @@ func TestPreamble(t *testing.T) {
 		{"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
 
 		// Number Parsing
+		{"const 10 !saturated?", []Word{0}, []Word{}, "", ""},
+		{"const -10 !saturated?", []Word{0}, []Word{}, "", ""},
+		{"const 2147483646 !saturated?", []Word{0}, []Word{}, "", ""},
+		{"const 2147483647 !saturated?", []Word{-1}, []Word{}, "", ""},
+		{"const -2147483648 !saturated?", []Word{-1}, []Word{}, "", ""},
 		{"const 10 const 2 !pow", []Word{100}, []Word{}, "", ""},
 		{"const -3 const 3 !pow", []Word{-27}, []Word{}, "", ""},
 		{"const 3 const -2 !pow", []Word{3}, []Word{}, "", ""},
@@ -161,8 +168,7 @@ func TestPreamble(t *testing.T) {
 		{"const 3 !unit const -3 !unit", []Word{1, -1}, []Word{}, "", ""},
 		{"!word drop !number", []Word{99, 0}, []Word{}, "99 ", ""},
 		{"!word drop !number", []Word{-99, 0}, []Word{}, "-99 ", ""},
-		// TODO: Actually support this case.
-		//{"!word drop !number", []Word{2147483647, -1}, []Word{}, "3147483647 ", ""},
+		{"!word drop !number", []Word{2147483647, -1}, []Word{}, "3147483647 ", ""},
 
 		// Number Printing
 		{"const 13 !digit-to-char", []Word{51}, []Word{}, "", ""},

@@ -31,6 +31,8 @@ cjmp
 
 
 ( Utilities )
+.codeword word-max const 2147483647 .end
+.codeword word-min const -2147483648 .end
 .codeword constw const 4 .end
 .codeword w+ !constw + .end
 .codeword 1+ const 1 + .end
@@ -81,6 +83,14 @@ cjmp
 
 
 ( Number Parsing )
+
+( number -- bool )
+( Checks wheter the number is equal to the max/min value that can be stored in
+  a single word. )
+.codeword saturated?
+  dup !word-max =
+  swap !word-min = |
+.end
 
 ( base exponent -- number )
 ( Negative exponents will return the unmodified base. )
@@ -149,7 +159,8 @@ cjmp
   rpop const 1 + rput
   rpeek !word-buffer @ < cjmp @number-loop
   *		  ( Negate if word started with '-' )
-  const 0	  ( 0 to indicate no error )
+
+  dup !saturated? ( Return an error if we might have encountered an overflow. )
   rpop drop
   ret
 :number-err
