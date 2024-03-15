@@ -160,8 +160,8 @@ func (f *Feed) Validate() error {
 	return errors.Join(errs...)
 }
 
-func RenderFeed(feed *Feed) (string, error) {
-	if err := feed.Validate(); err != nil {
+func (f *Feed) Render()(string, error) {
+	if err := f.Validate(); err != nil {
 		return "", err
 	}
 
@@ -169,12 +169,12 @@ func RenderFeed(feed *Feed) (string, error) {
 	var err error
 
 	if PrettyPrint {
-		data, err = xml.MarshalIndent(feed, "", "    ")
+		data, err = xml.MarshalIndent(f, "", "    ")
 	} else {
-		data, err = xml.Marshal(feed)
+		data, err = xml.Marshal(f)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to encode feed: %w", err)
+		return "", fmt.Errorf("failed to encode f: %w", err)
 	}
 
 	return xmlHeader + string(data), nil

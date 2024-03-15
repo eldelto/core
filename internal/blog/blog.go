@@ -541,6 +541,13 @@ func (a *Article) CreatedAtString() string {
 	return a.CreatedAt.Format(time.DateOnly)
 }
 
+func (a *Article) LastUpdate() time.Time {
+	if a.UpdatedAt != emptyTime {
+		return a.UpdatedAt
+	}
+	return a.CreatedAt
+}
+
 func (a *Article) Introduction() string {
 	for _, child := range a.Children {
 		_, ok := child.(*Paragraph)

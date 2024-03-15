@@ -54,7 +54,7 @@ func TestFeed(t *testing.T) {
 	PrettyPrint = true
 	validFeed := feed(func(f *Feed) {})
 
-	xml, err := RenderFeed(&validFeed)
+	xml, err := validFeed.Render()
 	AssertNoError(t, err, "RenderFeed")
 	AssertEquals(t, wantFeed, xml, "RenderFeed")
 }
@@ -83,7 +83,7 @@ func TestFeedValidations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := RenderFeed(&tt.feed)
+			_, err := tt.feed.Render()
 			if tt.wantErr {
 				AssertError(t, err, "RenderFeed")
 			} else {

@@ -61,6 +61,8 @@ func updateArticles(service *blog.Service, destination string, overwrite bool) {
 }
 
 func main() {
+	port := 8080
+
 	destination, ok := os.LookupEnv(destinationEnv)
 	if !ok {
 		log.Fatalf("failed to read environment variable %q, please provide a value", destinationEnv)
@@ -69,6 +71,11 @@ func main() {
 	gitHost, ok := os.LookupEnv(gitHostEnv)
 	if !ok {
 		gitHost = "github.com"
+	}
+
+	host, ok := os.LookupEnv(gitHostEnv)
+	if !ok {
+		host = fmt.Sprintf("localhost:%d", port)
 	}
 
 	readOnly := false
@@ -90,7 +97,7 @@ func main() {
 	}
 	defer db.Close()
 
-	service, err := blog.NewService(db, gitHost, sitemapContoller)
+	service, err := blog.NewService(db, gitHost, host, sitemapContoller)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,7 +114,6 @@ func main() {
 	articleUpdater.StartAsync()
 
 	// Controllers
-	port := 8080
 	r := chi.NewRouter()
 
 	sitemapContoller.Register(r)
@@ -115,6 +121,7 @@ func main() {
 	web.NewAssetController("/dynamic", boltfs.NewBoltFS(db, []byte(blog.AssetBucket))).Register(r)
 	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
+	server.NewFeedController(service).Register(r)
 
 	http.Handle("/", r)
 
