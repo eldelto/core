@@ -271,10 +271,15 @@ func (s *Service) AtomFeed() (atom.Feed, error) {
 		}
 	}
 
+	feedLink, err := url.JoinPath(s.host, "feed")
+	if err != nil {
+		return atom.Feed{}, fmt.Errorf("failed to create feed link: %w", err)
+	}
+
 	return atom.Feed{
 		ID:      s.host,
 		Title:   "eldelto's blog",
-		Link:    atom.Link{Href: s.host},
+		Link:    atom.Link{Href: feedLink},
 		Updated: updated,
 		Author:  atom.Author{Name: "eldelto"},
 		Entries: entries,

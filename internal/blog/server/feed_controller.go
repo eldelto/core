@@ -10,10 +10,19 @@ import (
 
 func NewFeedController(service *blog.Service) *web.Controller {
 	return &web.Controller{
-		BasePath: "/feeds",
+		BasePath: "/feed",
 		Handlers: map[web.Endpoint]web.Handler{
+			{Method: "GET", Path: ""}:          redirectToDefaultFeed(),
 			{Method: "GET", Path: "/atom.xml"}: getAtomFeed(service),
 		},
+	}
+}
+
+func redirectToDefaultFeed() web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		w.Header().Add(web.Location, "/feed/atom.xml")
+		w.WriteHeader(302)
+		return nil
 	}
 }
 
