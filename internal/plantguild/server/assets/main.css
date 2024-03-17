@@ -21,7 +21,6 @@ body {
   background-color: var(--dbrown);
   color: var(--white);
   font-size: 1.2em;
-  font-weight: 100;
   height: 100vh;
   overflow: hidden;
   margin: 0;
@@ -98,6 +97,7 @@ h1 {
 }
 
 .selection-form > input[type=text] {
+  width: 50%;
   flex-grow: 1;
   max-width: 20em;
   margin-right: .5em;
