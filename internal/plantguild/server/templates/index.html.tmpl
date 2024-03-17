@@ -1,9 +1,9 @@
 {{define "content"}}
-  <div class="selected-area">
+  <div class="selected-area padded">
     <ul id="selected-plants"></ul>
   </div>
 
-  <form onsubmit="return selectFirstPlant()">
+  <form class="selection-form padded" onsubmit="return selectFirstPlant()">
     <input type="text" id="plant-search" class="text-input"
            placeholder="Plant name..."
            autofocus
@@ -11,11 +11,15 @@
     <input type="submit" class="button" value="Select">
   </form>
 
-  <div class="suggestion-area">
+  <div class="suggestion-area padded">
     <ul id="suggestions"></ul>
   </div>
 
   <script>
-    const plantGuilds = new Map(Object.entries(JSON.parse({{ .PlantLexiconJSON }})))
+    const plantGuilds = new Map(
+      Object.entries(JSON.parse({{ .PlantLexiconJSON }})));
+
+    populateSuggestions("");
+    updateSuggestions("");
   </script>
 {{end}}

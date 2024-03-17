@@ -13,6 +13,6 @@
   - [x] Validate required fields
   - [x] Tests
   - [x] Check against [validtor](https://validator.w3.org/feed/check.cgi)
-- [ ] Implement `Service.AtomFeed()`
-- [ ] Implement `/atom/feed.xml` route with content-type `application/atom+xml`
+- [x] Implement `Service.AtomFeed()`
+- [x] Implement `/atom/feed.xml` route with content-type `application/atom+xml`
 

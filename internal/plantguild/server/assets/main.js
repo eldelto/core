@@ -48,7 +48,6 @@ function updateSelectedPlants(query) {
   list.innerHTML = "";
   selectedPlants.forEach((plantName) => {
     const li = document.createElement("li");
-    li.onclick = () => removePlant(plantName);
     list.appendChild(li);
 
     const span = document.createElement("span");
@@ -56,6 +55,7 @@ function updateSelectedPlants(query) {
     li.appendChild(span);
 
     const button = document.createElement("button");
+    button.onclick = () => removePlant(plantName);
     button.textContent = '⨯';
     li.appendChild(button);
   });

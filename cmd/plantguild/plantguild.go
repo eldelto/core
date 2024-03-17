@@ -4,21 +4,33 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/eldelto/core/internal/plantguild/server"
+	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 
-func main() {
-	env := server.Init()
-	defer env.Close()
+const portEnv = "PORT"
 
-	port := 8080
+func main() {
+	rawPort, ok := os.LookupEnv(portEnv)
+	if !ok {
+    rawPort = "8080"
+	}
+
+  port, err := strconv.ParseInt(rawPort, 10, 64)
+  if err != nil {
+    log.Fatalf("%q is not a valid port: %v", rawPort, err)
+  }
+
 	r := chi.NewRouter()
 
-	// Register controllers
-	env.AssetController.Register(r)
-	env.TemplateController.Register(r)
+
+	// API
+	web.NewAssetController("", server.AssetsFS).Register(r)
+	 web.NewTemplateController(server.TemplatesFS, &server.TemplateData{}).Register(r)
 
 	http.Handle("/", r)
 

@@ -14,7 +14,7 @@
   --organge: #e76d14;
   --white: #f2f2f9;
   --grey: #6a5fa0;
-  --black: #161423;
+  --black: #241003;
 }
 
 body {
@@ -50,9 +50,12 @@ h1 {
 #content {
   height: 90%;
   overflow: hidden;
-  padding: .3em;
   display: flex;
-  flex-direction:column;
+  flex-direction: column;
+}
+
+.padded {
+  padding: .3em;
 }
 
 #selected-plants {
@@ -62,21 +65,16 @@ h1 {
 }
 
 #selected-plants > li {
-    background-color: var(--lblue);
-    border-bottom: 3px solid var(--dblue);
-    border-right: 2px solid var(--dblue);
-    color: var(--white);
-    list-style: none;
-    border-radius: 2px;
-    padding: .2em .5em;
-    padding-right: .2em;
-    margin: .3em .3em;
-    display: flex;
-}
-
-#selected-plants > li > span {
-  border-right: 1px solid var(--dblue);
-  padding-right: .4em;
+  background-color: var(--lblue);
+  border-bottom: 3px solid var(--dblue);
+  border-right: 2px solid var(--dblue);
+  color: var(--white);
+  list-style: none;
+  border-radius: 2px;
+  padding: .2em .5em;
+  padding-right: .2em;
+  margin: .3em .3em;
+  display: flex;
 }
 
 #selected-plants > li > button {
@@ -91,38 +89,61 @@ h1 {
   background-color: var(--lblue);
 }
 
+.selection-form {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding-bottom: 1em;
+  border-bottom: 3px solid var(--black);
+}
+
+.selection-form > input[type=text] {
+  flex-grow: 1;
+  max-width: 20em;
+  margin-right: .5em;
+}
+
 .suggestion-area {
   overflow-y: auto;
   height: auto;
+  display: flex;
+  justify-content: center ;
 }
 
 #suggestions {
-    padding: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 30em;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: left;
 }
 
 #suggestions > li {
-    background-color: var(--lblue);
-    border-bottom: 3px solid var(--dblue);
-    border-right: 2px solid var(--dblue);
-    color: var(--white);
-    list-style: none;
-    border-radius: 2px;
-    padding: .7em 1em;
-    margin: .7em 0em;
+  display: inline-block;
+  background-color: var(--lblue);
+  border-bottom: 3px solid var(--dblue);
+  border-right: 2px solid var(--dblue);
+  color: var(--white);
+  list-style: none;
+  border-radius: 2px;
+  padding: .5em .8em;
+  margin: .3em;
 }
 
 #suggestions > li.good-companion {
-    background-color: var(--lgreen);
-    border-bottom: 3px solid var(--dgreen);
-    border-right: 2px solid var(--dgreen);
-    color: var(--white);
+  background-color: var(--lgreen);
+  border-bottom: 3px solid var(--dgreen);
+  border-right: 2px solid var(--dgreen);
+  color: var(--white);
 }
 
 #suggestions > li.bad-companion {
-    background-color: var(--lred);
-    border-bottom: 3px solid var(--dred);
-    border-right: 2px solid var(--dred);
-    color: var(--white);
+  background-color: var(--lred);
+  border-bottom: 3px solid var(--dred);
+  border-right: 2px solid var(--dred);
+  color: var(--white);
 }
 
 .button {
@@ -139,12 +160,7 @@ h1 {
 }
 
 .button:hover {
-  background-color: var(--mpurple);
-  color: var(--white);
-  border-top: var(--lpurple) solid 3px;
-  border-left: var(--lpurple) solid 3px;
-  border-bottom: var(--dpurple) solid 3px;
-  border-right: var(--dpurple) solid 3px;
+  color: var(--dgreen);
 }
 
 .text-input {
@@ -158,5 +174,4 @@ h1 {
   border-right: 0;
   border-radius: 2px;
 }
-
 
