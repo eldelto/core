@@ -256,3 +256,47 @@ cjmp
 .end
 
 
+( Memory Operations )
+
+( a b len -- bool )
+( Compares the two given memory locations for len bytes and returns a bool
+  indicating equal contents. )
+.codeword mem=
+  rput !false
+:mem=-loop
+  rpop !1- dup rput const 0 < cjmp @mem=-end
+  drop
+  over rpeek + b@
+  over rpeek + b@
+  = dup cjmp @mem=-loop
+
+:mem=-end
+rpop drop rput drop drop rpop
+.end
+
+( src dest len -- )
+( Copies len bytes from the source to the destination address. )
+.codeword memcpy
+  !1+ rput
+:memcpy-loop
+  rpop !1- dup rput const 0 < cjmp @memcpy-end
+  over rpeek + b@
+  over rpeek + b!
+  !true cjmp @memcpy-loop
+
+:memcpy-end
+rpop drop drop drop
+.end
+
+( start end -- )
+( Prints the memory contents between the given start and end address. )
+.codeword mem-view
+  swap dup !.
+  const 58 emit !spc
+  dup b@ !.
+  !newline
+  !1+ swap !2dup > ~ cjmp @_dictmem-view
+  !2drop
+.end
+
+
