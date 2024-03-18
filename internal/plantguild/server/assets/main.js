@@ -56,7 +56,7 @@ function updateSelectedPlants(query) {
 
     const button = document.createElement("button");
     button.onclick = () => removePlant(plantName);
-    button.textContent = '⨯';
+    button.textContent = 'x';
     li.appendChild(button);
   });
 

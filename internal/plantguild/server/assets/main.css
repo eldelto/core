@@ -74,18 +74,18 @@ h1 {
   padding-right: .2em;
   margin: .3em .3em;
   display: flex;
+  align-items: center;
 }
 
 #selected-plants > li > button {
-  font-size: 1.8em;
   color: var(--dblue);
-  line-height: .3em;
-  padding: 0 .1em;
-  padding-bottom: .3em;
-  margin-left: .1em;
+  padding: 0 .3em;
+  margin-left: .2em;
   cursor: pointer;
   border: none;
   background-color: var(--lblue);
+  font-weight: 600;
+  font-size: 1.1em;
 }
 
 .selection-form {
