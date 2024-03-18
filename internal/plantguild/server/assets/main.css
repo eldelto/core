@@ -57,7 +57,14 @@ h1 {
   padding: .3em;
 }
 
+.selected-area {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
 #selected-plants {
+   max-width: 50vw;
   display: flex;
   flex-wrap: wrap;
   padding: 0;
@@ -113,7 +120,7 @@ h1 {
 #suggestions {
   padding: 0;
   width: 100%;
-  max-width: 30em;
+  max-width: 50vw;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -174,4 +181,5 @@ h1 {
   border-right: 0;
   border-radius: 2px;
 }
+
 

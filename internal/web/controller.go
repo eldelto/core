@@ -26,14 +26,24 @@ type Endpoint struct {
 type Handler func(http.ResponseWriter, *http.Request) error
 
 type Controller struct {
-	BasePath string
-	Handlers map[Endpoint]Handler
+	BasePath   string
+	Handlers   map[Endpoint]Handler
+	Middleware []func(http.Handler) http.Handler
+}
+
+func (c *Controller) middleware(handler Handler) http.Handler {
+	next := ControllerMiddleware(handler)
+	for _, mw := range c.Middleware {
+		next = mw(next)
+	}
+
+	return next
 }
 
 func (c *Controller) Register(router chi.Router) {
 	for endpoint, handler := range c.Handlers {
 		path := path.Join(c.BasePath, endpoint.Path)
-		router.Method(endpoint.Method, path, ControllerMiddleware(handler))
+		router.Method(endpoint.Method, path, c.middleware(handler))
 		log.Printf("Registered handler for %s %s", endpoint.Method, path)
 	}
 }
@@ -149,7 +159,7 @@ func getSitemap(sc *SitemapController) Handler {
 			b.WriteRune('\n')
 		}
 
-		w.Header().Add(ContentType, ContentTypeText)
+		w.Header().Add(ContentTypeHeader, ContentTypeText)
 		if _, err := io.Copy(w, bytes.NewBufferString(b.String())); err != nil {
 			return fmt.Errorf("failed to copy sitemap pages to response: %w", err)
 		}

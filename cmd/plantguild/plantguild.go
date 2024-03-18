@@ -17,20 +17,19 @@ const portEnv = "PORT"
 func main() {
 	rawPort, ok := os.LookupEnv(portEnv)
 	if !ok {
-    rawPort = "8080"
+		rawPort = "8080"
 	}
 
-  port, err := strconv.ParseInt(rawPort, 10, 64)
-  if err != nil {
-    log.Fatalf("%q is not a valid port: %v", rawPort, err)
-  }
+	port, err := strconv.ParseInt(rawPort, 10, 64)
+	if err != nil {
+		log.Fatalf("%q is not a valid port: %v", rawPort, err)
+	}
 
 	r := chi.NewRouter()
 
-
 	// API
 	web.NewAssetController("", server.AssetsFS).Register(r)
-	 web.NewTemplateController(server.TemplatesFS, &server.TemplateData{}).Register(r)
+	web.NewTemplateController(server.TemplatesFS, &server.TemplateData{}).Register(r)
 
 	http.Handle("/", r)
 

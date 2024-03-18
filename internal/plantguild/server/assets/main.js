@@ -83,6 +83,7 @@ function selectPlant(name) {
 function removePlant(name) {
   selectedPlants.delete(name);
   updateSelectedPlants();
+  search();
 }
 
 function populateCompanions() {

@@ -36,7 +36,7 @@ func currentRiff() web.Handler {
 			return fmt.Errorf("failed to construct redirect destination for date %q: %w", today, err)
 		}
 
-		w.Header().Add(web.Location, path)
+		w.Header().Add(web.LocationHeader, path)
 		w.WriteHeader(302)
 		return nil
 	}

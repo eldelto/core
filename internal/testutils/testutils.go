@@ -153,7 +153,7 @@ func (ts *TestServer) request(verb, path string, body string) Response {
 		ts.T.Fatalf("http.NewRequest error: %v", err)
 	}
 
-	req.Header.Set(web.ContentType, "application/json")
+	req.Header.Set(web.ContentTypeHeader, web.ContentTypeJSON)
 
 	response, err := ts.Client.Do(req)
 	if err != nil {

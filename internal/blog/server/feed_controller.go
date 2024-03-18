@@ -20,7 +20,7 @@ func NewFeedController(service *blog.Service) *web.Controller {
 
 func redirectToDefaultFeed() web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		w.Header().Add(web.Location, "/feed/atom.xml")
+		w.Header().Add(web.LocationHeader, "/feed/atom.xml")
 		w.WriteHeader(302)
 		return nil
 	}
@@ -38,7 +38,7 @@ func getAtomFeed(service *blog.Service) web.Handler {
 			return err
 		}
 
-		w.Header().Add(web.ContentType, web.ContentTypeAtom)
+		w.Header().Add(web.ContentTypeHeader, web.ContentTypeAtom)
 
 		_, err = io.WriteString(w, content)
 		return err

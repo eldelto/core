@@ -1,9 +1,18 @@
 package web
 
 const (
-	ContentType     = "Content-Type"
-	ContentTypeText = "text/plain; charset=UTF-8"
-	ContentTypeHTML = "text/html"
+	MethodGET    = "GET"
+	MethodPOST   = "POST"
+	MethodPUT    = "PUT"
+	MethodDELETE = "DELETE"
+
+	CacheControlHeader = "Cache-Control"
+	ContentTypeHeader  = "Content-Type"
+	ETagHeader         = "ETag"
+	LocationHeader     = "Location"
+
 	ContentTypeAtom = "application/atom+xml"
-	Location        = "Location"
+	ContentTypeHTML = "text/html"
+	ContentTypeJSON = "application/json"
+	ContentTypeText = "text/plain; charset=UTF-8"
 )

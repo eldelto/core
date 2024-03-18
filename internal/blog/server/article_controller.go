@@ -13,9 +13,12 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/articles",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}:        getArticles(service),
-			{Method: "GET", Path: "/draft"}:   getDraftArticles(service),
-			{Method: "GET", Path: "/{title}"}: getArticle(service),
+			{Method: web.MethodGET, Path: "/"}:        getArticles(service),
+			{Method: web.MethodGET, Path: "/draft"}:   getDraftArticles(service),
+			{Method: web.MethodGET, Path: "/{title}"}: getArticle(service),
+		},
+		Middleware: []func(http.Handler) http.Handler{
+			web.MaxAgeMiddleware,
 		},
 	}
 }

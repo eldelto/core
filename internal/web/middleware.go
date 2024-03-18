@@ -36,6 +36,7 @@ func handleError(handler Handler) http.Handler {
 func StaticContentMiddleware(next http.Handler) http.Handler {
 	next = middleware.Compress(5)(next)
 	next = etagMiddleware(next)
+	next = MaxAgeMiddleware(next)
 
 	return next
 }
@@ -44,7 +45,16 @@ var etag = base64.StdEncoding.EncodeToString([]byte(time.Now().String()))
 
 func etagMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("ETag", "\""+etag+"\"")
+		w.Header().Set(ETagHeader, "\""+etag+"\"")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func MaxAgeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == MethodGET {
+			w.Header().Set(CacheControlHeader, "max-age=3600")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
