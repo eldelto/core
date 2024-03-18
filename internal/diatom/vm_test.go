@@ -186,6 +186,12 @@ func TestPreamble(t *testing.T) {
 		{"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
 		{"const 13 !.", []Word{}, []Word{}, "", "13"},
 		{"const -13 !.", []Word{}, []Word{}, "", "-13"},
+
+		// Memory Operations
+		{"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},
+		{"const 0 const 1 const 12 !mem=", []Word{0}, []Word{}, "", ""},
+		{"const 0 const 5000 const 12 !memcpy const 0 const 5000 const 12 !mem=", []Word{-1}, []Word{}, "", ""},
+		{"const 0 const 5 !mem-view", []Word{}, []Word{}, "", "0: 3\n1: 255\n2: 255\n3: 255\n4: 255\n5: 15\n"},
 	}
 
 	for _, tt := range tests {
