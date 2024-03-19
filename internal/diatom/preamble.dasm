@@ -248,7 +248,6 @@ cjmp
   !1- !w+ + b@
 .end
 
-( TODO: Doesn't properly print negative numbers. )
 ( number -- )
 ( Emits a number's ASCII representation. )
 .codeword .
@@ -298,5 +297,181 @@ rpop drop drop drop
   !1+ swap !2dup > ~ cjmp @_dictmem-view
   !2drop
 .end
+
+
+( Dictionary Operations )
+
+
+.codeword prev-word @ .end
+
+.codeword find
+  !latest @
+
+:find-loop
+  dup const 0 = cjmp @find-end
+  dup !w+ !word= cjmp @find-end
+  !prev-word const -1 cjmp @find-loop
+
+:find-end
+  swap drop
+  const 7777 drop
+.end
+
+( Takes the start address of a word and returns the addres of its code word. )
+( addr -- addr )
+.codeword codeword
+  !w+ dup b@
+  const 127 & ( Ignore the immediate flag. )
+  + !1+
+.end
+
+.codeword interpret
+  !word !find dup const 0 = cjmp @interpret-number
+  dup !codeword
+  swap !immediate? ~
+  !state @ & cjmp @interpret-compile
+
+( Interpret the word. )
+  scall
+  const -1 cjmp @_dictinterpret
+
+:interpret-compile
+  !,
+  const -1 cjmp @_dictinterpret
+
+:interpret-number
+  drop
+  !number
+  cjmp @interpret-error
+  const -1 cjmp @_dictinterpret
+
+:interpret-error
+.end
+
+( Built-in variables )
+.var state 0 .end
+.var here @here-label .end
+.var base 10 .end
+
+( Built-in constants
+# VERSION         Is the current version of this FORTH.
+# R0              The +ress of the top of the return stack.
+# DOCOL           Pointer to DOCOL.
+# F_IMMED         The IMMEDIATE flag's actual value.
+# F_HIDDEN        The HIDDEN flag's actual value.
+# F_LENMASK       The length mask in the flags/len byte.
+)
+
+
+( Creates the header for a new word at the end of the dictionary.
+
+                                            +-- Afterwards, HERE points here.
+                                            |
+                                            V
+ +---------+---+---+---+---+---+---+---+---+
+ | LINK    | 6 | D | O | U | B | L | E | 0 |
+ +---------+---+---+---+---+---+---+---+---+
+            len                         pad
+)
+( -- )
+.codeword create
+  !here @ !latest @ swap !
+  !word-buffer const 3 + !here @ !w+ !word-buffer @ !memcpy
+  !here dup @ !latest !
+  dup dup @ !w+ dup b@ + !1+ swap !
+.end
+
+( Append a word to the end of the dictionary. )
+( n -- )
+.codeword ,
+  !here @ !
+  !here dup @ !w+ swap !
+.end
+
+( Append a single byte to the end of the dictionary. )
+( n -- )
+.codeword b,
+  !here @ b!
+  !here dup @ !1+ swap !
+.end
+
+( Disables compilation mode. )
+( -- )
+.codeword [
+  !false !state !
+.end
+
+( Enables compilation mode. )
+( -- )
+.codeword ]
+  !true !state !
+.end
+
+( Reads words from stdin and switches into compilation mode. )
+( -- )
+.codeword :
+  !word !create
+  !]
+.end
+
+( Sets the immediate flag of the latest word. )
+( -- )
+.immediate-codeword immediate
+  !latest @ !w+ dup
+  b@ const 128 |
+  swap b!
+.end
+
+.codeword immediate?
+  !w+ b@ const 128 &
+  const 128 =
+.end
+
+( Appends 'ret' and ends compilation. )
+( -- )
+.immediate-codeword ;
+  ( 2 is equal to the RET instruction )
+  const 2 !b,
+  ![
+.end
+
+( .codeword main !word drop !emit-word exit .end )
+( .codeword main const 10 const 6 !pow .end )
+( .codeword main !word drop const 9999 drop !number drop .end )
+( .codeword main const 34 !number-to-word
+  !word-buffer @
+(  !word-buffer !w+ b@ emit )
+(  !word-buffer !w+ const 1 + b@ emit )
+  !emit-word
+.end )
+
+( .codeword main !word drop
+ const @1+ !w+ const 9999 drop !word= .end )
+
+.const konstantin 77 .end
+( .codeword main !konstantin !here @ !latest @ .end )
+( .codeword main !word drop const 9999 !find !codeword .end )
+.codeword main !interpret .end
+( .codeword main !word drop !number .end )
+( .codeword main const 10 const 20 !mem-view .end )
+
+
+( !!! No word definition shall stand beyond this mark. !!! )
+( Except this one. )
+.var yyy 999 .end
+.var latest @latest .end
+
+:start
+call
+@_dictmain
+exit
+
+( TODO:
+  - Add compilation mode to 'interpret'
+)
+
+
+( !!! No code shall reach beyond this point or it will be overwritten. !!! )
+:here-label
 
 
