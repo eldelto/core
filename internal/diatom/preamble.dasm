@@ -132,7 +132,7 @@ cjmp
   !word-buffer !w+ b@ !minus?
 .end
 
-( number -- number ) 
+( number -- number )
 ( Returns the unit value of the number preserving its sign. )
 .codeword unit
   const 0 < cjmp @unit-t
@@ -142,7 +142,7 @@ cjmp
   const -1
 .end
 
-( number -- bool ) 
+( number -- bool )
 ( Tests if the given number is negative. )
 .codeword negative?
 	const 0 <
@@ -187,7 +187,7 @@ cjmp
   const 48 +	( Add '0' to it )
 .end
 
-( number -- number ) 
+( number -- number )
 ( Returns the count of digits of the given number. The count will include the
   minus sign of negative numbers. )
 .codeword digit-count
@@ -301,6 +301,18 @@ rpop drop drop drop
 
 ( Dictionary Operations )
 
+( Takes the address past the prev-word pointer and compares it to the value
+stored in 'word-buffer'. )
+( addr -- bool )
+.codeword word=
+  ( The most significant bit is the immediate flag and we want to ignore it. )
+  dup !1+
+  swap b@ const 127 &
+  !word-buffer !w+
+  swap
+  const 4444 drop
+  !mem=
+.end
 
 .codeword prev-word @ .end
 
@@ -350,7 +362,9 @@ rpop drop drop drop
 
 ( Built-in variables )
 .var state 0 .end
-.var here @here-label .end
+( TODO: Think about how to support this )
+( .var here  @here-label .end )
+.var here 4 .end
 .var base 10 .end
 
 ( Built-in constants
@@ -435,43 +449,7 @@ rpop drop drop drop
   ![
 .end
 
-( .codeword main !word drop !emit-word exit .end )
-( .codeword main const 10 const 6 !pow .end )
-( .codeword main !word drop const 9999 drop !number drop .end )
-( .codeword main const 34 !number-to-word
-  !word-buffer @
-(  !word-buffer !w+ b@ emit )
-(  !word-buffer !w+ const 1 + b@ emit )
-  !emit-word
-.end )
-
-( .codeword main !word drop
- const @1+ !w+ const 9999 drop !word= .end )
-
-.const konstantin 77 .end
-( .codeword main !konstantin !here @ !latest @ .end )
-( .codeword main !word drop const 9999 !find !codeword .end )
-.codeword main !interpret .end
-( .codeword main !word drop !number .end )
-( .codeword main const 10 const 20 !mem-view .end )
-
-
-( !!! No word definition shall stand beyond this mark. !!! )
-( Except this one. )
-.var yyy 999 .end
-.var latest @latest .end
-
-:start
-call
-@_dictmain
-exit
-
-( TODO:
-  - Add compilation mode to 'interpret'
-)
-
-
-( !!! No code shall reach beyond this point or it will be overwritten. !!! )
-:here-label
-
+( TODO: Support this? )
+( .var latest @latest .end )
+.var latest 4 .end
 
