@@ -1,185 +1,195 @@
 :root {
-  --lpink: #f2c0a2;
-  --dpink: #e98472;
-  --lred: #c12323;
-  --dred: #800e0e;
-  --lgreen: #33a127;
-  --dgreen: #126d30;
-  --lblue: #4aa2c5;
-  --dblue: #1867a0;
-  --lbrown: #934226;
-  --dbrown: #763b1f;
-  --lyellow: #f7e26c;
-  --dyello: #edb329;
-  --organge: #e76d14;
-  --white: #f2f2f9;
-  --grey: #6a5fa0;
-  --black: #241003;
+	--lpink: #f2c0a2;
+	--dpink: #e98472;
+	--lred: #c12323;
+	--dred: #800e0e;
+	--lgreen: #33a127;
+	--dgreen: #126d30;
+	--lblue: #4aa2c5;
+	--dblue: #1867a0;
+	--lbrown: #934226;
+	--dbrown: #763b1f;
+	--lyellow: #f7e26c;
+	--dyello: #edb329;
+	--organge: #e76d14;
+	--white: #f2f2f9;
+	--grey: #6a5fa0;
+	--black: #241003;
 }
 
 body {
-  background-color: var(--dbrown);
-  color: var(--white);
-  font-size: 1.2em;
-  height: 100vh;
-  overflow: hidden;
-  margin: 0;
-  font-family: Verdana;
+	background-color: var(--dbrown);
+	color: var(--white);
+	font-size: 1.2em;
+	height: 100vh;
+	overflow: hidden;
+	margin: 0;
+	font-family: Verdana;
 }
 
 h1 {
-  color: var(--mgreen);
+	color: var(--mgreen);
 }
 
 .header {
-  display: flex;
-  flex-direction: row;
-  height: 3em;
-  background-color: var(--lgreen);
-  border-bottom: 3px solid var(--dgreen);
-  justify-content: space-around;
-  align-items: center;
+	display: flex;
+	flex-direction: row;
+	height: 3em;
+	background-color: var(--lgreen);
+	border-bottom: 3px solid var(--dgreen);
+	justify-content: space-around;
+	align-items: center;
 }
 
 .header > h1 {
-  font-size: 1.5em;
-  color: var(--dgreen);
+	font-size: 1.5em;
+	color: var(--dgreen);
 }
 
 #content {
-  height: 90%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+	height: 90%;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 }
 
 .padded {
-  padding: .3em;
+	padding: .3em;
 }
 
 .selected-area {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+}
+
+#copy-button {
+	left: 80vw;
+	position: absolute;
 }
 
 #selected-plants {
-   max-width: 50vw;
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0;
+	max-width: 50em;
+	display: flex;
+	flex-wrap: wrap;
+	padding: 0;
 }
 
 #selected-plants > li {
-  background-color: var(--lblue);
-  border-bottom: 3px solid var(--dblue);
-  border-right: 2px solid var(--dblue);
-  color: var(--white);
-  list-style: none;
-  border-radius: 2px;
-  padding: .2em .5em;
-  padding-right: .2em;
-  margin: .3em .3em;
-  display: flex;
-  align-items: center;
+	background-color: var(--lblue);
+	border-bottom: 3px solid var(--dblue);
+	border-right: 2px solid var(--dblue);
+	color: var(--white);
+	list-style: none;
+	border-radius: 2px;
+	padding: .2em .5em;
+	padding-right: .2em;
+	margin: .3em .3em;
+	display: flex;
+	align-items: center;
+	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
 #selected-plants > li > button {
-  color: var(--dblue);
-  padding: 0 .3em;
-  margin-left: .2em;
-  cursor: pointer;
-  border: none;
-  background-color: var(--lblue);
-  font-weight: 600;
-  font-size: 1.1em;
+	color: var(--dblue);
+	padding: 0 .3em;
+	margin-left: .2em;
+	cursor: pointer;
+	border: none;
+	background-color: var(--lblue);
+	font-weight: 600;
+	font-size: 1.1em;
+	box-shadow: none;
 }
 
 .selection-form {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  padding-bottom: 1em;
-  border-bottom: 3px solid var(--black);
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	padding-bottom: 1em;
+	border-bottom: 3px solid var(--black);
 }
 
 .selection-form > input[type=text] {
-  width: 50%;
-  flex-grow: 1;
-  max-width: 20em;
-  margin-right: .5em;
+	width: 50%;
+	flex-grow: 1;
+	max-width: 20em;
+	margin-right: .5em;
+	box-shadow: inset 2px 3px 2px rgba(0,0,0, .4);
 }
 
 .suggestion-area {
-  overflow-y: auto;
-  height: auto;
-  display: flex;
-  justify-content: center ;
+	overflow-y: auto;
+	height: auto;
+	display: flex;
+	justify-content: center ;
 }
 
 #suggestions {
-  padding: 0;
-  width: 100%;
-  max-width: 50vw;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: left;
+	padding: 0;
+	width: 100%;
+	max-width: 50em;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: left;
 }
 
 #suggestions > li {
-  display: inline-block;
-  background-color: var(--lblue);
-  border-bottom: 3px solid var(--dblue);
-  border-right: 2px solid var(--dblue);
-  color: var(--white);
-  list-style: none;
-  border-radius: 2px;
-  padding: .5em .8em;
-  margin: .3em;
+	display: inline-block;
+	background-color: var(--lblue);
+	border-bottom: 3px solid var(--dblue);
+	border-right: 2px solid var(--dblue);
+	color: var(--white);
+	list-style: none;
+	border-radius: 2px;
+	padding: .5em .8em;
+	margin: .3em;
+	cursor: pointer;
+	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
 #suggestions > li.good-companion {
-  background-color: var(--lgreen);
-  border-bottom: 3px solid var(--dgreen);
-  border-right: 2px solid var(--dgreen);
-  color: var(--white);
+	background-color: var(--lgreen);
+	border-bottom: 3px solid var(--dgreen);
+	border-right: 2px solid var(--dgreen);
+	color: var(--white);
 }
 
 #suggestions > li.bad-companion {
-  background-color: var(--lred);
-  border-bottom: 3px solid var(--dred);
-  border-right: 2px solid var(--dred);
-  color: var(--white);
+	background-color: var(--lred);
+	border-bottom: 3px solid var(--dred);
+	border-right: 2px solid var(--dred);
+	color: var(--white);
 }
 
-.button {
-  font-size: 1em;
-  cursor: pointer;
-  background-color: var(--lgreen);
-  color: var(--white);
-  padding: .3em .7em;
-  border-top: 0;
-  border-left: 0;
-  border-bottom: var(--dgreen) solid 3px;
-  border-right: var(--dgreen) solid 2px;
-  border-radius: 2px;
+button, .button {
+	font-size: 1em;
+	cursor: pointer;
+	background-color: var(--lgreen);
+	color: var(--white);
+	padding: .3em .7em;
+	border-top: 0;
+	border-left: 0;
+	border-bottom: var(--dgreen) solid 3px;
+	border-right: var(--dgreen) solid 2px;
+	border-radius: 2px;
+	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
-.button:hover {
-  color: var(--dgreen);
+button:hover, .button:hover {
+	color: var(--dgreen);
 }
 
 .text-input {
-  font-size: 1em;
-  background-color: var(--white);
-  color: var(--black);
-  padding: .3em .7em;
-  border-top: var(--black) solid 3px;
-  border-left: var(--black) solid 2px;
-  border-bottom: 0;
-  border-right: 0;
-  border-radius: 2px;
+	font-size: 1em;
+	background-color: var(--white);
+	color: var(--black);
+	padding: .3em .7em;
+	border-top: var(--black) solid 3px;
+	border-left: var(--black) solid 2px;
+	border-bottom: 0;
+	border-right: 0;
+	border-radius: 2px;
 }
-
 
