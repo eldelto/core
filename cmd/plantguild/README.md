@@ -5,8 +5,8 @@ planting project.
 
 # TODO
 
-- [ ] Copy selected plants as list to clipboard
-- [ ] Draw logo
+- [x] Copy selected plants as list to clipboard
+- [x] Draw logo
 - [ ] Add about section
 - [ ] Add section to top level README
 - [ ] Add screenshot
