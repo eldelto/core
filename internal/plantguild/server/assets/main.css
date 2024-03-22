@@ -34,16 +34,16 @@ h1 {
 .header {
 	display: flex;
 	flex-direction: row;
-	height: 3em;
-	background-color: var(--lgreen);
-	border-bottom: 3px solid var(--dgreen);
+	height: 4em;
 	justify-content: space-around;
 	align-items: center;
+	padding: .3em;
+	padding-top: .5em;
 }
 
-.header > h1 {
-	font-size: 1.5em;
-	color: var(--dgreen);
+.header > img {
+  height: auto;
+  max-width: auto;
 }
 
 #content {
@@ -192,4 +192,5 @@ button:hover, .button:hover {
 	border-right: 0;
 	border-radius: 2px;
 }
+
 
