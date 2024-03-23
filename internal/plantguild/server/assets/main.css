@@ -24,7 +24,8 @@ body {
 	height: 100vh;
 	overflow: hidden;
 	margin: 0;
-	font-family: Verdana;
+  font-family: Verdana;
+  background-image: url("/assets/plantguild-background.png");
 }
 
 h1 {
@@ -34,16 +35,11 @@ h1 {
 .header {
 	display: flex;
 	flex-direction: row;
-	height: 4em;
+	height: auto;
 	justify-content: space-around;
 	align-items: center;
 	padding: .3em;
 	padding-top: .5em;
-}
-
-.header > img {
-  height: auto;
-  max-width: auto;
 }
 
 #content {
@@ -107,7 +103,9 @@ h1 {
 	flex-direction: row;
 	justify-content: center;
 	padding-bottom: 1em;
-	border-bottom: 3px solid var(--black);
+  border-bottom: 3px solid var(--black);
+  box-shadow: 0px 4px 4px rgba(0,0,0, .4);
+  z-index: 0;
 }
 
 .selection-form > input[type=text] {
