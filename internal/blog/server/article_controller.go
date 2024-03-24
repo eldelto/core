@@ -17,7 +17,7 @@ func NewArticleController(service *blog.Service) *web.Controller {
 			{Method: web.MethodGET, Path: "/draft"}:   getDraftArticles(service),
 			{Method: web.MethodGET, Path: "/{title}"}: getArticle(service),
 		},
-		Middleware: []func(http.Handler) http.Handler{
+		Middleware: []web.HandlerProvider{
 			web.MaxAgeMiddleware,
 		},
 	}

@@ -111,7 +111,7 @@ func NewTemplateController(fileSystem fs.FS, data any) *Controller {
 			{Method: "GET", Path: "/"}:                                  getTemplate(templater, data),
 			{Method: "GET", Path: "/{" + templatePathUrlParam + ":.*}"}: getTemplate(templater, data),
 		},
-    Middleware: []HandlerProvider{middleware.Compress(5)},
+		Middleware: []HandlerProvider{middleware.Compress(5)},
 	}
 }
 
@@ -122,10 +122,10 @@ func getTemplate(templater *Templater, data any) Handler {
 			templatePath = "index.html"
 		}
 
-    w.Header().Add(ContentTypeHeader, ContentTypeHTML)
+		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
 
 		if err := templater.Write(w, data, templatePath); err != nil {
-      log.Printf("did not find template at path %q", templatePath)
+			log.Printf("did not find template at path %q", templatePath)
 			w.WriteHeader(http.StatusNotFound)
 			return templater.Write(w, data, "not-found.html")
 		}
