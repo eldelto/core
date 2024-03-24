@@ -1,50 +1,50 @@
 :root {
-	--lpink: #f2c0a2;
-	--dpink: #e98472;
-	--lred: #c12323;
-	--dred: #800e0e;
-	--lgreen: #33a127;
-	--dgreen: #126d30;
-	--lblue: #4aa2c5;
-	--dblue: #1867a0;
-	--lbrown: #934226;
-	--dbrown: #763b1f;
-	--lyellow: #f7e26c;
-	--dyello: #edb329;
-	--organge: #e76d14;
-	--white: #f2f2f9;
-	--grey: #6a5fa0;
-	--black: #241003;
+  --lpink: #f2c0a2;
+  --dpink: #e98472;
+  --lred: #c12323;
+  --dred: #800e0e;
+  --lgreen: #33a127;
+  --dgreen: #126d30;
+  --lblue: #4aa2c5;
+  --dblue: #1867a0;
+  --lbrown: #934226;
+  --dbrown: #763b1f;
+  --lyellow: #f7e26c;
+  --dyello: #edb329;
+  --organge: #e76d14;
+  --white: #f2f2f9;
+  --grey: #6a5fa0;
+  --black: #241003;
 }
 
 body {
-	background-color: var(--dbrown);
-	color: var(--white);
-	font-size: 1.2em;
-	height: 100vh;
-	overflow: hidden;
-	margin: 0;
+  background-color: var(--dbrown);
+  color: var(--white);
+  font-size: 1.2em;
+  height: 100vh;
+  margin: 0;
   font-family: Verdana;
   background-image: url("/assets/plantguild-background.png");
 }
 
-h1 {
-	color: var(--mgreen);
+h1, h2, h3, a {
+  color: var(--lgreen);
 }
 
 section {
-	margin: .3em;
-	background-color: rgba(0, 0, 0, .4);
-	border-radius: 2px;
-	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
+  max-width: 50em;
+  margin: .3em;
+  background-color: rgba(0, 0, 0, .4);
+  border-radius: 2px;
+  box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
 .header {
-	display: flex;
-	flex-direction: row;
-	height: auto;
-	justify-content: space-around;
-	align-items: center;
+  display: flex;
+  flex-direction: row;
+  height: auto;
+  justify-content: space-around;
+  align-items: center;
 }
 
 .header img {
@@ -52,177 +52,190 @@ section {
 }
 
 #content {
-	height: 90%;
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(0deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,0) 100%);
 }
 
 .padded {
-	padding: .5em;
+  padding: .5em;
 }
 
 .info-area {
-	display: flex;
-	justify-content: space-around;
-	padding-top: 0;
-	padding-bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .info-container {
-	max-width: 50em;
-	flex-grow: 1;
-    display: flex;
-	justify-content: space-between;
+  max-width: 50em;
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-between;
 }
 
 #about-button {
-	font-size: .9em;
-	height: 1.3em;
-	border-radius: 10em;
-	text-decoration: none;
-	border: none;
-	background-color: var(--dblue);
-	border-color: var(--dblue);
+  font-size: .9em;
+  height: 1.3em;
+  margin-bottom: 3px;
+  margin-right: 2px;
+  border-radius: 10em;
+  text-decoration: none;
+  border: none;
+  background-color: var(--dblue);
+  border-color: var(--dblue);
+}
+
+#about-button:hover {
+  margin-bottom: 0;
+  margin-right: 0;
 }
 
 .selected-area {
-	display: flex;
-	align-items: center;
-	flex-direction: column;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
 }
 
 #selected-plants {
-	max-width: 50em;
-	display: flex;
-	flex-wrap: wrap;
-	padding: 0;
-	margin: 0;
+  max-width: 50em;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0;
+  margin: 0;
 }
 
 #selected-plants > li {
-	background-color: var(--lblue);
-	border-bottom: 3px solid var(--dblue);
-	border-right: 2px solid var(--dblue);
-	color: var(--white);
-	list-style: none;
-	border-radius: 2px;
-	padding: .2em .5em;
-	padding-right: .2em;
-	margin: .3em .3em;
-	display: flex;
-	align-items: center;
-	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
+  background-color: var(--lblue);
+  border-bottom: 3px solid var(--dblue);
+  border-right: 2px solid var(--dblue);
+  color: var(--white);
+  list-style: none;
+  border-radius: 2px;
+  padding: .2em .5em;
+  padding-right: .2em;
+  margin: .3em .3em;
+  display: flex;
+  align-items: center;
+  box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
 #selected-plants > li > button {
-	color: var(--dblue);
-	padding: 0 .3em;
-	margin-left: .2em;
-	cursor: pointer;
-	border: none;
-	background-color: var(--lblue);
-	font-weight: 600;
-	font-size: 1.1em;
-	box-shadow: none;
+  color: var(--dblue);
+  padding: 0 .3em;
+  margin-left: .2em;
+  cursor: pointer;
+  border: none;
+  background-color: var(--lblue);
+  font-weight: 600;
+  font-size: 1.1em;
+  box-shadow: none;
 }
 
 .selection-form {
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	padding-bottom: 1em;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding-bottom: 1em;
   border-bottom: 3px solid var(--black);
   box-shadow: 0px 4px 4px rgba(0,0,0, .4);
   z-index: 0;
 }
 
 .selection-form > input[type=text] {
-	width: 50%;
-	flex-grow: 1;
-	max-width: 20em;
-	margin-right: .5em;
-	box-shadow: inset 2px 3px 2px rgba(0,0,0, .4);
+  width: 50%;
+  flex-grow: 1;
+  max-width: 20em;
+  margin-right: .5em;
+  box-shadow: inset 2px 3px 2px rgba(0,0,0, .4);
 }
 
 .suggestion-area {
-	overflow-y: auto;
-	height: auto;
-	display: flex;
-	justify-content: center;
+  height: auto;
+  display: flex;
+  justify-content: center;
 }
 
 #suggestions {
-	padding: 0;
-	width: 100%;
-	max-width: 50em;
-	display: flex;
-	flex-direction: row;
-	flex-wrap: wrap;
-	justify-content: left;
+  padding: 0;
+  width: 100%;
+  max-width: 50em;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: left;
 }
 
 #suggestions > li {
-	display: inline-block;
-	background-color: var(--lblue);
-	border-bottom: 3px solid var(--dblue);
-	border-right: 2px solid var(--dblue);
-	color: var(--white);
-	list-style: none;
-	margin: .3em;
+  display: inline-block;
+  background-color: var(--lblue);
+  border-bottom: 3px solid var(--dblue);
+  border-right: 2px solid var(--dblue);
+  color: var(--white);
+  list-style: none;
+  margin: .3em;
 }
 
 #suggestions > li:hover {
-	border: none !important;
+  border: none !important;
   border-right: none !important;
   border-bottom: none !important;
-	margin: .4em .3em .3em .4em !important;
+  margin: .4em .3em .3em .4em !important;
 }
 
 #suggestions > li.good-companion {
-	background-color: var(--lgreen);
-	border-bottom: 3px solid var(--dgreen);
-	border-right: 2px solid var(--dgreen);
-	color: var(--white);
+  background-color: var(--lgreen);
+  border-bottom: 3px solid var(--dgreen);
+  border-right: 2px solid var(--dgreen);
+  color: var(--white);
 }
 
 #suggestions > li.bad-companion {
-	background-color: var(--lred);
-	border-bottom: 3px solid var(--dred);
-	border-right: 2px solid var(--dred);
-	color: var(--white);
+  background-color: var(--lred);
+  border-bottom: 3px solid var(--dred);
+  border-right: 2px solid var(--dred);
+  color: var(--white);
 }
 
 .button {
-	font-size: 1em;
-	cursor: pointer;
-	background-color: var(--lgreen);
-	color: var(--white);
-	padding: .3em .7em;
-	border-top: 0;
-	border-left: 0;
-	border-bottom: var(--dgreen) solid 3px;
-	border-right: var(--dgreen) solid 2px;
-	border-radius: 2px;
-	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
+  font-size: 1em;
+  cursor: pointer;
+  background-color: var(--lgreen);
+  color: var(--white);
+  padding: .3em .7em;
+  border-top: 0;
+  border-left: 0;
+  border-bottom: var(--dgreen) solid 3px;
+  border-right: var(--dgreen) solid 2px;
+  border-radius: 2px;
+  box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
 .button:hover {
-	border: none;
-	margin-top: 3px;
-	margin-left: 2px;
-	box-shadow: 1px 2px 1px rgba(0,0,0, .4);
+  border: none;
+  margin-top: 3px;
+  margin-left: 2px;
+  box-shadow: 1px 2px 1px rgba(0,0,0, .4);
 }
 
 .text-input {
-	font-size: 1em;
-	background-color: var(--white);
-	color: var(--black);
-	padding: .3em .7em;
-	border-top: var(--black) solid 3px;
-	border-left: var(--black) solid 2px;
-	border-bottom: 0;
-	border-right: 0;
-	border-radius: 2px;
+  font-size: 1em;
+  background-color: var(--white);
+  color: var(--black);
+  padding: .3em .7em;
+  border-top: var(--black) solid 3px;
+  border-left: var(--black) solid 2px;
+  border-bottom: 0;
+  border-right: 0;
+  border-radius: 2px;
 }
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var startupTime = time.Now()
@@ -25,10 +26,12 @@ type Endpoint struct {
 
 type Handler func(http.ResponseWriter, *http.Request) error
 
+type HandlerProvider func(http.Handler) http.Handler
+
 type Controller struct {
 	BasePath   string
 	Handlers   map[Endpoint]Handler
-	Middleware []func(http.Handler) http.Handler
+	Middleware []HandlerProvider
 }
 
 func (c *Controller) middleware(handler Handler) http.Handler {
@@ -108,6 +111,7 @@ func NewTemplateController(fileSystem fs.FS, data any) *Controller {
 			{Method: "GET", Path: "/"}:                                  getTemplate(templater, data),
 			{Method: "GET", Path: "/{" + templatePathUrlParam + ":.*}"}: getTemplate(templater, data),
 		},
+    Middleware: []HandlerProvider{middleware.Compress(5)},
 	}
 }
 
@@ -117,6 +121,8 @@ func getTemplate(templater *Templater, data any) Handler {
 		if templatePath == "" {
 			templatePath = "index.html"
 		}
+
+    w.Header().Add(ContentTypeHeader, ContentTypeHTML)
 
 		if err := templater.Write(w, data, templatePath); err != nil {
       log.Printf("did not find template at path %q", templatePath)
