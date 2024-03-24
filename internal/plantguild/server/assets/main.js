@@ -31,8 +31,11 @@ function updateSuggestions(query) {
 		const li = document.createElement("li");
 		li.onclick = () => selectPlant(plantName);
 		li.textContent = plantName;
+
 		if (goodCompanions.has(plantName)) li.classList.add("good-companion");
 		if (badCompanions.has(plantName)) li.classList.add("bad-companion");
+
+    li.classList.add("button");
 		list.appendChild(li);
 	});
 }
@@ -62,9 +65,9 @@ function updateSelectedPlants(query) {
 
 	const copyButton = window.document.getElementById("copy-button");
 	if (selectedPlants.size > 0) {
-		copyButton.removeAttribute("style");		
+		copyButton.removeAttribute("style");
 	} else {
-		copyButton.setAttribute("style", "display:none;");		
+		copyButton.setAttribute("style", "display:none;");
 	}
 
 	populateCompanions();

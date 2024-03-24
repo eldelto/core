@@ -32,14 +32,23 @@ h1 {
 	color: var(--mgreen);
 }
 
+section {
+	margin: .3em;
+	background-color: rgba(0, 0, 0, .4);
+	border-radius: 2px;
+	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
+}
+
 .header {
 	display: flex;
 	flex-direction: row;
 	height: auto;
 	justify-content: space-around;
 	align-items: center;
-	padding: .3em;
-	padding-top: .5em;
+}
+
+.header img {
+  max-width: 95vw;
 }
 
 #content {
@@ -50,7 +59,31 @@ h1 {
 }
 
 .padded {
-	padding: .3em;
+	padding: .5em;
+}
+
+.info-area {
+	display: flex;
+	justify-content: space-around;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+.info-container {
+	max-width: 50em;
+	flex-grow: 1;
+    display: flex;
+	justify-content: space-between;
+}
+
+#about-button {
+	font-size: .9em;
+	height: 1.3em;
+	border-radius: 10em;
+	text-decoration: none;
+	border: none;
+	background-color: var(--dblue);
+	border-color: var(--dblue);
 }
 
 .selected-area {
@@ -59,16 +92,12 @@ h1 {
 	flex-direction: column;
 }
 
-#copy-button {
-	left: 80vw;
-	position: absolute;
-}
-
 #selected-plants {
 	max-width: 50em;
 	display: flex;
 	flex-wrap: wrap;
 	padding: 0;
+	margin: 0;
 }
 
 #selected-plants > li {
@@ -120,7 +149,7 @@ h1 {
 	overflow-y: auto;
 	height: auto;
 	display: flex;
-	justify-content: center ;
+	justify-content: center;
 }
 
 #suggestions {
@@ -140,11 +169,14 @@ h1 {
 	border-right: 2px solid var(--dblue);
 	color: var(--white);
 	list-style: none;
-	border-radius: 2px;
-	padding: .5em .8em;
 	margin: .3em;
-	cursor: pointer;
-	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
+}
+
+#suggestions > li:hover {
+	border: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+	margin: .4em .3em .3em .4em !important;
 }
 
 #suggestions > li.good-companion {
@@ -161,7 +193,7 @@ h1 {
 	color: var(--white);
 }
 
-button, .button {
+.button {
 	font-size: 1em;
 	cursor: pointer;
 	background-color: var(--lgreen);
@@ -175,8 +207,11 @@ button, .button {
 	box-shadow: 2px 3px 2px rgba(0,0,0, .4);
 }
 
-button:hover, .button:hover {
-	color: var(--dgreen);
+.button:hover {
+	border: none;
+	margin-top: 3px;
+	margin-left: 2px;
+	box-shadow: 1px 2px 1px rgba(0,0,0, .4);
 }
 
 .text-input {
@@ -190,5 +225,4 @@ button:hover, .button:hover {
 	border-right: 0;
 	border-radius: 2px;
 }
-
 
