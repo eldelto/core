@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -54,7 +55,7 @@ func (s *Stack) Peek() (Word, error) {
 func (s *Stack) String() string {
 	b := strings.Builder{}
 
-	for _, w := range s.data {
+	for _, w := range s.data[:s.cursor] {
 		b.WriteString(strconv.Itoa(int(w)))
 		b.WriteString(", ")
 	}
@@ -85,6 +86,13 @@ func (i *Input) nextChar(r io.Reader) (byte, error) {
 	return b, nil
 }
 
+type traceEntry struct {
+	programCounter Word
+	instruction    byte
+	dataStack      Stack
+	returnStack    Stack
+}
+
 type VM struct {
 	programCounter Word
 	dataStack      Stack
@@ -93,7 +101,7 @@ type VM struct {
 	input          io.Reader
 	output         io.Writer
 	memory         [MemorySize]byte
-	executionTrace collections.RingBuffer[byte]
+	executionTrace collections.RingBuffer[traceEntry]
 }
 
 func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
@@ -106,7 +114,7 @@ func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 	vm := VM{
 		input:          input,
 		output:         output,
-		executionTrace: collections.NewRingBuffer[byte](StackSize),
+		executionTrace: collections.NewRingBuffer[traceEntry](StackSize),
 	}
 	copy(vm.memory[:], program)
 
@@ -115,6 +123,17 @@ func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 
 func NewDefaultVM(program []byte) (*VM, error) {
 	return NewVM(program, os.Stdin, os.Stdout)
+}
+
+func (vm *VM) appendTraceEntry(instruction byte) {
+	entry := traceEntry{
+		programCounter: vm.programCounter,
+		instruction:    instruction,
+		dataStack:      vm.dataStack,
+		returnStack:    vm.returnStack,
+	}
+
+	vm.executionTrace.Append(entry)
 }
 
 func (vm *VM) validateMemoryAccess(addr Word) error {
@@ -159,12 +178,9 @@ func (vm *VM) fetchWord(addr Word) (Word, error) {
 }
 
 func (vm *VM) storeWord(addr Word, w Word) error {
-	var b byte
+	bytes := wordToBytes(w)
 	for i := 0; i < WordSize; i++ {
-		shift := (WordSize - (i + 1)) * 8
-		b = byte(w & (0xff << shift))
-
-		if err := vm.storeByte(addr+Word(i), b); err != nil {
+		if err := vm.storeByte(addr+(WordSize-(Word(i)+1)), bytes[i]); err != nil {
 			return err
 		}
 	}
@@ -234,7 +250,7 @@ func multiply(a, b Word) Word {
 func (vm *VM) execute() error {
 	for {
 		instruction := vm.memory[vm.programCounter]
-		vm.executionTrace.Append(instruction)
+		vm.appendTraceEntry(instruction)
 
 		switch instruction {
 		case EXIT:
@@ -573,15 +589,26 @@ func (vm *VM) execute() error {
 func (vm *VM) StackTrace() string {
 	b := strings.Builder{}
 
-	b.WriteString("Data stack: ")
-	b.WriteString(vm.dataStack.String())
+	trace := vm.executionTrace.Slice()
+	slices.Reverse(trace)
 
-	b.WriteString("\nReturn stack: ")
-	b.WriteString(vm.returnStack.String())
+	for _, entry := range trace {
+		b.WriteString("Program counter: ")
+		b.WriteString(strconv.FormatInt(int64(entry.programCounter), 10))
+		b.WriteRune('\n')
 
-	b.WriteString("\n\nInstruction trace:\n")
-	for _, i := range vm.executionTrace.Slice() {
-		b.WriteString(instructionFromOpcode(i))
+		b.WriteString("Instruction: ")
+		b.WriteString(instructionFromOpcode(entry.instruction))
+		b.WriteRune('\n')
+
+		b.WriteString("Data stack:\n")
+		b.WriteString(entry.dataStack.String())
+		b.WriteRune('\n')
+
+		b.WriteString("Return stack:\n")
+		b.WriteString(entry.returnStack.String())
+		b.WriteRune('\n')
+
 		b.WriteRune('\n')
 	}
 

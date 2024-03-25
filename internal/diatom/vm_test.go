@@ -3,6 +3,7 @@ package diatom
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	_ "embed"
@@ -52,6 +53,7 @@ func TestVM(t *testing.T) {
 		{"const 5 rput rpeek", []Word{5}, []Word{5}, false},
 		{"const 10 b@ exit 5", []Word{5}, []Word{0}, false},
 		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{0}, false},
+		{"const 777 const 20 ! const 20 @ exit 5", []Word{777}, []Word{0}, false},
 
 		// TODO: Test failure modes
 	}
@@ -192,6 +194,18 @@ func TestPreamble(t *testing.T) {
 		{"const 0 const 1 const 12 !mem=", []Word{0}, []Word{}, "", ""},
 		{"const 0 const 5000 const 12 !memcpy const 0 const 5000 const 12 !mem=", []Word{-1}, []Word{}, "", ""},
 		{"const 0 const 5 !mem-view", []Word{}, []Word{}, "", "0: 3\n1: 255\n2: 255\n3: 255\n4: 255\n5: 15\n"},
+
+		// Dictionary Operations
+		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
+		{"!word drop const @mem-view !word=", []Word{0}, []Word{}, "mem-view ", ""},
+		{"const 777 !latest ! !latest @", []Word{777}, []Word{}, "", ""},
+		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
+		{"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "asdf ", ""},
+		{"!word drop !latest @ !w+ !word=", []Word{-1}, []Word{}, "latest ", ""},
+		{"!word drop !find", []Word{2361}, []Word{}, "latest ", ""},
+		{"!word drop !find", []Word{87}, []Word{}, "drop ", ""},
+		{"!word drop !find", []Word{0}, []Word{}, "asdf ", ""},
+		// TODO: Continue
 	}
 
 	for _, tt := range tests {
@@ -199,7 +213,7 @@ func TestPreamble(t *testing.T) {
 			main := fmt.Sprintf(".codeword main %s .end", tt.assembly)
 			assembly := preamble + " :start call @_dictmain exit " + main
 
-			_, _, program, err := Assemble(bytes.NewBufferString(assembly))
+			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")
 
 			input := bytes.NewBufferString(tt.input)
@@ -210,6 +224,10 @@ func TestPreamble(t *testing.T) {
 
 			err = vm.Execute()
 			AssertNoError(t, err, "vm.Execute")
+			if err != nil {
+				err = os.WriteFile("preamble.dins", []byte(dins), 0666)
+				AssertNoError(t, err, "write .dins file")
+			}
 			AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
 			AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
 			AssertEquals(t, tt.wantOutput, output.String(), "output")

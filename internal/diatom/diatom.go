@@ -29,6 +29,7 @@ func wordToBytes(w Word) [WordSize]byte {
 func writeAsBytes(w io.Writer, value Word) error {
 	bytes := wordToBytes(value)
 
+	// TODO: Is this correct or does it skip the last byte?
 	for i := WordSize - 1; i > 0; i-- {
 		if _, err := fmt.Fprintf(w, "%d ", bytes[i]); err != nil {
 			return err

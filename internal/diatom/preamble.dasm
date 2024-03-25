@@ -1,7 +1,7 @@
 const
 -1
 cjmp
-@start
+@init
 
 
 ( Instructions )
@@ -301,32 +301,35 @@ rpop drop drop drop
 
 ( Dictionary Operations )
 
+( addr -- bool )
 ( Takes the address past the prev-word pointer and compares it to the value
 stored in 'word-buffer'. )
-( addr -- bool )
 .codeword word=
   ( The most significant bit is the immediate flag and we want to ignore it. )
   dup !1+
   swap b@ const 127 &
   !word-buffer !w+
   swap
-  const 4444 drop
   !mem=
 .end
 
+( addr -- addr )
+( An alias for '@' )
 .codeword prev-word @ .end
 
+( -- addr )
+( Iterates through the dictionary, starting from the last entry, and returns
+the first word matching the string in 'word-buffer'. If no match is found, 0 is
+returned. )
 .codeword find
   !latest @
 
 :find-loop
   dup const 0 = cjmp @find-end
   dup !w+ !word= cjmp @find-end
-  !prev-word const -1 cjmp @find-loop
+  !prev-word !true cjmp @find-loop
 
 :find-end
-  swap drop
-  const 7777 drop
 .end
 
 ( Takes the start address of a word and returns the addres of its code word. )
@@ -449,7 +452,24 @@ stored in 'word-buffer'. )
   ![
 .end
 
+
+
 ( TODO: Support this? )
 ( .var latest @latest .end )
 .var latest 4 .end
+
+
+( Initialization Code ) 
+:init
+
+( Init 'latest' )
+const @latest
+const @_varlatest
+!
+
+( Start executing )
+const
+-1
+cjmp
+@start
 
