@@ -25,6 +25,8 @@ body {
   margin: 0;
   font-family: Verdana;
   background-image: url("/assets/plantguild-background.png");
+  display: flex;
+  flex-direction: column;
 }
 
 h1, h2, h3, a {
@@ -52,6 +54,7 @@ section {
 }
 
 #content {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   background: linear-gradient(0deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,0) 100%);
@@ -237,5 +240,4 @@ section {
   align-items: center;
   width: 100%;
 }
-
 
