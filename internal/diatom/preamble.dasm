@@ -332,43 +332,47 @@ returned. )
 :find-end
 .end
 
-( Takes the start address of a word and returns the addres of its code word. )
 ( addr -- addr )
+( Takes the start address of a word and returns the addres of its code word. )
 .codeword codeword
   !w+ dup b@
   const 127 & ( Ignore the immediate flag. )
   + !1+
 .end
 
+( -- )
+( Reads words from stdin, finds them in the dictionary and executes them. )
 .codeword interpret
-  !word !find dup const 0 = cjmp @interpret-number
+  !word drop !find dup const 0 = cjmp @interpret-number
   dup !codeword
   swap !immediate? ~
   !state @ & cjmp @interpret-compile
 
 ( Interpret the word. )
   scall
-  const -1 cjmp @_dictinterpret
+  !true cjmp @_dictinterpret
 
 :interpret-compile
   !,
-  const -1 cjmp @_dictinterpret
+  !true cjmp @_dictinterpret
 
 :interpret-number
   drop
   !number
   cjmp @interpret-error
-  const -1 cjmp @_dictinterpret
+  !true cjmp @_dictinterpret
 
 :interpret-error
 .end
 
+
 ( Built-in variables )
-.var state 0 .end
+
+.var state 4 .end
 ( TODO: Think about how to support this )
 ( .var here  @here-label .end )
 .var here 4 .end
-.var base 10 .end
+.var base 4 .end
 
 ( Built-in constants
 # VERSION         Is the current version of this FORTH.
@@ -465,6 +469,11 @@ returned. )
 ( Init 'latest' )
 const @latest
 const @_varlatest
+!
+
+( Init 'base' )
+const 10
+const @_varbase
 !
 
 ( Start executing )

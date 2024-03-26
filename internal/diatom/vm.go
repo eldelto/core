@@ -1,6 +1,7 @@
 package diatom
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -448,6 +449,9 @@ func (vm *VM) execute() error {
 		case KEY:
 			b, err := vm.key()
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
 				return err
 			}
 			if err := vm.dataStack.Push(Word(b)); err != nil {

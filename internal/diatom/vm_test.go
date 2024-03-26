@@ -202,10 +202,11 @@ func TestPreamble(t *testing.T) {
 		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
 		{"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "asdf ", ""},
 		{"!word drop !latest @ !w+ !word=", []Word{-1}, []Word{}, "latest ", ""},
-		{"!word drop !find", []Word{2361}, []Word{}, "latest ", ""},
 		{"!word drop !find", []Word{87}, []Word{}, "drop ", ""},
 		{"!word drop !find", []Word{0}, []Word{}, "asdf ", ""},
-		// TODO: Continue
+		{"const @dup dup !codeword swap -", []Word{8}, []Word{}, "asdf ", ""},
+		{"!interpret", []Word{10}, []Word{}, "10 ", ""},
+		{"!interpret", []Word{20}, []Word{}, "10 dup + ", ""},
 	}
 
 	for _, tt := range tests {
@@ -224,13 +225,14 @@ func TestPreamble(t *testing.T) {
 
 			err = vm.Execute()
 			AssertNoError(t, err, "vm.Execute")
-			if err != nil {
-				err = os.WriteFile("preamble.dins", []byte(dins), 0666)
-				AssertNoError(t, err, "write .dins file")
-			}
 			AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
 			AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
 			AssertEquals(t, tt.wantOutput, output.String(), "output")
+
+			if t.Failed() {
+				err = os.WriteFile("preamble.dins", []byte(dins), 0666)
+				AssertNoError(t, err, "write .dins file")
+			}
 		})
 	}
 }
