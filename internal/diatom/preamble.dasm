@@ -463,7 +463,7 @@ returned. )
 .var latest 4 .end
 
 
-( Initialization Code ) 
+( Initialization Code )
 :init
 
 ( Init 'latest' )

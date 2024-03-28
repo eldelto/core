@@ -12,7 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func execute(path string) error {
+func repl() ([]byte, error) {
+	repl := diatom.Preamble + ".codeword main !interpret .end :start call @_dictmain exit"
+	_, _, dopc, err := diatom.Assemble(bytes.NewBufferString(repl))
+	return dopc, err
+}
+
+func loadProgram(path string) ([]byte, error) {
 	var program []byte
 	needsAssembly := false
 
@@ -21,35 +27,30 @@ func execute(path string) error {
 	case strings.HasSuffix(path, ".dasm"):
 		needsAssembly = true
 	default:
-		return fmt.Errorf("%q is not a supported file format", filepath.Ext(path))
+		return nil, fmt.Errorf("%q is not a supported file format", filepath.Ext(path))
 	}
 
 	in, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file %q: %w", path, err)
+		return nil, fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 	program = in
 
 	if needsAssembly {
 		_, _, dopc, err := diatom.Assemble(bytes.NewBuffer(in))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		program = dopc
 	}
 
-	vm, err := diatom.NewDefaultVM(program)
-	if err != nil {
-		return err
-	}
-
-	return vm.Execute()
+	return program, err
 }
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "diatom [path]",
-	Args:  cobra.MatchAll(cobra.ExactArgs(1)),
+	Args:  cobra.MatchAll(cobra.RangeArgs(0, 1)),
 	Short: "Diatom Virtual Machine",
 	Long: `diatom starts the Diatom virtual machine, loads the file at the given path and
 starts executing.
@@ -58,8 +59,29 @@ If path points to a .dopc file it will be executed directly, if it points to a
 .dasm file it will assemble it first (see diatom assemble -h for more
 information).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[0]
-		if err := execute(path); err != nil {
+		var program []byte
+
+		if len(args) < 1 {
+			dopc, err := repl()
+			if err != nil {
+				log.Fatal(err)
+			}
+			program = dopc
+		} else {
+			path := args[0]
+			dopc, err := loadProgram(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+			program = dopc
+		}
+
+		vm, err := diatom.NewDefaultVM(program)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := vm.Execute(); err != nil {
 			log.Fatal(err)
 		}
 	},

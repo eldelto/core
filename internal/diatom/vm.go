@@ -599,17 +599,16 @@ func (vm *VM) StackTrace() string {
 	for _, entry := range trace {
 		b.WriteString("Program counter: ")
 		b.WriteString(strconv.FormatInt(int64(entry.programCounter), 10))
-		b.WriteRune('\n')
 
-		b.WriteString("Instruction: ")
+		b.WriteString("  Instruction: ")
 		b.WriteString(instructionFromOpcode(entry.instruction))
 		b.WriteRune('\n')
 
-		b.WriteString("Data stack:\n")
+		b.WriteString("Data stack: ")
 		b.WriteString(entry.dataStack.String())
 		b.WriteRune('\n')
 
-		b.WriteString("Return stack:\n")
+		b.WriteString("Return stack: ")
 		b.WriteString(entry.returnStack.String())
 		b.WriteRune('\n')
 

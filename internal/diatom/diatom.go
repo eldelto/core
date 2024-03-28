@@ -1,6 +1,7 @@
 package diatom
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +16,9 @@ const (
 
 	maxTokenLen = 127
 )
+
+//go:embed preamble.dasm
+var Preamble string
 
 func wordToBytes(w Word) [WordSize]byte {
 	bytes := [WordSize]byte{}

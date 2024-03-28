@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 
-	_ "embed"
-
 	. "github.com/eldelto/core/internal/testutils"
 )
 
@@ -94,9 +92,6 @@ func TestVMIO(t *testing.T) {
 
 	AssertEquals(t, input, output.String(), "output")
 }
-
-//go:embed preamble.dasm
-var preamble string
 
 func TestPreamble(t *testing.T) {
 	tests := []struct {
@@ -212,7 +207,7 @@ func TestPreamble(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.assembly, func(t *testing.T) {
 			main := fmt.Sprintf(".codeword main %s .end", tt.assembly)
-			assembly := preamble + " :start call @_dictmain exit " + main
+			assembly := Preamble + " :start call @_dictmain exit " + main
 
 			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")
