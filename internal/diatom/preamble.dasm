@@ -415,47 +415,49 @@ rpop drop drop drop
   !here dup @ !w+ swap !
 .end
 
-( Append a single byte to the end of the dictionary. )
 ( n -- )
+( Append a single byte to the end of the dictionary. )
 .codeword b,
   !here @ b!
   !here dup @ !1+ swap !
 .end
 
-( Disables compilation mode. )
 ( -- )
+( Disables compilation mode. )
 .codeword [
   !false !state !
 .end
 
-( Enables compilation mode. )
 ( -- )
+( Enables compilation mode. )
 .codeword ]
   !true !state !
 .end
 
-( Reads words from stdin and switches into compilation mode. )
 ( -- )
+( Reads words from stdin and switches into compilation mode. )
 .codeword :
   !word !create
   !]
 .end
 
-( Sets the immediate flag of the latest word. )
 ( -- )
+( Sets the immediate flag of the latest word. )
 .immediate-codeword immediate
   !latest @ !w+ dup
   b@ const 128 |
   swap b!
 .end
 
+( addr -- bool )
+( Checks if the word at the given address contains the immediate flag. )
 .codeword immediate?
   !w+ b@ const 128 &
   const 128 =
 .end
 
-( Appends 'ret' and ends compilation. )
 ( -- )
+( Appends 'ret' and ends compilation. )
 .immediate-codeword ;
   ( 2 is equal to the RET instruction )
   const 2 !b,

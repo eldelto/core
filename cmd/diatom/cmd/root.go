@@ -13,7 +13,8 @@ import (
 )
 
 func repl() ([]byte, error) {
-	repl := diatom.Preamble + ".codeword main !interpret .end :start call @_dictmain exit"
+	main := ".codeword main !interpret .end"
+	repl := strings.Replace(diatom.Preamble, diatom.MainTemplate, main, 1)
 	_, _, dopc, err := diatom.Assemble(bytes.NewBufferString(repl))
 	return dopc, err
 }

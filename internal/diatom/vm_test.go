@@ -214,13 +214,17 @@ func TestPreamble(t *testing.T) {
 		{"!here @ !word drop !create !latest @ =", []Word{-1}, []Word{}, "test ", ""},
 		{"!word drop !create !latest @ !w+ b@", []Word{4}, []Word{}, "test ", ""},
 		{"!here @ !word drop !create !here @ const 9 - =", []Word{-1}, []Word{}, "test ", ""},
-		// TODO: ','
+		{"const 77 !, !here @ !constw - @", []Word{77}, []Word{}, "", ""},
+		{"const 300 !b, !here @ !1- b@", []Word{44}, []Word{}, "", ""},
+		{"!] !state @", []Word{-1}, []Word{}, "", ""},
+		{"!] ![ !state @", []Word{0}, []Word{}, "", ""},
+		// TODO: Test : double dup + ;
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.assembly, func(t *testing.T) {
 			main := fmt.Sprintf(".codeword main %s .end", tt.assembly)
-			assembly := strings.Replace(Preamble, mainTemplate, main, 1)
+			assembly := strings.Replace(Preamble, MainTemplate, main, 1)
 
 			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")

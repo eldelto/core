@@ -16,7 +16,7 @@ const (
 
 	maxTokenLen = 127
 
-	mainTemplate = "{main}"
+	MainTemplate = "{main}"
 )
 
 //go:embed preamble.dasm

@@ -19,6 +19,7 @@ The priorities are:
 
 ## TODO
 
+- [ ] Implement debugging tool
 - [ ] Start the repl with `diatom repl`
 - [ ] Read programs from stdin instead of files
 - [ ] Bootstrap Forth interpreter
