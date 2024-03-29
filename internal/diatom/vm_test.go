@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	. "github.com/eldelto/core/internal/testutils"
@@ -202,12 +203,24 @@ func TestPreamble(t *testing.T) {
 		{"const @dup dup !codeword swap -", []Word{8}, []Word{}, "asdf ", ""},
 		{"!interpret", []Word{10}, []Word{}, "10 ", ""},
 		{"!interpret", []Word{20}, []Word{}, "10 dup + ", ""},
+
+		// Built-in Variables
+		{"!state @", []Word{0}, []Word{}, "", ""},
+		{"!base @", []Word{10}, []Word{}, "", ""},
+		{"!here @ !latest @ >", []Word{-1}, []Word{}, "", ""},
+		{"!latest @ const @latest =", []Word{-1}, []Word{}, "", ""},
+
+		// Compilation
+		{"!here @ !word drop !create !latest @ =", []Word{-1}, []Word{}, "test ", ""},
+		{"!word drop !create !latest @ !w+ b@", []Word{4}, []Word{}, "test ", ""},
+		{"!here @ !word drop !create !here @ const 9 - =", []Word{-1}, []Word{}, "test ", ""},
+		// TODO: ','
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.assembly, func(t *testing.T) {
 			main := fmt.Sprintf(".codeword main %s .end", tt.assembly)
-			assembly := Preamble + " :start call @_dictmain exit " + main
+			assembly := strings.Replace(Preamble, mainTemplate, main, 1)
 
 			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")

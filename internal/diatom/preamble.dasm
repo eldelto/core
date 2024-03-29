@@ -303,7 +303,7 @@ rpop drop drop drop
 
 ( addr -- bool )
 ( Takes the address past the prev-word pointer and compares it to the value
-stored in 'word-buffer'. )
+  stored in 'word-buffer'. )
 .codeword word=
   ( The most significant bit is the immediate flag and we want to ignore it. )
   dup !1+
@@ -319,8 +319,8 @@ stored in 'word-buffer'. )
 
 ( -- addr )
 ( Iterates through the dictionary, starting from the last entry, and returns
-the first word matching the string in 'word-buffer'. If no match is found, 0 is
-returned. )
+  the first word matching the string in 'word-buffer'. If no match is found, 0 is
+  returned. )
 .codeword find
   !latest @
 
@@ -368,11 +368,9 @@ returned. )
 
 ( Built-in variables )
 
-.var state 4 .end
-( TODO: Think about how to support this )
-( .var here  @here-label .end )
-.var here 4 .end
 .var base 4 .end
+.var state 4 .end
+.var here 4 .end
 
 ( Built-in constants
 # VERSION         Is the current version of this FORTH.
@@ -383,6 +381,8 @@ returned. )
 # F_LENMASK       The length mask in the flags/len byte.
 )
 
+
+( Compilation )
 
 ( Creates the header for a new word at the end of the dictionary.
 
@@ -395,15 +395,21 @@ returned. )
             len                         pad
 )
 ( -- )
+( Reads the content of 'word-buffer' and creates the dictionary header for new
+  word with the given name. The header consists of a pointer to the previous
+  word (4 bytes), the length of the word name (1 byte) and the actual word name
+  (n bytes). 'here' points at the end of the dictionary and 'latest' is set to
+  point to the previous value of 'here'. )
 .codeword create
-  !here @ !latest @ swap !
+  !latest @ !here @ !
+  !here @ !latest !
   !word-buffer const 3 + !here @ !w+ !word-buffer @ !memcpy
-  !here dup @ !latest !
-  dup dup @ !w+ dup b@ + !1+ swap !
+  ( !here dup @ !latest ! )
+  !here @ !w+ dup b@ + !1+ !here !
 .end
 
-( Append a word to the end of the dictionary. )
 ( n -- )
+( Append a word to the end of the dictionary. )
 .codeword ,
   !here @ !
   !here dup @ !w+ swap !
@@ -457,28 +463,29 @@ returned. )
 .end
 
 
-
-( TODO: Support this? )
-( .var latest @latest .end )
-.var latest 4 .end
+( The main codeword goes here. )
+{main}
 
 
 ( Initialization Code )
 :init
 
-( Init 'latest' )
-const @latest
-const @_varlatest
-!
-
 ( Init 'base' )
 const 10
-const @_varbase
-!
+const @_varbase !
+
+( Init 'latest' )
+const @latest
+const @_varlatest !
+
+( Init 'here' )
+const @here-marker
+const @_varhere !
 
 ( Start executing )
-const
--1
-cjmp
-@start
+call @_dictmain
+exit
+
+.var latest 4 .end
+:here-marker
 

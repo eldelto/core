@@ -15,6 +15,8 @@ const (
 	WordMin  = math.MinInt32
 
 	maxTokenLen = 127
+
+	mainTemplate = "{main}"
 )
 
 //go:embed preamble.dasm
