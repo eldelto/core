@@ -360,6 +360,11 @@ rpop drop drop drop
   drop
   !number
   cjmp @interpret-error
+  !state @ cjmp @interpret-compile-number
+  !true cjmp @_dictinterpret
+
+:interpret-compile-number
+  const 3 !b, !,   ( 3 is the 'const' instruction )
   !true cjmp @_dictinterpret
 
 :interpret-error
