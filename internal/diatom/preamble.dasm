@@ -241,7 +241,7 @@ cjmp
   !last-digit-to-word
   dup !word-min = ~ cjmp @number-to-word-loop
 
-  drop !word-buffer
+  drop
 .end
 
 .codeword char-at
@@ -251,7 +251,7 @@ cjmp
 ( number -- )
 ( Emits a number's ASCII representation. )
 .codeword .
-  !number-to-word drop !emit-word
+  !number-to-word !emit-word
 .end
 
 
@@ -353,7 +353,7 @@ rpop drop drop drop
   !true cjmp @_dictinterpret
 
 :interpret-compile
-  !,
+  const 16 !b, !,   ( 16 is the 'call' instruction )
   !true cjmp @_dictinterpret
 
 :interpret-number
@@ -437,7 +437,7 @@ rpop drop drop drop
 ( -- )
 ( Reads words from stdin and switches into compilation mode. )
 .codeword :
-  !word !create
+  !word drop !create
   !]
 .end
 

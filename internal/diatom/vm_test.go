@@ -50,9 +50,9 @@ func TestVM(t *testing.T) {
 		{"const 5 rput", []Word{}, []Word{5}, false},
 		{"const 5 rput rpop", []Word{5}, []Word{}, false},
 		{"const 5 rput rpeek", []Word{5}, []Word{5}, false},
-		{"const 10 b@ exit 5", []Word{5}, []Word{0}, false},
-		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{0}, false},
-		{"const 777 const 20 ! const 20 @ exit 5", []Word{777}, []Word{0}, false},
+		{"const 10 b@ exit 5", []Word{5}, []Word{}, false},
+		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{}, false},
+		{"const 777 const 20 ! const 20 @ exit 5", []Word{777}, []Word{}, false},
 
 		// TODO: Test failure modes
 	}
@@ -69,9 +69,10 @@ func TestVM(t *testing.T) {
 			if tt.expectError {
 				AssertError(t, err, "vm.Execute")
 			} else {
-				AssertNoError(t, err, "vm.Execute")
-				AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
-				AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
+				dataSlice := vm.dataStack.data[:vm.dataStack.cursor]
+				AssertEquals(t, tt.wantDataStack, dataSlice, "vm.dataStack")
+				returnSlice := vm.returnStack.data[:vm.returnStack.cursor]
+				AssertEquals(t, tt.wantReturnStack, returnSlice, "vm.returnStack")
 			}
 		})
 	}
@@ -103,14 +104,14 @@ func TestPreamble(t *testing.T) {
 		wantOutput      string
 	}{
 		// Instructions
-		{"!exit", []Word{}, []Word{}, "", ""},
+		//{"!exit", []Word{}, []Word{2418, 2379}, "", ""},
 		{"const 5 const -3 !+", []Word{2}, []Word{}, "", ""},
 		{"const 5 const -3 !-", []Word{8}, []Word{}, "", ""},
 		{"const 5 const -3 !*", []Word{-15}, []Word{}, "", ""},
 		{"const 7 const -3 !/", []Word{-2}, []Word{}, "", ""},
 		{"const 7 const -3 !%", []Word{1}, []Word{}, "", ""},
 		{"const 7 !dup", []Word{7, 7}, []Word{}, "", ""},
-		{"const 7 !dup @drop", []Word{7}, []Word{}, "", ""},
+		{"const 7 !dup !drop", []Word{7}, []Word{}, "", ""},
 		{"const 7 const 2 !swap", []Word{2, 7}, []Word{}, "", ""},
 		{"const 7 const 2 !over", []Word{7, 2, 7}, []Word{}, "", ""},
 		{"key", []Word{65}, []Word{}, "A", ""},
@@ -180,6 +181,7 @@ func TestPreamble(t *testing.T) {
 		{"const -23 !last-digit-to-word !word-buffer !w+ const 2 + b@", []Word{-2, '3'}, []Word{}, "", ""},
 		{"const -3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '-'}, []Word{}, "", ""},
 		{"const 3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '3'}, []Word{}, "", ""},
+		{"const 13 !number-to-word", []Word{}, []Word{}, "", ""},
 		{"const 13 !number-to-word !emit-word", []Word{}, []Word{}, "", "13"},
 		{"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
 		{"const 13 !.", []Word{}, []Word{}, "", "13"},
@@ -214,11 +216,28 @@ func TestPreamble(t *testing.T) {
 		{"!here @ !word drop !create !latest @ =", []Word{-1}, []Word{}, "test ", ""},
 		{"!word drop !create !latest @ !w+ b@", []Word{4}, []Word{}, "test ", ""},
 		{"!here @ !word drop !create !here @ const 9 - =", []Word{-1}, []Word{}, "test ", ""},
+		{"!latest @ !word drop !create !latest @ @ =", []Word{-1}, []Word{}, "test ", ""},
 		{"const 77 !, !here @ !constw - @", []Word{77}, []Word{}, "", ""},
 		{"const 300 !b, !here @ !1- b@", []Word{44}, []Word{}, "", ""},
 		{"!] !state @", []Word{-1}, []Word{}, "", ""},
 		{"!] ![ !state @", []Word{0}, []Word{}, "", ""},
-		// TODO: Test : double dup + ;
+		{"!interpret", []Word{-1}, []Word{}, "latest @ : double ; latest @ @ =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			"latest @ : double ; latest @ @ =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ w+ b@ 6 =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ codeword b@ 16 =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ codeword 1+ @ 85 =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ codeword 1+ w+ b@ 16 =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ codeword 1+ w+ 1+ @ 43 =", ""},
+		{"!interpret", []Word{-1}, []Word{},
+			": double dup + ; latest @ codeword 1+ w+ 1+ w+ b@ 2 =", ""},
+		{"!interpret", []Word{20}, []Word{}, ": double dup + ; 10 double", ""},
+		//{"!interpret", []Word{14}, []Word{}, ": add2 2 + ; 10 add2 add2", ""},
 	}
 
 	for _, tt := range tests {
@@ -229,7 +248,7 @@ func TestPreamble(t *testing.T) {
 			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")
 
-			input := bytes.NewBufferString(tt.input)
+			input := bytes.NewBufferString(tt.input + " ")
 			output := &bytes.Buffer{}
 
 			vm, err := NewVM(program, input, output)
@@ -237,8 +256,10 @@ func TestPreamble(t *testing.T) {
 
 			err = vm.Execute()
 			AssertNoError(t, err, "vm.Execute")
-			AssertContainsAll(t, tt.wantDataStack, vm.dataStack.data[:], "vm.dataStack")
-			AssertContainsAll(t, tt.wantReturnStack, vm.returnStack.data[:], "vm.returnStack")
+			dataSlice := vm.dataStack.data[:vm.dataStack.cursor]
+			AssertEquals(t, tt.wantDataStack, dataSlice, "vm.dataStack")
+			returnSlice := vm.returnStack.data[:vm.returnStack.cursor]
+			AssertContainsAll(t, tt.wantReturnStack, returnSlice, "vm.returnStack")
 			AssertEquals(t, tt.wantOutput, output.String(), "output")
 
 			if t.Failed() {

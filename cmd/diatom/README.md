@@ -17,8 +17,16 @@ The priorities are:
 4. Efficiency - be reasonable efficient in both time and space requirements but
                 always provide an escape hatch to the host language
 
+## Problems
+
+The `exit` instruction is equal to 0 which means whenever rogue code jumps to a
+wrong memory address the VM just exists gracefully, which is not exactly what
+we want. Maybe we can introduce an additional instruction `abort` for value 0
+and move `exit` to 1 so we can distinguish this.
+
 ## TODO
 
+- [ ] Reorder instructions so `ret` & `call` have well-defined values
 - [ ] Implement debugging tool
 - [ ] Start the repl with `diatom repl`
 - [ ] Read programs from stdin instead of files
