@@ -10,7 +10,7 @@ It contains the following somewhat finished projects:
 A small website to help you in choosing beneficial neighbours for your next
 planting project.
 
-Please see the project's ![README](/cmd/plantguild/README.md) for more information.
+Please see the project's [README](/cmd/plantguild/README.md) for more information.
 
 ## Blog
 

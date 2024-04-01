@@ -3,7 +3,7 @@
 A small website to help you in choosing beneficial neighbours for your next
 planting project.
 
-![Screenshot](/media/plant-guild-screen.png?raw=true "Screenshot")
+![Screenshot](media/plant-guild-screen.png?raw=true "Screenshot")
 
 ## About
 
