@@ -26,7 +26,8 @@ and move `exit` to 1 so we can distinguish this.
 
 ## TODO
 
-- [ ] Reorder instructions so `ret` & `call` have well-defined values
+- [ ] Implement `quit` and figure out how to clear the stacks
+- [ ] Reorder instructions so `ret`, `const` & `call` have well-defined values
 - [ ] Implement debugging tool
 - [ ] Start the repl with `diatom repl`
 - [ ] Read programs from stdin instead of files

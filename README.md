@@ -1,5 +1,17 @@
 # Mono-repo for Personal Projects
 
+This repository contains most of the things I'm currently working on plus a
+bunch of helper libraries.
+
+It contains the following somewhat finished projects:
+
+## Plant Guild
+
+A small website to help you in choosing beneficial neighbours for your next
+planting project.
+
+Please see the project's ![README](/cmd/plantguild/README.md) for more information.
+
 ## Blog
 
 ### Atom Feed
