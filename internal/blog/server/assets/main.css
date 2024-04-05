@@ -124,6 +124,10 @@ aside::before {
   opacity: .6;
 }
 
+blockquote {
+	font-style: italic;
+}
+
 pre {
   overflow-x: auto;
 }
@@ -201,3 +205,4 @@ img {
   display: flex;
   justify-content: space-between;
 }
+

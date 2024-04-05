@@ -43,6 +43,7 @@ func init() {
 	gob.Register(&Paragraph{})
 	gob.Register(&CodeBlock{})
 	gob.Register(&CommentBlock{})
+	gob.Register(&BlockQuote{})
 	gob.Register(&UnorderedList{})
 	gob.Register(&Properties{})
 }

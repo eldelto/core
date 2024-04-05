@@ -19,6 +19,8 @@ const (
 	codeBlockEnd      = "#+end_src"
 	commentBlockStart = "#+begin_comment"
 	commentBlockEnd   = "#+end_comment"
+	blockQuoteStart = "#+begin_quote"
+	blockQuoteEnd   = "#+end_quote"
 )
 
 var emptyTime = time.Time{}
@@ -118,6 +120,18 @@ func (cb *CommentBlock) GetContent() string {
 }
 
 func (cb *CommentBlock) GetChildren() []TextNode {
+	return nil
+}
+
+type BlockQuote struct {
+	Content string
+}
+
+func (cb *BlockQuote) GetContent() string {
+	return cb.Content
+}
+
+func (cb *BlockQuote) GetChildren() []TextNode {
 	return nil
 }
 
@@ -231,6 +245,16 @@ func parseHeadline(t *tokenizer) (*Headline, error) {
 	return headline, nil
 }
 
+func indentationLevel(s string) int {
+	for i, r := range s {
+		if r != ' ' {
+			return i
+		}
+	}
+
+	return 0
+}
+
 func isCodeBlock(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), codeBlockStart)
 }
@@ -285,16 +309,6 @@ func isCommentBlockEnd(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), commentBlockEnd)
 }
 
-func indentationLevel(s string) int {
-	for i, r := range s {
-		if r != ' ' {
-			return i
-		}
-	}
-
-	return 0
-}
-
 func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 	token, line, err := t.token()
 	if err != nil {
@@ -320,6 +334,43 @@ func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 		}
 
 		commentBlock.Content += " " + token
+		t.consume()
+	}
+}
+
+func isBlockQuote(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), blockQuoteStart)
+}
+
+func isBlockQuoteEnd(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), blockQuoteEnd)
+}
+
+func parseBlockQuote(t *tokenizer) (*BlockQuote, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected block quote: %w", line, err)
+	}
+
+	if !isBlockQuote(token) {
+		return nil, parseError("expected block quote", line, token)
+	}
+
+	blockQuote := &BlockQuote{}
+	t.consume()
+
+	for {
+		token, line, err = t.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected block quote Content: %w", line, err)
+		}
+
+		if isBlockQuoteEnd(token) {
+			t.consume()
+			return blockQuote, nil
+		}
+
+		blockQuote.Content += " " + token
 		t.consume()
 	}
 }
@@ -473,6 +524,11 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 			nodes = append(nodes, node)
 		} else if isCommentBlock(token) {
 			if node, err = parseCommentBlock(t); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
+		} else if isBlockQuote(token) {
+			if node, err = parseBlockQuote(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
@@ -775,6 +831,8 @@ func TextNodeToHtml(t TextNode) string {
 	case *CommentBlock:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "aside"))
+	case *BlockQuote:
+		b.WriteString(tagged(content, "blockquote"))
 	case *UnorderedList:
 		b.WriteString("<ul>")
 		for _, child := range t.Children {
