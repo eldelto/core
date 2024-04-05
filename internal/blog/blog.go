@@ -19,11 +19,14 @@ const (
 	codeBlockEnd      = "#+end_src"
 	commentBlockStart = "#+begin_comment"
 	commentBlockEnd   = "#+end_comment"
-	blockQuoteStart = "#+begin_quote"
-	blockQuoteEnd   = "#+end_quote"
+	blockQuoteStart   = "#+begin_quote"
+	blockQuoteEnd     = "#+end_quote"
 )
 
-var emptyTime = time.Time{}
+var (
+	emptyTime        = time.Time{}
+	orderedListRegex = regexp.MustCompile(`\d+\.\s`)
+)
 
 type TextNode interface {
 	GetContent() string
@@ -150,6 +153,24 @@ func (ul *UnorderedList) GetContent() string {
 }
 
 func (ul *UnorderedList) GetChildren() []TextNode {
+	return ul.Children
+}
+
+type OrderedList struct {
+	Children []TextNode
+}
+
+func NewOrderedList() *OrderedList {
+	return &OrderedList{
+		Children: []TextNode{},
+	}
+}
+
+func (ul *OrderedList) GetContent() string {
+	return ""
+}
+
+func (ul *OrderedList) GetChildren() []TextNode {
 	return ul.Children
 }
 
@@ -375,12 +396,12 @@ func parseBlockQuote(t *tokenizer) (*BlockQuote, error) {
 	}
 }
 
-func isUnorderedList(token string) bool {
-	return strings.HasPrefix(strings.TrimSpace(token), "- ")
-}
-
 func isText(token string) bool {
 	return !(isHeadline(token) || isCodeBlock(token) || isCommentBlock(token))
+}
+
+func isUnorderedList(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), "- ")
 }
 
 func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
@@ -401,7 +422,7 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected unordered list Content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
 		}
 
 		if !isText(token) || t.sawEmptyLine() {
@@ -412,6 +433,51 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 
 		if isUnorderedList(token) {
 			node = NewParagraph(trimmedToken[2:])
+			list.Children = append(list.Children, node)
+		} else {
+			node.Content += " " + trimmedToken
+		}
+
+		t.consume()
+	}
+}
+
+func isOrderedList(token string) bool {
+	return orderedListRegex.MatchString(token)
+}
+
+func parseOrderedList(t *tokenizer) (*OrderedList, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected ordered list: %w", line, err)
+	}
+
+	if !isOrderedList(token) {
+		return nil, parseError("expected ordered list", line, token)
+	}
+
+	list := NewOrderedList()
+	trimmedToken := strings.TrimSpace(token)
+	parts := strings.SplitN(trimmedToken, " ", 2)
+	node := NewParagraph(parts[1])
+	list.Children = append(list.Children, node)
+	t.consume()
+
+	for {
+		token, line, err = t.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected ordered list content: %w", line, err)
+		}
+
+		if !isText(token) || t.sawEmptyLine() {
+			return list, nil
+		}
+
+		trimmedToken := strings.TrimSpace(token)
+
+		if isOrderedList(token) {
+			parts := strings.SplitN(trimmedToken, " ", 2)
+			node = NewParagraph(parts[1])
 			list.Children = append(list.Children, node)
 		} else {
 			node.Content += " " + trimmedToken
@@ -534,6 +600,11 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 			nodes = append(nodes, node)
 		} else if isUnorderedList(token) {
 			if node, err = parseUnorderedList(t); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
+		} else if isOrderedList(token) {
+			if node, err = parseOrderedList(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)
@@ -841,6 +912,14 @@ func TextNodeToHtml(t TextNode) string {
 			b.WriteString(tagged(content, "li"))
 		}
 		b.WriteString("</ul>")
+	case *OrderedList:
+		b.WriteString("<ol>")
+		for _, child := range t.Children {
+			content = html.EscapeString(child.GetContent())
+			content = replaceInlineElements(content)
+			b.WriteString(tagged(content, "li"))
+		}
+		b.WriteString("</ol>")
 	case *Properties:
 	default:
 		panic(fmt.Sprintf("unhandled type for HTML conversion: '%T'", t))

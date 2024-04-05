@@ -19,6 +19,11 @@
    - *local* - Applies only to the current Git repository; located
      at ~<project>/.git/config~
 
+
+   1. First element
+   2. Second element
+   3. Third element
+
 ** Blocks
 
    #+begin_quote

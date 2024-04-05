@@ -42,6 +42,12 @@ func TestParseOrgFile(t *testing.T) {
 	AssertEquals(t, "*global* - Applies to all projects of a single user; usually found at ~$HOME/.gitconfig~",
 		unorderedList.GetChildren()[1].GetContent(), "second list entry")
 
+	orderedList := lists.GetChildren()[1].(*OrderedList)
+	AssertEquals(t, "First element",
+		orderedList.GetChildren()[0].GetContent(), "first list entry")
+	AssertEquals(t, "Second element",
+		orderedList.GetChildren()[1].GetContent(), "second list entry")
+
 	blocks := headline.GetChildren()[4].(*Headline)
 	_, ok := blocks.GetChildren()[0].(*BlockQuote)
 	AssertEquals(t, true, ok, "is block quote")
