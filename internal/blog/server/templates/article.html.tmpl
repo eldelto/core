@@ -1,2 +1,6 @@
 {{define "title"}} {{.Title}} {{end}}
-{{define "content"}} {{.Content}} {{end}}
+{{define "content"}}
+<article class="h-entry">
+  {{.Content}}
+</article>
+{{end}}

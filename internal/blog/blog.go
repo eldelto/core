@@ -752,10 +752,14 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 	return articles, nil
 }
 
-func tagged(s, tag string) string {
+func tagged(s, tag string, attributes ...string) string {
 	b := strings.Builder{}
 	b.WriteRune('<')
 	b.WriteString(tag)
+	if len(attributes) > 0 {
+		b.WriteRune(' ')
+		b.WriteString(strings.Join(attributes, " "))
+	}
 	b.WriteRune('>')
 	b.WriteString(s)
 	b.WriteRune('<')
@@ -766,7 +770,7 @@ func tagged(s, tag string) string {
 	return b.String()
 }
 
-// TODO:Replace this hacky way of resolving text emphasis with a proper
+// TODO: Replace this hacky way of resolving text emphasis with a proper
 // parser as this comes with a lot of caveats.
 // The parser currently has to quite a bit of implicit knowledge how the
 // controller and service layer work, which is not really nice. Also I have
@@ -949,19 +953,27 @@ func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 
 	b.WriteString(`<div class="timestamps">`)
-	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly), "time"), "span"))
+	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
+		"time",
+		`class="dt-published"`),
+		"span"))
 
 	if a.UpdatedAt != emptyTime {
-		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly), "time"), "span"))
+		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly),
+			"time",
+			`class="dt-updated"`),
+			"span"))
 	}
 	b.WriteString("</div>")
 
-	b.WriteString(tagged(a.Title, "h1"))
+	b.WriteString(tagged(a.Title, "h1", `class="p-name"`))
 	writeTableOfContents(&a, &b)
 
+	b.WriteString(`<div class="e-content">`)
 	for _, child := range a.Children {
 		b.WriteString(TextNodeToHtml(child))
 	}
+	b.WriteString("</div>")
 
 	return b.String()
 }

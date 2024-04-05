@@ -84,7 +84,7 @@ func TestArticlesToHtml(t *testing.T) {
 	AssertStringContains(t, `(<cite>italic in parenthesis</cite>)`, html, "nested italics")
 
 	html = ArticleToHtml(articles[1])
-	AssertStringContains(t, "<h1>Raspberry Pi Pico no Hands Flashing</h1>", html, "title")
+	AssertStringContains(t, `<h1 class="p-name">Raspberry Pi Pico no Hands Flashing</h1>`, html, "title")
 	AssertStringContains(t, "<h2>Picotool</h2>", html, "sub-headline")
 	AssertStringContains(t,
 		`<a href="https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e" target="_blank">here</a>`,
