@@ -236,11 +236,24 @@ func (s *Service) CheckoutRepository(destination string) error {
 	return nil
 }
 
-func (s *Service) articleToFeedEntry(a Article) (atom.Entry, error) {
+func (s *Service) HomePage() string {
+	return s.host
+}
+
+func (s *Service) Permalink(a Article) (string, error) {
 	permalink, err := url.JoinPath(s.host, "articles", a.UrlEncodedTitle())
 	if err != nil {
-		return atom.Entry{}, fmt.Errorf("failed to create permalink for article %q: %w",
+		return "", fmt.Errorf("failed to create permalink for article %q: %w",
 			a.Title, err)
+	}
+
+	return permalink, nil
+}
+
+func (s *Service) articleToFeedEntry(a Article) (atom.Entry, error) {
+	permalink, err := s.Permalink(a)
+	if err != nil {
+		return atom.Entry{}, err
 	}
 
 	return atom.Entry{

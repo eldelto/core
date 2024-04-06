@@ -52,8 +52,10 @@ func getDraftArticles(service *blog.Service) web.Handler {
 }
 
 type articleData struct {
-	Title   string
-	Content template.HTML
+	Title     string
+	Permalink string
+	HomePage  string
+	Content   template.HTML
 }
 
 func getArticle(service *blog.Service) web.Handler {
@@ -66,10 +68,16 @@ func getArticle(service *blog.Service) web.Handler {
 		}
 
 		htmlArticle := blog.ArticleToHtml(article)
+		permalink, err := service.Permalink(article)
+		if err != nil {
+			return err
+		}
 
 		data := articleData{
-			Title:   article.Title,
-			Content: template.HTML(htmlArticle),
+			Title:     article.Title,
+			Permalink: permalink,
+			HomePage:  service.HomePage(),
+			Content:   template.HTML(htmlArticle),
 		}
 
 		return articleTemplate.Execute(w, data)
