@@ -22,6 +22,9 @@ const (
 //go:embed preamble.dasm
 var Preamble string
 
+//go:embed stdlib.dia
+var Stdlib string
+
 func wordToBytes(w Word) [WordSize]byte {
 	bytes := [WordSize]byte{}
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -29,7 +30,10 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		vm, err := diatom.NewDefaultVM(program)
+		input := io.MultiReader(bytes.NewBufferString(diatom.Stdlib),
+			os.Stdin)
+
+		vm, err := diatom.NewVM(program, input, os.Stdout)
 		if err != nil {
 			log.Fatal(err)
 		}
