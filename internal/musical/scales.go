@@ -26,18 +26,35 @@ func (s *ScaleDegrees) Shift(name string, offset int) ScaleDegrees {
 }
 
 var (
-	// Also Ionian
+	// Basic Scales
 	MajorScaleDegrees = ScaleDegrees{
 		name:      "major",
 		intervals: []int{2, 2, 1, 2, 2, 2, 1},
 	}
-	DorianScaleDegrees     = MajorScaleDegrees.Shift("dorian", 2)
-	PhrygianScaleDegrees   = MajorScaleDegrees.Shift("phrygian", 3)
-	LydianScaleDegrees     = MajorScaleDegrees.Shift("lydian", 4)
-	MixolydianScaleDegrees = MajorScaleDegrees.Shift("mixolydian", 5)
-	// Also Aeolian
-	MinorScaleDegrees   = MajorScaleDegrees.Shift("minor", 6)
-	LocrianScaleDegrees = MajorScaleDegrees.Shift("locrian", 7)
+	MinorScaleDegrees = MajorScaleDegrees.Shift("minor", 6)
+
+	// Major Modes
+	IonianScaleDegrees     = MajorScaleDegrees.Shift("ionian", 1)
+	DorianScaleDegrees     = IonianScaleDegrees.Shift("dorian", 2)
+	PhrygianScaleDegrees   = IonianScaleDegrees.Shift("phrygian", 3)
+	LydianScaleDegrees     = IonianScaleDegrees.Shift("lydian", 4)
+	MixolydianScaleDegrees = IonianScaleDegrees.Shift("mixolydian", 5)
+	AeolianScaleDegrees    = IonianScaleDegrees.Shift("aeolian", 6)
+	LocrianScaleDegrees    = IonianScaleDegrees.Shift("locrian", 7)
+
+	// Blues Scales
+	HexatonicBluesScaleDegrees = ScaleDegrees{
+		name:      "hexatonic blues",
+		intervals: []int{3, 2, 1, 1, 3, 2},
+	}
+	HeptatonicBluesScaleDegrees = ScaleDegrees{
+		name:      "heptatonic blues",
+		intervals: []int{2, 1, 2, 1, 3, 1, 2},
+	}
+	NonatonicBluesScaleDegrees = ScaleDegrees{
+		name:      "nonatonic blues",
+		intervals: []int{2, 1, 1, 1, 2, 2, 1, 1, 1},
+	}
 )
 
 func notesFromIntervals(tonic Note, intervals []int) []Note {
