@@ -13,12 +13,18 @@ var (
 	degrees = []musical.ScaleDegrees{
 		musical.MajorScaleDegrees,
 		musical.MinorScaleDegrees,
+
+		musical.IonianScaleDegrees,
 		musical.DorianScaleDegrees,
 		musical.PhrygianScaleDegrees,
 		musical.LydianScaleDegrees,
 		musical.MixolydianScaleDegrees,
-		musical.MinorScaleDegrees,
+		musical.AeolianScaleDegrees,
 		musical.LocrianScaleDegrees,
+
+		musical.HexatonicBluesScaleDegrees,
+		musical.HeptatonicBluesScaleDegrees,
+		musical.NonatonicBluesScaleDegrees,
 	}
 
 	tonics = []musical.Note{
