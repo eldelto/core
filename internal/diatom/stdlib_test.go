@@ -9,7 +9,7 @@ import (
 
 func TestStdlib(t *testing.T) {
 	tests := []struct {
-		program        string
+		program         string
 		wantDataStack   []Word
 		wantReturnStack []Word
 		input           string

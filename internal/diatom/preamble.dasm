@@ -469,6 +469,15 @@ rpop drop drop drop
   ![
 .end
 
+( -- )
+( Consumes all words until it finds a ')'. )
+.immediate-codeword (
+  !word
+  dup @ const 1 =
+  swap !w+ b@ const 41 =
+  & ~ cjmp @_dict(
+.end
+
 
 ( The main codeword goes here. )
 {main}

@@ -143,7 +143,7 @@ func WithStdlib(program string) (*VM, error) {
 	}
 
 	input := io.MultiReader(bytes.NewBufferString(Stdlib),
-		bytes.NewBufferString(program + " "),
+		bytes.NewBufferString(program+" "),
 		os.Stdin)
 
 	return NewVM(dopc, input, os.Stdout)

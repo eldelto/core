@@ -238,6 +238,9 @@ func TestPreamble(t *testing.T) {
 			": double dup + ; latest @ codeword 1+ w+ 1+ w+ b@ 2 =", ""},
 		{"!interpret", []Word{20}, []Word{}, ": double dup + ; 10 double", ""},
 		{"!interpret", []Word{14}, []Word{}, ": add2 2 + ; 10 add2 add2", ""},
+
+		// Comments
+		{"!interpret", []Word{12}, []Word{}, ": add2 2 + ; 10 ( add2 ) add2", ""},
 	}
 
 	for _, tt := range tests {
