@@ -1,11 +1,11 @@
 ( TODO:
-- [ ] Implement '(' and ')' in assembly
-- [ ] Implement ''' (tick) gets the codeword pointer of the following word
-- [ ] Implement 0branch & branch add/subtract the current stack value from
-      their return stack, so the 'ret' instruction basically performs a jump
-- [ ] Implement 'literal' that compiles the stack value to 'const <value>'
-- [ ] [compile] compiles immediate words
-- [ ] Extend the interpreter to support recursion
-
+    - [ ] Implement '(' and ')' in assembly
+    - [ ] Implement ''' (tick) gets the codeword pointer of the following word
+    - [ ] Implement 0branch & branch add/subtract the current stack value from
+	their return stack, so the 'ret' instruction basically performs a jump
+    - [ ] Implement 'literal' that compiles the stack value to 'const <value>'
+    - [ ] [compile] compiles immediate words
+    - [ ] Extend the interpreter to support recursion
 )
+
 : double dup + ;

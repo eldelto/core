@@ -1,10 +1,13 @@
 package diatom
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"io"
 	"math"
+	"os"
+	"strings"
 )
 
 type Word int32
@@ -129,4 +132,19 @@ func instructionFromOpcode(b byte) string {
 	}
 
 	return "UNKNOWN"
+}
+
+func WithStdlib(program string) (*VM, error) {
+	main := ".codeword main !interpret .end"
+	repl := strings.Replace(Preamble, MainTemplate, main, 1)
+	_, _, dopc, err := Assemble(bytes.NewBufferString(repl))
+	if err != nil {
+		return nil, err
+	}
+
+	input := io.MultiReader(bytes.NewBufferString(Stdlib),
+		bytes.NewBufferString(program + " "),
+		os.Stdin)
+
+	return NewVM(dopc, input, os.Stdout)
 }
