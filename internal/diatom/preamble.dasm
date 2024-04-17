@@ -333,7 +333,7 @@ rpop drop drop drop
 .end
 
 ( addr -- addr )
-( Takes the start address of a word and returns the addres of its code word. )
+( Takes the start address of a word and returns the address of its code word. )
 .codeword codeword
   !w+ dup b@
   const 127 & ( Ignore the immediate flag. )
