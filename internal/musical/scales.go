@@ -55,6 +55,12 @@ var (
 		name:      "nonatonic blues",
 		intervals: []int{2, 1, 1, 1, 2, 2, 1, 1, 1},
 	}
+
+	// Japanese Scales
+	HirajōshiScaleDegrees = ScaleDegrees{
+		name:      "hirajōshi",
+		intervals: []int{2, 1, 4, 1},
+	}
 )
 
 func notesFromIntervals(tonic Note, intervals []int) []Note {
