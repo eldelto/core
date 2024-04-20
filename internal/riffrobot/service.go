@@ -25,6 +25,8 @@ var (
 		musical.HexatonicBluesScaleDegrees,
 		musical.HeptatonicBluesScaleDegrees,
 		musical.NonatonicBluesScaleDegrees,
+
+		musical.HirajōshiScaleDegrees,
 	}
 
 	tonics = []musical.Note{
