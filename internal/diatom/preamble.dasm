@@ -308,9 +308,13 @@ rpop drop drop drop
   ( The most significant bit is the immediate flag and we want to ignore it. )
   dup !1+
   swap b@ const 127 &
+  dup !word-buffer const 3 + b@ = ~ cjmp @word=-false
   !word-buffer !w+
-  swap
-  !mem=
+  swap !mem= ret
+
+:word=-false
+  drop drop
+  !false
 .end
 
 ( addr -- addr )

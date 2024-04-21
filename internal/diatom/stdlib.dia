@@ -1,5 +1,4 @@
 ( TODO:
-    - [ ] Fix 'word=' as it currently does accidental prefix matches
     - [ ] Implement 'literal' that compiles the stack value to 'const <value>'
     - [ ] Implement 0branch & branch add/subtract the current stack value from
 	their return stack, so the 'ret' instruction basically performs a jump
@@ -9,9 +8,9 @@
 
 ( -- addr )
 ( Returns the codeword pointer of the following word. )
-: ' word drp find codeword ; 
+: ' word drop find codeword ; 
 
 
 
 
-: double duplia + ;
+: double dup + ;

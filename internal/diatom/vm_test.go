@@ -194,11 +194,12 @@ func TestPreamble(t *testing.T) {
 		{"const 0 const 5 !mem-view", []Word{}, []Word{}, "", "0: 3\n1: 255\n2: 255\n3: 255\n4: 255\n5: 15\n"},
 
 		// Dictionary Operations
-		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
-		{"!word drop const @mem-view !word=", []Word{0}, []Word{}, "mem-view ", ""},
 		{"const 777 !latest ! !latest @", []Word{777}, []Word{}, "", ""},
 		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
 		{"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "asdf ", ""},
+		{"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "mem-viewX ", ""},
+		{"!word drop const @1- !w+ !word=", []Word{0}, []Word{}, "10 ", ""},
+		{"!word drop const @immediate !w+ !word=", []Word{-1}, []Word{}, "immediate ", ""},
 		{"!word drop !latest @ !w+ !word=", []Word{-1}, []Word{}, "latest ", ""},
 		{"!word drop !find", []Word{87}, []Word{}, "drop ", ""},
 		{"!word drop !find", []Word{0}, []Word{}, "asdf ", ""},
