@@ -240,7 +240,7 @@ func TestPreamble(t *testing.T) {
 		{"!interpret", []Word{20}, []Word{}, ": double dup + ; 10 double", ""},
 		{"!interpret", []Word{14}, []Word{}, ": add2 2 + ; 10 add2 add2", ""},
 
-		// Comments
+		// Compile-Time Words
 		{"!interpret", []Word{12}, []Word{}, ": add2 2 + ; 10 ( add2 ) add2", ""},
 	}
 

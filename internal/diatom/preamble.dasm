@@ -28,6 +28,8 @@ cjmp
 .codeword > > .end
 .codeword b@ b@ .end
 .codeword b! b! .end
+.codeword 'ret' const 2 .end
+.codeword 'const' const 3 .end
 
 
 ( Utilities )
@@ -433,13 +435,13 @@ rpop drop drop drop
 
 ( -- )
 ( Disables compilation mode. )
-.codeword [
+.immediate-codeword [
   !false !state !
 .end
 
 ( -- )
 ( Enables compilation mode. )
-.codeword ]
+.immediate-codeword ]
   !true !state !
 .end
 
@@ -481,7 +483,6 @@ rpop drop drop drop
   swap !w+ b@ const 41 =
   & ~ cjmp @_dict(
 .end
-
 
 ( The main codeword goes here. )
 {main}
