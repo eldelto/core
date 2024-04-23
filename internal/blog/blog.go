@@ -859,7 +859,7 @@ func replaceInternalLinks() func(string) string {
 }
 
 func replaceWrappedText(symbol, replacement string) func(string) string {
-	r := regexp.MustCompile(`([^"<>/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
+	r := regexp.MustCompile(`([^"<>:/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
 
 	return func(s string) string {
 		// Add space so the regex also matches when symbol is at the start.
