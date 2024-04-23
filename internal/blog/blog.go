@@ -640,7 +640,10 @@ func parseOrgFile(r io.Reader) (*Headline, error) {
 }
 
 func urlEncodeTitle(title string) string {
-	return url.QueryEscape((strings.ReplaceAll(strings.ToLower(title), " ", "-")))
+	title = strings.ToLower(title)
+	replacer := strings.NewReplacer(" ", "-", "'", "")
+	title = replacer.Replace(title)
+	return url.QueryEscape(title)
 }
 
 func firstRunes(s string, n int) string {
