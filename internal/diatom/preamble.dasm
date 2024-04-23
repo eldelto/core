@@ -26,6 +26,9 @@ cjmp
 .codeword | | .end
 .codeword < < .end
 .codeword > > .end
+.codeword rpop rpop rpop swap rput .end
+.codeword rput rpop swap rput rput .end
+.codeword rpeek rpeek .end
 .codeword b@ b@ .end
 .codeword b! b! .end
 .codeword 'ret' const 2 .end
