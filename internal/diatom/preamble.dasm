@@ -487,6 +487,18 @@ rpop drop drop drop
   & ~ cjmp @_dict(
 .end
 
+( int -- )
+( Jumps the specified amount of bytes forwards or backwards. )
+.codeword 0branch rpop + rput .end
+
+( int bool -- )
+( Jumps the specified amount of bytes forwards or backwards if the
+bool is true. )
+.codeword branch
+  !true = *
+  rpop swap - rput
+.end
+
 ( The main codeword goes here. )
 {main}
 

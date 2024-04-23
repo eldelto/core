@@ -242,6 +242,11 @@ func TestPreamble(t *testing.T) {
 
 		// Compile-Time Words
 		{"!interpret", []Word{12}, []Word{}, ": add2 2 + ; 10 ( add2 ) add2", ""},
+		// Branching
+		{"const 10 const 5 !0branch const 20", []Word{10}, []Word{}, "", ""},
+		{"const 10 const 0 !0branch const 20", []Word{10, 20}, []Word{}, "", ""},
+		{"const 10 const 5 !true !branch const 20", []Word{10}, []Word{}, "", ""},
+		{"const 10 const 5 !false !branch const 20", []Word{10, 20}, []Word{}, "", ""},
 	}
 
 	for _, tt := range tests {

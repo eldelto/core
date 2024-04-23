@@ -19,7 +19,6 @@ func TestStdlib(t *testing.T) {
 		{"4 double", []Word{8}, []Word{}, "", ""},
 		{"' drop", []Word{96}, []Word{}, "", ""},
 		{": l4 [ 4 ] literal ; l4 l4 +", []Word{8}, []Word{}, "", ""},
-		{": test 10 5 0branch 20 ; test", []Word{10}, []Word{}, "", ""},
 	}
 
 	for _, tt := range tests {

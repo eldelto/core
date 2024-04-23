@@ -1,6 +1,4 @@
 ( TODO:
-    - [ ] Implement 0branch & branch add/subtract the current stack value from
-	their return stack, so the 'ret' instruction basically performs a jump
     - [ ] Split out preamble tests
     - [ ] Test return stack words
     - [ ] [compile] compiles immediate words
@@ -13,13 +11,8 @@
 : ' word drop find codeword ; 
 
 ( int -- )
-( Takes the number from stack and appends it as 'const int' to the
-  dictionary. )
+( Takes the number from stack and appends it as 'const <int>' to
+  the dictionary. )
 : literal immediate 'const' b, , ;
-
-( int -- )
-( TODO: Implement in assembly )
-( Jumps the specified amount of bytes forwards or backwards. )
-: 0branch rpop + rput ;
 
 : double dup + ;
