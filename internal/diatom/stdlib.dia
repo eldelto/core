@@ -1,5 +1,4 @@
 ( TODO:
-    - [ ] Split out preamble tests
     - [ ] Test return stack words
     - [ ] [compile] compiles immediate words
     - [ ] Implement 'if' & 'then'
