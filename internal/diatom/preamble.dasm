@@ -489,12 +489,12 @@ rpop drop drop drop
 
 ( int -- )
 ( Jumps the specified amount of bytes forwards or backwards. )
-.codeword 0branch rpop + rput .end
+.codeword branch rpop + rput .end
 
 ( int bool -- )
-( Jumps the specified amount of bytes forwards or backwards if the
-bool is true. )
-.codeword branch
+( Conditional branch, jumps the specified amount of bytes forwards or
+backwards if the bool is true. )
+.codeword cbranch
   !true = *
   rpop swap - rput
 .end

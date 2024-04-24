@@ -1,7 +1,6 @@
 ( TODO:
-    - [ ] Test return stack words
-    - [ ] [compile] compiles immediate words
     - [ ] Implement 'if' & 'then'
+    - [ ] Implement recurse
     - [ ] Extend the interpreter to support recursion
 )
 
@@ -17,3 +16,10 @@
 ( -- )
 ( Compiles the next word even though it is an immediate word. )
 : [compile] immediate 'call' b, ' , ;
+
+( -- )
+( TODO: Something is up here... )
+: if immediate [ 0 ] literal here @ [compile] cbranch . . ;
+
+( -- )
+: then immediate dup here @ swap - swap ! ;

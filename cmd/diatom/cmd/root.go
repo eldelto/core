@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		input := io.MultiReader(bytes.NewBufferString(diatom.Stdlib),
+		input := io.MultiReader(bytes.NewBufferString(diatom.Stdlib + " "),
 			os.Stdin)
 
 		vm, err := diatom.NewVM(program, input, os.Stdout)
