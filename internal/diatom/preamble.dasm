@@ -33,6 +33,7 @@ cjmp
 .codeword b! b! .end
 .codeword 'ret' const 2 .end
 .codeword 'const' const 3 .end
+.codeword 'call' const 16 .end
 
 
 ( Utilities )
@@ -362,7 +363,7 @@ rpop drop drop drop
   !true cjmp @_dictinterpret
 
 :interpret-compile
-  const 16 !b, !,   ( 16 is the 'call' instruction )
+  !'call' !b, !,
   !true cjmp @_dictinterpret
 
 :interpret-number
@@ -373,7 +374,7 @@ rpop drop drop drop
   !true cjmp @_dictinterpret
 
 :interpret-compile-number
-  const 3 !b, !,   ( 3 is the 'const' instruction )
+  !'const' !b, !,
   !true cjmp @_dictinterpret
 
 :interpret-error
@@ -473,8 +474,7 @@ rpop drop drop drop
 ( -- )
 ( Appends 'ret' and ends compilation. )
 .immediate-codeword ;
-  ( 2 is equal to the RET instruction )
-  const 2 !b,
+  !'ret' !b,
   ![
 .end
 

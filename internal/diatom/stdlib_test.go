@@ -16,9 +16,9 @@ func TestStdlib(t *testing.T) {
 		wantOutput      string
 	}{
 		// Fundamental words
-		{"4 double", []Word{8}, []Word{}, "", ""},
 		{"' drop", []Word{96}, []Word{}, "", ""},
 		{": l4 [ 4 ] literal ; l4 l4 +", []Word{8}, []Word{}, "", ""},
+		{": A immediate 65 emit ; : test [compile] A ; test test", []Word{}, []Word{}, "", "AA"},
 	}
 
 	for _, tt := range tests {
