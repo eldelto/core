@@ -14,12 +14,16 @@
 : literal immediate 'const' b, , ;
 
 ( -- )
-( Compiles the next word even though it is an immediate word. )
-: [compile] immediate 'call' b, ' , ;
+( While compiling, compiles the next word even though it is an
+immediate word. )
+: [compile] immediate 'call' b, ' , emit-word ;
+
+( Also doesn't work when called via an immediate word. )
+: call' 'call' b, ' , ;
 
 ( -- )
 ( TODO: Something is up here... )
-: if immediate [ 0 ] literal here @ [compile] cbranch . . ;
+: if immediate [ 0 ] literal here @ call' swap ;
 
 ( -- )
 : then immediate dup here @ swap - swap ! ;
