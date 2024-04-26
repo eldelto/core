@@ -142,7 +142,7 @@ func WithStdlib(program string) (*VM, error) {
 		return nil, err
 	}
 
-	input := io.MultiReader(bytes.NewBufferString(Stdlib + " "),
+	input := io.MultiReader(bytes.NewBufferString(Stdlib+" "),
 		bytes.NewBufferString(program+" "),
 		os.Stdin)
 

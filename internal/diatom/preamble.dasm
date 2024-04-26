@@ -495,7 +495,7 @@ rpop drop drop drop
 ( Conditional branch, jumps the specified amount of bytes forwards or
 backwards if the bool is true. )
 .codeword cbranch
-  !true = *
+  !false = *
   rpop swap - rput
 .end
 

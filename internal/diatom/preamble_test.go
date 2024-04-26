@@ -160,8 +160,8 @@ func TestPreamble(t *testing.T) {
 		// Branching
 		{"const 10 const 5 !branch const 20", []Word{10}, []Word{}, "", ""},
 		{"const 10 const 0 !branch const 20", []Word{10, 20}, []Word{}, "", ""},
-		{"const 10 const 5 !true !cbranch const 20", []Word{10}, []Word{}, "", ""},
-		{"const 10 const 5 !false !cbranch const 20", []Word{10, 20}, []Word{}, "", ""},
+		{"const 10 const 5 !false !cbranch const 20 const 11", []Word{10, 11}, []Word{}, "", ""},
+		{"const 10 const 5 !true !cbranch const 20", []Word{10, 20}, []Word{}, "", ""},
 	}
 
 	for _, tt := range tests {

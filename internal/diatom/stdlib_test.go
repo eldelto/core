@@ -22,8 +22,10 @@ func TestStdlib(t *testing.T) {
 		{": a immediate ref dup postpone ; : test 5 a ; test", []Word{5, 5}, []Word{}, "", ""},
 
 		// Conditionals
-		//{": test if 11 then 22 ; ", []Word{22}, []Word{}, "", ""},
-		//{": test if 11 then 22 ; true test", []Word{11, 22}, []Word{}, "", ""},
+		//{": test if 11 ; ", []Word{2988}, []Word{}, "", ""},
+		{": test if 11 then 22 ; ", []Word{}, []Word{}, "", ""},
+		{": test if 11 then 22 ; true test", []Word{11, 22}, []Word{}, "", ""},
+		{": test if 11 then 22 ; false test", []Word{22}, []Word{}, "", ""},
 	}
 
 	for _, tt := range tests {
