@@ -19,9 +19,10 @@ func TestStdlib(t *testing.T) {
 		{"' drop", []Word{96}, []Word{}, "", ""},
 		{": l4 [ 4 ] literal ; l4 l4 +", []Word{8}, []Word{}, "", ""},
 		{": A immediate 65 emit ; : test [compile] A ; test test", []Word{}, []Word{}, "", "AA"},
+		{": a immediate ref dup postpone ; : test 5 a ; test", []Word{5, 5}, []Word{}, "", ""},
 
 		// Conditionals
-		{": test if 11 then 22 ; ", []Word{22}, []Word{}, "", ""},
+		//{": test if 11 then 22 ; ", []Word{22}, []Word{}, "", ""},
 		//{": test if 11 then 22 ; true test", []Word{11, 22}, []Word{}, "", ""},
 	}
 

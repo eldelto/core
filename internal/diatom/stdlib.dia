@@ -2,28 +2,43 @@
     - [ ] Implement 'if' & 'then'
     - [ ] Implement recurse
     - [ ] Extend the interpreter to support recursion
-)
 
-( -- addr )
-( Returns the codeword pointer of the following word. )
-: ' word drop find codeword ; 
+    - [X] I need a way to compile immediate words => [compile]
+    - [ ] I need a way to compile words into another word => ref emit postpone
+)
 
 ( int -- )
 ( Takes the number from stack and appends it as 'const <int>' to
   the dictionary. )
 : literal immediate 'const' b, , ;
 
+( -- addr )
+( Returns the codeword pointer of the next word from the input
+stream. )
+: ' word drop find codeword ; 
+
 ( -- )
 ( While compiling, compiles the next word even though it is an
 immediate word. )
-: [compile] immediate 'call' b, ' , emit-word ;
+: [compile] immediate 'call' b, ' , ;
 
-( Also doesn't work when called via an immediate word. )
-: call' 'call' b, ' , ;
+( -- )
+( Compiles the codeword pointer of the following word into the current
+definition. )
+: ref immediate ' [compile] literal ;
+
+( addr -- )
+( Compiles a call to the given address into the currently compiled
+definition. )
+: postpone 'call' b, , ;
 
 ( -- )
 ( TODO: Something is up here... )
-: if immediate [ 0 ] literal here @ call' swap ;
+: if immediate
+  [ 0 ] literal here @
+  ref swap postpone
+  ref cbranch postpone
+;
 
 ( -- )
 : then immediate dup here @ swap - swap ! ;
