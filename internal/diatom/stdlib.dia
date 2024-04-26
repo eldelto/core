@@ -1,5 +1,7 @@
 ( TODO:
-    - [ ] Implement else
+    - [ ] Test conditionals
+    - [ ] Think about implementing conditionals in terms of
+	  'jmp' & 'cjmp' directly
     - [ ] Implement recurse
     - [ ] Extend the interpreter to support recursion
 )
@@ -49,4 +51,13 @@ currently compiled definition. )
 complete the branching construct. )
 : then immediate
   dup here @ swap - 15 - swap 1 + !
+;
+
+( -- )
+( Slightly modified combination of 'then' and 'if'. It sets the branch
+offset of the 'if' call in a way so it lands just after the 'cbranch'
+of 'else' and therefore executes it. )
+: else immediate
+  dup here @ swap - 5 + swap 1 + !
+  ref false postpone [compile] if
 ;
