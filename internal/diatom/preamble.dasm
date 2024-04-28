@@ -1,0 +1,527 @@
+const
+-1
+cjmp
+@init
+
+
+( Instructions )
+.codeword exit exit .end
+.codeword @ @ .end
+.codeword ! ! .end
+.codeword + + .end
+.codeword - - .end
+.codeword * * .end
+.codeword / / .end
+.codeword % % .end
+.codeword dup dup .end
+.codeword drop drop .end
+.codeword swap swap .end
+.codeword over over .end
+.codeword scall scall .end
+.codeword key key .end
+.codeword emit emit .end
+.codeword = = .end
+.codeword ~ ~ .end
+.codeword & & .end
+.codeword | | .end
+.codeword < < .end
+.codeword > > .end
+.codeword rpop rpop rpop swap rput .end
+.codeword rput rpop swap rput rput .end
+.codeword rpeek rpeek .end
+.codeword b@ b@ .end
+.codeword b! b! .end
+.codeword 'ret' const 2 .end
+.codeword 'const' const 3 .end
+.codeword 'call' const 16 .end
+
+
+( Utilities )
+.codeword word-max const 2147483647 .end
+.codeword word-min const -2147483648 .end
+.codeword constw const 4 .end
+.codeword w+ !constw + .end
+.codeword 1+ const 1 + .end
+.codeword 1- const 1 - .end
+.codeword !1+ dup @ const 1 + swap ! .end
+.codeword 2dup over over .end
+.codeword 2drop drop drop .end
+.codeword true const -1 .end
+.codeword false const 0 .end
+.codeword newline const 10 emit .end
+.codeword spc const 32 emit .end
+
+
+( Word Handling )
+.var word-buffer 32 .end
+
+.var word-cursor 4 .end
+.codeword reset-word-cursor const 0 !word-cursor ! .end
+
+.codeword is-blank? const 33 < .end
+.codeword non-blank-key
+  key dup !is-blank? ~ cjmp @nbk1
+  drop const -1 cjmp @_dictnon-blank-key :nbk1
+.end
+
+.codeword store-in-word
+  !word-buffer !word-cursor @ !w+ + b!
+  !word-cursor !!1+
+.end
+.codeword finish-word !word-cursor @ !word-buffer ! !reset-word-cursor .end
+.codeword word
+  !non-blank-key
+  :word1 !store-in-word
+  key dup !is-blank? ~ cjmp @word1
+  drop !finish-word !word-buffer
+.end
+
+.var emit-word-cursor 4 .end
+.codeword reset-emit-word-cursor const 0 !emit-word-cursor ! .end
+.codeword emit-word
+  !reset-emit-word-cursor
+  :emit-word1 !word-buffer @ !emit-word-cursor @ > ~ cjmp @emit-word2
+  !word-buffer !emit-word-cursor @ !w+ + b@ emit
+  !emit-word-cursor !!1+
+  const -1 cjmp @emit-word1
+  :emit-word2
+.end
+
+
+( Number Parsing )
+
+( number -- bool )
+( Checks wheter the number is equal to the max/min value that can be stored in
+  a single word. )
+.codeword saturated?
+  dup !word-max =
+  swap !word-min = |
+.end
+
+( base exponent -- number )
+( Negative exponents will return the unmodified base. )
+.codeword pow
+  dup const 0 = cjmp @pow-1
+  swap dup rput swap
+:pow-loop
+  dup const 2 < cjmp @pow-end
+  swap
+  rpop dup rput *
+  swap const 1 -
+  const -1 cjmp @pow-loop
+:pow-end
+  drop
+  rpop
+  drop
+  ret
+:pow-1
+  drop
+  drop
+  const 1
+.end
+
+( char -- bool )
+( Tests if the given character represents a digit. )
+.codeword number?
+  dup const 47 > swap const 58 < &
+.end
+
+( char -- bool )
+( Tests if the given char equals "-". )
+.codeword minus?
+  const 45 =
+.end
+
+( -- bool )
+( Tests the first character of "word-buffer" to be equal to "-". )
+.codeword negative-number?
+  !word-buffer !w+ b@ !minus?
+.end
+
+( number -- number )
+( Returns the unit value of the number preserving its sign. )
+.codeword unit
+  const 0 < cjmp @unit-t
+  const 1
+  ret
+:unit-t
+  const -1
+.end
+
+( number -- bool )
+( Tests if the given number is negative. )
+.codeword negative?
+	const 0 <
+.end
+
+( -- number error )
+( Converts the content of "word-buffer" to a number and puts it on the stack.
+  If the string is not a valid number or exceeds the maximum representable
+  range, error will be -1 and the result should be discarded. )
+.codeword number
+  !negative-number?
+  dup const -1 * rput	( Skip the first char if it is '-' )
+  !unit			( 1 or -1 if '-' )
+  const 0		( Init result )
+:number-loop
+  !word-buffer !w+ rpeek + b@				( Read char at offset rpeek )
+  dup !number? ~ cjmp @number-err
+  const 48 -
+  const 10 !word-buffer @ const 1 - rpeek - !pow * +	( Scale digit at offset )
+  rpop const 1 + rput
+  rpeek !word-buffer @ < cjmp @number-loop
+  *		  ( Negate if word started with '-' )
+
+  dup !saturated? ( Return an error if we might have encountered an overflow. )
+  rpop drop
+  ret
+:number-err
+  drop drop drop	( Cleanup )
+  rpop drop
+  const -1		( -1 to indicate error )
+.end
+
+
+( Number Printing )
+
+( number -- char )
+( Takes the last digit of a number and converts it to its
+  ASCII representation. )
+.codeword digit-to-char
+  const 10 %	( Get last digit )
+  dup !unit *   ( Convert to positive number )
+  const 48 +	( Add '0' to it )
+.end
+
+( number -- number )
+( Returns the count of digits of the given number. The count will include the
+  minus sign of negative numbers. )
+.codeword digit-count
+  dup const -1 > const 1 +
+  swap
+
+:digit-count-loop
+  swap const 1 + swap
+  const 10 /
+  dup const 0 = ~ cjmp @digit-count-loop
+  drop
+.end
+
+( number -- number)
+( Stores the last digit of the given number in "word-buffer" at the offset it
+  appears in the number. Leaves number / 10 on the stack or "word-min" if the
+  last digit has been converted. )
+.codeword last-digit-to-word
+  dup
+  dup !digit-count rput
+  !digit-to-char
+  !word-buffer !w+
+  rpeek !1-
+  + b!
+  const 10 /
+
+  rpeek const 1 = cjmp @ldtw-last-digit
+
+  dup const 0 =
+  rpeek const 2 =
+  & cjmp @ldtw-last-negative-digit
+
+  rpop drop
+  ret
+
+:ldtw-last-negative-digit
+  const 45 !word-buffer !w+ b!
+
+:ldtw-last-digit
+  rpop drop
+  drop !word-min
+.end
+
+( number -- )
+( Stores a number's ASCII representation in "word-buffer". )
+.codeword number-to-word
+  dup !digit-count	( Get number of digits )
+  !word-buffer !	( Store future len in word-buffer )
+
+:number-to-word-loop
+  !last-digit-to-word
+  dup !word-min = ~ cjmp @number-to-word-loop
+
+  drop
+.end
+
+.codeword char-at
+  !1- !w+ + b@
+.end
+
+( number -- )
+( Emits a number's ASCII representation. )
+.codeword .
+  !number-to-word !emit-word
+.end
+
+
+( Memory Operations )
+
+( a b len -- bool )
+( Compares the two given memory locations for len bytes and returns a bool
+  indicating equal contents. )
+.codeword mem=
+  rput !false
+:mem=-loop
+  rpop !1- dup rput const 0 < cjmp @mem=-end
+  drop
+  over rpeek + b@
+  over rpeek + b@
+  = dup cjmp @mem=-loop
+
+:mem=-end
+rpop drop rput drop drop rpop
+.end
+
+( src dest len -- )
+( Copies len bytes from the source to the destination address. )
+.codeword memcpy
+  !1+ rput
+:memcpy-loop
+  rpop !1- dup rput const 0 < cjmp @memcpy-end
+  over rpeek + b@
+  over rpeek + b!
+  !true cjmp @memcpy-loop
+
+:memcpy-end
+rpop drop drop drop
+.end
+
+( start end -- )
+( Prints the memory contents between the given start and end address. )
+.codeword mem-view
+  swap dup !.
+  const 58 emit !spc
+  dup b@ !.
+  !newline
+  !1+ swap !2dup > ~ cjmp @_dictmem-view
+  !2drop
+.end
+
+
+( Dictionary Operations )
+
+( addr -- bool )
+( Takes the address past the prev-word pointer and compares it to the value
+  stored in 'word-buffer'. )
+.codeword word=
+  ( The most significant bit is the immediate flag and we want to ignore it. )
+  dup !1+
+  swap b@ const 127 &
+  dup !word-buffer const 3 + b@ = ~ cjmp @word=-false
+  !word-buffer !w+
+  swap !mem= ret
+
+:word=-false
+  drop drop
+  !false
+.end
+
+( addr -- addr )
+( An alias for '@' )
+.codeword prev-word @ .end
+
+( -- addr )
+( Iterates through the dictionary, starting from the last entry, and returns
+  the first word matching the string in 'word-buffer'. If no match is found, 0 is
+  returned. )
+.codeword find
+  !latest @
+
+:find-loop
+  dup const 0 = cjmp @find-end
+  dup !w+ !word= cjmp @find-end
+  !prev-word !true cjmp @find-loop
+
+:find-end
+.end
+
+( addr -- addr )
+( Takes the start address of a word and returns the address of its code word. )
+.codeword codeword
+  !w+ dup b@
+  const 127 & ( Ignore the immediate flag. )
+  + !1+
+.end
+
+( -- )
+( Reads words from stdin, finds them in the dictionary and executes them. )
+.codeword interpret
+  !word drop !find dup const 0 = cjmp @interpret-number
+  dup !codeword
+  swap !immediate? ~
+  !state @ & cjmp @interpret-compile
+
+( Interpret the word. )
+  scall
+  !true cjmp @_dictinterpret
+
+:interpret-compile
+  !'call' !b, !,
+  !true cjmp @_dictinterpret
+
+:interpret-number
+  drop
+  !number
+  cjmp @interpret-error
+  !state @ cjmp @interpret-compile-number
+  !true cjmp @_dictinterpret
+
+:interpret-compile-number
+  !'const' !b, !,
+  !true cjmp @_dictinterpret
+
+:interpret-error
+.end
+
+
+( Built-in variables )
+
+.var base 4 .end
+.var state 4 .end
+.var here 4 .end
+
+( Built-in constants
+# VERSION         Is the current version of this FORTH.
+# R0              The +ress of the top of the return stack.
+# DOCOL           Pointer to DOCOL.
+# F_IMMED         The IMMEDIATE flag's actual value.
+# F_HIDDEN        The HIDDEN flag's actual value.
+# F_LENMASK       The length mask in the flags/len byte.
+)
+
+
+( Compilation )
+
+( Creates the header for a new word at the end of the dictionary.
+
+                                            +-- Afterwards, HERE points here.
+                                            |
+                                            V
+ +---------+---+---+---+---+---+---+---+---+
+ | LINK    | 6 | D | O | U | B | L | E | 0 |
+ +---------+---+---+---+---+---+---+---+---+
+            len                         pad
+)
+( -- )
+( Reads the content of 'word-buffer' and creates the dictionary header for new
+  word with the given name. The header consists of a pointer to the previous
+  word (4 bytes), the length of the word name (1 byte) and the actual word name
+  (n bytes). 'here' points at the end of the dictionary and 'latest' is set to
+  point to the previous value of 'here'. )
+.codeword create
+  !latest @ !here @ !
+  !here @ !latest !
+  !word-buffer const 3 + !here @ !w+ !word-buffer @ !memcpy
+  ( !here dup @ !latest ! )
+  !here @ !w+ dup b@ + !1+ !here !
+.end
+
+( n -- )
+( Append a word to the end of the dictionary. )
+.codeword ,
+  !here @ !
+  !here dup @ !w+ swap !
+.end
+
+( n -- )
+( Append a single byte to the end of the dictionary. )
+.codeword b,
+  !here @ b!
+  !here dup @ !1+ swap !
+.end
+
+( -- )
+( Disables compilation mode. )
+.immediate-codeword [
+  !false !state !
+.end
+
+( -- )
+( Enables compilation mode. )
+.immediate-codeword ]
+  !true !state !
+.end
+
+( -- )
+( Reads words from stdin and switches into compilation mode. )
+.codeword :
+  !word drop !create
+  !]
+.end
+
+( -- )
+( Sets the immediate flag of the latest word. )
+.immediate-codeword immediate
+  !latest @ !w+ dup
+  b@ const 128 |
+  swap b!
+.end
+
+( addr -- bool )
+( Checks if the word at the given address contains the immediate flag. )
+.codeword immediate?
+  !w+ b@ const 128 &
+  const 128 =
+.end
+
+( -- )
+( Appends 'ret' and ends compilation. )
+.immediate-codeword ;
+  !'ret' !b,
+  ![
+.end
+
+( -- )
+( Consumes all words until it finds a ')'. )
+.immediate-codeword (
+  !word
+  dup @ const 1 =
+  swap !w+ b@ const 41 =
+  & ~ cjmp @_dict(
+.end
+
+( int -- )
+( Jumps the specified amount of bytes forwards or backwards. )
+.codeword branch rpop + rput .end
+
+( int bool -- )
+( Conditional branch, jumps the specified amount of bytes forwards or
+backwards if the bool is true. )
+.codeword cbranch
+  !false = *
+  rpop swap - rput
+.end
+
+( The main codeword goes here. )
+{main}
+
+
+( Initialization Code )
+:init
+
+( Init 'base' )
+const 10
+const @_varbase !
+
+( Init 'latest' )
+const @latest
+const @_varlatest !
+
+( Init 'here' )
+const @here-marker
+const @_varhere !
+
+( Start executing )
+call @_dictmain
+exit
+
+.var latest 4 .end
+:here-marker
+

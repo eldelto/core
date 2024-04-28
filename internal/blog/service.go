@@ -11,13 +11,16 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/eldelto/core/internal/atom"
 	"github.com/eldelto/core/internal/web"
 	"go.etcd.io/bbolt"
 )
 
 type Service struct {
 	gitHost          string
+	host             string
 	db               *bbolt.DB
 	sitemapControlle *web.SitemapController
 }
@@ -40,11 +43,13 @@ func init() {
 	gob.Register(&Paragraph{})
 	gob.Register(&CodeBlock{})
 	gob.Register(&CommentBlock{})
+	gob.Register(&BlockQuote{})
 	gob.Register(&UnorderedList{})
+	gob.Register(&OrderedList{})
 	gob.Register(&Properties{})
 }
 
-func NewService(db *bbolt.DB, gitHost string, sitmapController *web.SitemapController) (*Service, error) {
+func NewService(db *bbolt.DB, gitHost string, host string, sitmapController *web.SitemapController) (*Service, error) {
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(articleBucket))
 		if err != nil {
@@ -60,6 +65,7 @@ func NewService(db *bbolt.DB, gitHost string, sitmapController *web.SitemapContr
 
 	return &Service{
 		gitHost:          gitHost,
+		host:             host,
 		db:               db,
 		sitemapControlle: sitmapController,
 	}, nil
@@ -167,7 +173,7 @@ func (s *Service) UpdateArticles(orgFile string) error {
 		return err
 	}
 
-	// TODO: Think about how the service doesn't need to know the full domain.
+	// TODO: Think about how the service doesn't need to know the full host.
 	for _, article := range articles {
 		if article.Draft {
 			continue
@@ -228,4 +234,69 @@ func (s *Service) CheckoutRepository(destination string) error {
 	}
 
 	return nil
+}
+
+func (s *Service) HomePage() string {
+	return s.host
+}
+
+func (s *Service) Permalink(a Article) (string, error) {
+	permalink, err := url.JoinPath(s.host, "articles", a.UrlEncodedTitle())
+	if err != nil {
+		return "", fmt.Errorf("failed to create permalink for article %q: %w",
+			a.Title, err)
+	}
+
+	return permalink, nil
+}
+
+func (s *Service) articleToFeedEntry(a Article) (atom.Entry, error) {
+	permalink, err := s.Permalink(a)
+	if err != nil {
+		return atom.Entry{}, err
+	}
+
+	return atom.Entry{
+		ID:      permalink,
+		Title:   a.Title,
+		Updated: a.LastUpdate(),
+		Summary: a.Introduction(),
+		Link:    atom.Link{Href: permalink},
+	}, nil
+}
+
+func (s *Service) AtomFeed() (atom.Feed, error) {
+	updated := time.Time{}
+
+	articles, err := s.FetchAll(false)
+	if err != nil {
+		return atom.Feed{}, err
+	}
+
+	entries := make([]atom.Entry, len(articles))
+	for i := range articles {
+		entry, err := s.articleToFeedEntry(articles[i])
+		if err != nil {
+			return atom.Feed{}, err
+		}
+		entries[i] = entry
+
+		if entry.Updated.After(updated) {
+			updated = entry.Updated
+		}
+	}
+
+	feedLink, err := url.JoinPath(s.host, "feed")
+	if err != nil {
+		return atom.Feed{}, fmt.Errorf("failed to create feed link: %w", err)
+	}
+
+	return atom.Feed{
+		ID:      s.host,
+		Title:   "eldelto's blog",
+		Link:    atom.Link{Href: feedLink},
+		Updated: updated,
+		Author:  atom.Author{Name: "eldelto"},
+		Entries: entries,
+	}, nil
 }

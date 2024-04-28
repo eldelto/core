@@ -1,0 +1,63 @@
+( TODO:
+    - [ ] Test conditionals
+    - [ ] Think about implementing conditionals in terms of
+	  'jmp' & 'cjmp' directly
+    - [ ] Implement recurse
+    - [ ] Extend the interpreter to support recursion
+)
+
+
+( int -- )
+( Displays the last x bytes of memory. )
+: mem-tail here @ swap - here @ mem-view ;
+
+( int -- )
+( Takes the number from stack and appends it as 'const <int>' to
+  the dictionary. )
+: literal immediate 'const' b, , ;
+
+( -- addr )
+( Returns the codeword pointer of the next word from the input
+stream. )
+: ' word drop find codeword ;
+
+( -- )
+( While compiling, compiles the next word even though it is an
+immediate word. )
+: [compile] immediate 'call' b, ' , ;
+
+( -- )
+( Compiles the codeword pointer of the following word into the current
+definition. )
+: ref immediate ' [compile] literal ;
+
+( addr -- )
+( Compiles a call to the given address into the currently compiled
+definition. )
+: postpone 'call' b, , ;
+
+( -- )
+( Compiles a 'cbranch' call with a dummy offset of 0 into the
+currently compiled definition. )
+: if immediate
+  here @
+  0 [compile] literal
+  ref swap postpone
+  ref cbranch postpone
+;
+
+( -- )
+( Retroactively fills the 'cbranch' offset of a previous 'if' call to
+complete the branching construct. )
+: then immediate
+  dup here @ swap - 15 - swap 1 + !
+;
+
+( -- )
+( Slightly modified combination of 'then' and 'if'. It sets the branch
+offset of the 'if' call in a way so it lands just after the 'cbranch'
+of 'else' and therefore executes it. )
+: else immediate
+  dup here @ swap - 5 + swap 1 + !
+  ref false postpone [compile] if
+;

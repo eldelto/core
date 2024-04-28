@@ -1,81 +1,81 @@
 :root {
-  --white: #ffffff;
-  --black: #141414;
-  --highlight: #a01ed9;
-  --light-highlight: #d174fa;
-  --ultra-light-highlight: rgba(209, 116, 250, 0.31);
-  --dark-highlight: #631685;
-  --dark: rgb(0, 23, 62);
+    --white: #ffffff;
+    --black: #141414;
+    --highlight: #a01ed9;
+    --light-highlight: #d174fa;
+    --ultra-light-highlight: rgba(209, 116, 250, 0.31);
+    --dark-highlight: #631685;
+    --dark: rgb(0, 23, 62);
 }
 
 @font-face {
-  font-family: Atkinson;
-  font-style: normal;
-  font-weight: 400;
-  src: url(/assets/Atkinson-Hyperlegible-Regular-102a.woff2);
+    font-family: Atkinson;
+    font-style: normal;
+    font-weight: 400;
+    src: url(/assets/Atkinson-Hyperlegible-Regular-102a.woff2);
 }
 
 @font-face {
-  font-family: Atkinson;
-  font-style: normal;
-  font-weight: bold;
-  src: url(/assets/Atkinson-Hyperlegible-Bold-102a.woff2);
+    font-family: Atkinson;
+    font-style: normal;
+    font-weight: bold;
+    src: url(/assets/Atkinson-Hyperlegible-Bold-102a.woff2);
 }
 
 @font-face {
-  font-family: Atkinson;
-  font-style: italic;
-  font-weight: 400;
-  src: url(/assets/Atkinson-Hyperlegible-Italic-102a.woff2);
+    font-family: Atkinson;
+    font-style: italic;
+    font-weight: 400;
+    src: url(/assets/Atkinson-Hyperlegible-Italic-102a.woff2);
 }
 
 @font-face {
-  font-family: Atkinson;
-  font-style: italic;
-  font-weight: bold;
-  src: url(/assets/Atkinson-Hyperlegible-BoldItalic-102a.woff2);
+    font-family: Atkinson;
+    font-style: italic;
+    font-weight: bold;
+    src: url(/assets/Atkinson-Hyperlegible-BoldItalic-102a.woff2);
 }
 
 body {
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 1.2em;
-  line-height: 1.5;
-  color: var(--black);
-  background-color: var(--white);
-  font-family: Atkinson;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.2em;
+    line-height: 1.5;
+    color: var(--black);
+    background-color: var(--white);
+    font-family: Atkinson;
 }
 
 #content {
-  width: 95%;
-  max-width: 40em;
-  margin-top: 1em;
-  margin: 0 .5em;
+    width: 95%;
+    max-width: 40em;
+    margin-top: 1em;
+    margin: 0 .5em;
 }
 
 #table-of-contents {
-  margin: 1em 0 3em 0;
+    margin: 1em 0 3em 0;
 }
 
 #table-of-contents>ul {
-  margin-top: .3em;
+    margin-top: .3em;
 }
 
 h1 {
-  text-align: center;
-  text-decoration: underline;
-  text-decoration-color: var(--highlight);
-  text-decoration-thickness: 4px;
+    text-align: center;
+    text-decoration: underline;
+    text-decoration-color: var(--highlight);
+    text-decoration-thickness: 4px;
 }
 
 h2 {
-  text-decoration: underline;
-  text-decoration-color: var(--highlight);
-  text-decoration-thickness: 3px;
+    text-decoration: underline;
+    text-decoration-color: var(--highlight);
+    text-decoration-thickness: 3px;
 }
 
 h2,
@@ -83,121 +83,126 @@ h3,
 h4,
 h5,
 h6 {
-  margin-bottom: 0;
-  margin-top: 2em;
+    margin-top: 2em;
 }
 
 code {
-  color: var(--highlight);
+    overflow-wrap: break-word;
+    padding: 0.1em 0.5em;
+    border-radius: 4px;
+    background-color: var(--ultra-light-highlight);
 }
 
 pre {
-  /* font-family: Koomik;
-  font-size: .8em; */
-  border-radius: 4px;
-  background-color: var(--dark);
-  border: 1px dotted var(--highlight);
-  padding: 5px 10px;
-  color: var(--white);
+    border-radius: 4px;
+    background-color: var(--dark);
+    border: 1px dotted var(--highlight);
+    padding: 5px 10px;
+    color: var(--white);
 }
 
 pre::before {
-  content: 'Code';
-  display: block;
-  font-size: .7em;
-  color: var(--light-highlight);
-  margin-bottom: .5em;
+    content: 'Code';
+    display: block;
+    font-size: .7em;
+    color: var(--light-highlight);
+    margin-bottom: .5em;
 }
 
 aside {
-  border: 1px dotted var(--highlight);
-  border-radius: 4px;
-  padding: 5px 10px;
-  background-color: var(--ultra-light-highlight);
+    border: 1px dotted var(--highlight);
+    border-radius: 4px;
+    padding: 5px 10px;
+    background-color: var(--ultra-light-highlight);
 }
 
 aside::before {
-  content: 'Note';
-  display: block;
-  font-size: .6em;
-  color: var(--highlight);
-  opacity: .6;
+    content: 'Note';
+    display: block;
+    font-size: .6em;
+    color: var(--highlight);
+    opacity: .6;
+}
+
+blockquote {
+    font-style: italic;
 }
 
 pre {
-  overflow-x: auto;
+    overflow-x: auto;
 }
 
 a {
-  color: var(--black);
-  text-decoration: none;
-  border-bottom: dotted 1px var(--highlight);
+    color: var(--black);
+    text-decoration: none;
+    border-bottom: dotted 1px var(--highlight);
 }
 
 a:hover {
-  background-color: var(--ultra-light-highlight);
-  border-bottom: solid 2px var(--highlight);
+    background-color: var(--ultra-light-highlight);
+    border-bottom: solid 2px var(--highlight);
 }
 
 nav#nav-bar {
-  width: 100%;
-  height: 2.5em;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background-color: var(--highlight);
-  border-bottom: solid 5px var(--dark-highlight);
+    width: 100%;
+    height: 2.5em;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: var(--highlight);
+    border-bottom: solid 5px var(--dark-highlight);
 }
 
 nav#nav-bar>a {
-  color: var(--white);
-  border-bottom: solid 5px rgba(0, 0, 0, 0);
-  padding: 0 1em;
-  height: 100%;
-  line-height: 285%;
+    color: var(--white);
+    border-bottom: solid 5px rgba(0, 0, 0, 0);
+    padding: 0 1em;
+    height: 100%;
+    line-height: 285%;
 
-  /* Hack to align the border of the links with the parent. */
-  position: relative;
-  top: 2px;
+    /* Hack to align the border of the links with the parent. */
+    position: relative;
+    top: 2px;
 }
 
 nav#nav-bar>a:hover {
-  border-bottom: solid 5px var(--light-highlight);
-  background-color: var(--dark-highlight);
+    border-bottom: solid 5px var(--light-highlight);
+    background-color: var(--dark-highlight);
 }
 
 #nav-logo>img {
-  width: 1.4em;
-  top: 0.2em;
-  position: relative;
+    width: 1.4em;
+    top: 0.2em;
+    position: relative;
 }
 
 .articles>ul {
-  padding: 0;
+    padding: 0;
 }
 
 .articles>ul>li {
-  margin-bottom: 1em;
-  list-style: none;
+    margin-bottom: 1em;
+    list-style: none;
 }
 
 .shadow {
-  border-radius: 5px;
-  box-shadow: 0px 7px 12px rgba(0, 0, 0, .6);
+    border-radius: 5px;
+    box-shadow: 0px 7px 12px rgba(0, 0, 0, .6);
 }
 
 img {
-  max-width: 100%;
+    max-width: 100%;
 }
 
 .timestamp,
 .timestamps {
-  opacity: .5;
-  font-size: .9em;
-  margin-top: 1em;
+    opacity: .5;
+    font-size: .9em;
+    margin-top: 1em;
 }
 
 .timestamps {
-  display: flex;
-  justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
 }
+

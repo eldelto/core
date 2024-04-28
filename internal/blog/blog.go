@@ -19,7 +19,10 @@ var (
 )
 
 func urlEncodeTitle(title string) string {
-	return url.QueryEscape((strings.ReplaceAll(strings.ToLower(title), " ", "-")))
+	title = strings.ToLower(title)
+	replacer := strings.NewReplacer(" ", "-", "'", "")
+	title = replacer.Replace(title)
+	return url.QueryEscape(title)
 }
 
 func firstRunes(s string, n int) string {
@@ -46,6 +49,13 @@ func (a *Article) UrlEncodedTitle() string {
 
 func (a *Article) CreatedAtString() string {
 	return a.CreatedAt.Format(time.DateOnly)
+}
+
+func (a *Article) LastUpdate() time.Time {
+	if a.UpdatedAt != emptyTime {
+		return a.UpdatedAt
+	}
+	return a.CreatedAt
 }
 
 func (a *Article) Introduction() string {
@@ -123,10 +133,14 @@ func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
 	return findArticles(headline, "")
 }
 
-func tagged(s, tag string) string {
+func tagged(s, tag string, attributes ...string) string {
 	b := strings.Builder{}
 	b.WriteRune('<')
 	b.WriteString(tag)
+	if len(attributes) > 0 {
+		b.WriteRune(' ')
+		b.WriteString(strings.Join(attributes, " "))
+	}
 	b.WriteRune('>')
 	b.WriteString(s)
 	b.WriteRune('<')
@@ -137,7 +151,7 @@ func tagged(s, tag string) string {
 	return b.String()
 }
 
-// TODO:Replace this hacky way of resolving text emphasis with a proper
+// TODO: Replace this hacky way of resolving text emphasis with a proper
 // parser as this comes with a lot of caveats.
 // The parser currently has to quite a bit of implicit knowledge how the
 // controller and service layer work, which is not really nice. Also I have
@@ -226,7 +240,7 @@ func replaceInternalLinks() func(string) string {
 }
 
 func replaceWrappedText(symbol, replacement string) func(string) string {
-	r := regexp.MustCompile(`([^"<>/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
+	r := regexp.MustCompile(`([^"<>:/A-z0-9])` + symbol + `([^` + symbol + `]+)` + symbol)
 
 	return func(s string) string {
 		// Add space so the regex also matches when symbol is at the start.
@@ -273,6 +287,8 @@ func TextNodeToHtml(t TextNode) string {
 	case *CommentBlock:
 		content = replaceInlineElements(content)
 		b.WriteString(tagged(content, "aside"))
+	case *BlockQuote:
+		b.WriteString(tagged(content, "blockquote"))
 	case *UnorderedList:
 		b.WriteString("<ul>")
 		for _, child := range t.Children {
@@ -281,6 +297,14 @@ func TextNodeToHtml(t TextNode) string {
 			b.WriteString(tagged(content, "li"))
 		}
 		b.WriteString("</ul>")
+	case *OrderedList:
+		b.WriteString("<ol>")
+		for _, child := range t.Children {
+			content = html.EscapeString(child.GetContent())
+			content = replaceInlineElements(content)
+			b.WriteString(tagged(content, "li"))
+		}
+		b.WriteString("</ol>")
 	case *Properties:
 	default:
 		panic(fmt.Sprintf("unhandled type for HTML conversion: '%T'", t))
@@ -310,19 +334,27 @@ func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 
 	b.WriteString(`<div class="timestamps">`)
-	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly), "time"), "span"))
+	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
+		"time",
+		`class="dt-published"`),
+		"span"))
 
 	if a.UpdatedAt != emptyTime {
-		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly), "time"), "span"))
+		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly),
+			"time",
+			`class="dt-updated"`),
+			"span"))
 	}
 	b.WriteString("</div>")
 
-	b.WriteString(tagged(a.Title, "h1"))
+	b.WriteString(tagged(a.Title, "h1", `class="p-name"`))
 	writeTableOfContents(&a, &b)
 
+	b.WriteString(`<div class="e-content">`)
 	for _, child := range a.Children {
 		b.WriteString(TextNodeToHtml(child))
 	}
+	b.WriteString("</div>")
 
 	return b.String()
 }

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var startupTime = time.Now()
@@ -25,15 +26,27 @@ type Endpoint struct {
 
 type Handler func(http.ResponseWriter, *http.Request) error
 
+type HandlerProvider func(http.Handler) http.Handler
+
 type Controller struct {
-	BasePath string
-	Handlers map[Endpoint]Handler
+	BasePath   string
+	Handlers   map[Endpoint]Handler
+	Middleware []HandlerProvider
+}
+
+func (c *Controller) middleware(handler Handler) http.Handler {
+	next := ControllerMiddleware(handler)
+	for _, mw := range c.Middleware {
+		next = mw(next)
+	}
+
+	return next
 }
 
 func (c *Controller) Register(router chi.Router) {
 	for endpoint, handler := range c.Handlers {
 		path := path.Join(c.BasePath, endpoint.Path)
-		router.Method(endpoint.Method, path, ControllerMiddleware(handler))
+		router.Method(endpoint.Method, path, c.middleware(handler))
 		log.Printf("Registered handler for %s %s", endpoint.Method, path)
 	}
 }
@@ -98,6 +111,7 @@ func NewTemplateController(fileSystem fs.FS, data any) *Controller {
 			{Method: "GET", Path: "/"}:                                  getTemplate(templater, data),
 			{Method: "GET", Path: "/{" + templatePathUrlParam + ":.*}"}: getTemplate(templater, data),
 		},
+		Middleware: []HandlerProvider{middleware.Compress(5)},
 	}
 }
 
@@ -108,7 +122,10 @@ func getTemplate(templater *Templater, data any) Handler {
 			templatePath = "index.html"
 		}
 
+		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
+
 		if err := templater.Write(w, data, templatePath); err != nil {
+			log.Printf("did not find template at path %q", templatePath)
 			w.WriteHeader(http.StatusNotFound)
 			return templater.Write(w, data, "not-found.html")
 		}
@@ -149,7 +166,7 @@ func getSitemap(sc *SitemapController) Handler {
 			b.WriteRune('\n')
 		}
 
-		w.Header().Add(ContentType, ContentTypeText)
+		w.Header().Add(ContentTypeHeader, ContentTypeText)
 		if _, err := io.Copy(w, bytes.NewBufferString(b.String())); err != nil {
 			return fmt.Errorf("failed to copy sitemap pages to response: %w", err)
 		}

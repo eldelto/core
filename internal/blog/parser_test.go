@@ -13,7 +13,7 @@ func TestParseOrgFile(t *testing.T) {
 
 	AssertEquals(t, "Headline 1", headline.GetContent(), "1. headline")
 	AssertEquals(t, uint(1), headline.Level, "1. headline level")
-	AssertEquals(t, 4, len(headline.GetChildren()), "1. headline getchildren() len")
+	AssertEquals(t, 5, len(headline.GetChildren()), "1. headline getchildren() len")
 
 	headlineOneOne := headline.GetChildren()[1].(*Headline)
 	AssertEquals(t, "Headline 1.1", headlineOneOne.GetContent(), "1.1 headline")
@@ -33,4 +33,14 @@ func TestParseOrgFile(t *testing.T) {
 		unorderedList.GetChildren()[0].GetContent(), "first list entry")
 	AssertEquals(t, "*global* - Applies to all projects of a single user; usually found at ~$HOME/.gitconfig~",
 		unorderedList.GetChildren()[1].GetContent(), "second list entry")
+
+	orderedList := lists.GetChildren()[1].(*OrderedList)
+	AssertEquals(t, "First element",
+		orderedList.GetChildren()[0].GetContent(), "first list entry")
+	AssertEquals(t, "Second element",
+		orderedList.GetChildren()[1].GetContent(), "second list entry")
+
+	blocks := headline.GetChildren()[4].(*Headline)
+	_, ok := blocks.GetChildren()[0].(*BlockQuote)
+	AssertEquals(t, true, ok, "is block quote")
 }

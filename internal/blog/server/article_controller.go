@@ -13,9 +13,12 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/articles",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: "GET", Path: "/"}:        getArticles(service),
-			{Method: "GET", Path: "/draft"}:   getDraftArticles(service),
-			{Method: "GET", Path: "/{title}"}: getArticle(service),
+			{Method: web.MethodGET, Path: "/"}:        getArticles(service),
+			{Method: web.MethodGET, Path: "/draft"}:   getDraftArticles(service),
+			{Method: web.MethodGET, Path: "/{title}"}: getArticle(service),
+		},
+		Middleware: []web.HandlerProvider{
+			web.MaxAgeMiddleware,
 		},
 	}
 }
@@ -49,8 +52,10 @@ func getDraftArticles(service *blog.Service) web.Handler {
 }
 
 type articleData struct {
-	Title   string
-	Content template.HTML
+	Title     string
+	Permalink string
+	HomePage  string
+	Content   template.HTML
 }
 
 func getArticle(service *blog.Service) web.Handler {
@@ -63,10 +68,16 @@ func getArticle(service *blog.Service) web.Handler {
 		}
 
 		htmlArticle := blog.ArticleToHtml(article)
+		permalink, err := service.Permalink(article)
+		if err != nil {
+			return err
+		}
 
 		data := articleData{
-			Title:   article.Title,
-			Content: template.HTML(htmlArticle),
+			Title:     article.Title,
+			Permalink: permalink,
+			HomePage:  service.HomePage(),
+			Content:   template.HTML(htmlArticle),
 		}
 
 		return articleTemplate.Execute(w, data)

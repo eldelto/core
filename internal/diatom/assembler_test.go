@@ -78,8 +78,8 @@ func TestExpandLabels(t *testing.T) {
 		expectError bool
 	}{
 		{"backward reference",
-			"dup ( test label ) :test @test",
-			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n",
+			"dup ( test label ) :test @test 2",
+			"dup\n( ':test' at address '1' )\n( '@test' at address '1' )\n0 0 0 1\n2\n",
 			false},
 		{"no declaration", "dup @test", "", true},
 		{"double declaration", "dup :test @test :test", "", true},
@@ -123,10 +123,45 @@ func TestGenerateMachineCode(t *testing.T) {
 
 			err := diatom.GenerateMachineCode(in, &out)
 			if tt.expectError {
-				AssertError(t, err, "ExpandLabels")
+				AssertError(t, err, "GenerateMachineCode")
 			} else {
-				AssertNoError(t, err, "ExpandLabels")
-				AssertEquals(t, tt.expected, out.Bytes(), "ExpandLabels output")
+				AssertNoError(t, err, "GenerateMachineCode")
+				AssertEquals(t, tt.expected, out.Bytes(), "GenerateMachineCode output")
+			}
+		})
+	}
+}
+
+func TestAssemble(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          string
+		expected    []byte
+		expectError bool
+	}{
+		{"valid instructions", "const 10 ( jump ) dup * exit",
+			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
+			false},
+		{"valid program",
+			"const -1 cjmp @start .codeword double dup dup + .end :start const 11 call @_dictdouble exit",
+			[]byte{3, 255, 255, 255, 255, 15, 0, 0, 0, 25, 0, 0, 0, 0, 6, 100, 111, 117, 98, 108, 101, 11, 11, 6, 2, 3, 0, 0, 0, 11, 16, 0, 0, 0, 21, 0},
+			false},
+		{"mixed assembly and calls",
+			"nop .codeword rput rput .end .codeword main const 5 !rput exit .end",
+			[]byte{1, 0, 0, 0, 0, 4, 114, 112, 117, 116, 27, 2, 0, 0, 0, 1, 4, 109, 97, 105, 110, 3, 0, 0, 0, 5, 16, 0, 0, 0, 10, 0, 2},
+			false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := bytes.NewReader([]byte(tt.in))
+
+			_, _, out, err := diatom.Assemble(in)
+			if tt.expectError {
+				AssertError(t, err, "Assemble")
+			} else {
+				AssertNoError(t, err, "Assemble")
+				AssertEquals(t, tt.expected, out, "Assemble output")
 			}
 		})
 	}

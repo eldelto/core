@@ -1,6 +1,7 @@
 package diatom
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -16,19 +17,7 @@ type pos struct {
 type tokenScanner struct {
 	pos   pos
 	token []byte
-	r     io.ReadSeeker
-}
-
-func (s *tokenScanner) reset() error {
-	s.pos.line = 0
-	s.pos.column = 0
-	s.token = s.token[:0]
-	_, err := s.r.Seek(0, io.SeekStart)
-	if err != nil {
-		return fmt.Errorf("failed to reset underlying io.Reader: %w", err)
-	}
-
-	return nil
+	r     io.Reader
 }
 
 func (s *tokenScanner) scan() error {
@@ -87,17 +76,17 @@ type assembler struct {
 	scanner      *tokenScanner
 	writer       io.Writer
 	lastWordName string
-	labels       map[string]word
+	labels       map[string]Word
 }
 
-func newAssembler(r io.ReadSeeker, w io.Writer) *assembler {
+func newAssembler(r io.Reader, w io.Writer) *assembler {
 	return &assembler{
 		scanner: &tokenScanner{
 			token: []byte{},
 			r:     r,
 		},
 		writer: w,
-		labels: map[string]word{},
+		labels: map[string]Word{},
 	}
 }
 
@@ -169,7 +158,7 @@ func match(want string) func(string) (string, error) {
 }
 
 func identifier(token string) (string, error) {
-	if token[0] == '.' {
+	if token[0] == '.' && len(token) > 1 {
 		return "", fmt.Errorf("expected non-macro identifier but got %q", token)
 	}
 
@@ -247,7 +236,7 @@ func expandWordCall(asm *assembler) error {
 		return err
 	}
 
-	if token[0] != '!' {
+	if token[0] != '!' || len(token) < 2 {
 		return nil
 	}
 	asm.scanner.Consume()
@@ -268,7 +257,7 @@ func expandNumber(asm *assembler) error {
 	}
 	asm.scanner.Consume()
 
-	return writeAsBytes(asm.writer, word(number))
+	return writeAsBytes(asm.writer, Word(number))
 }
 
 func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
@@ -428,7 +417,7 @@ func expandMacros(asm *assembler) error {
 	return nil
 }
 
-func ExpandMacros(r io.ReadSeeker, w io.Writer) error {
+func ExpandMacros(r io.Reader, w io.Writer) error {
 	asm := newAssembler(r, w)
 
 	for {
@@ -443,31 +432,40 @@ func ExpandMacros(r io.ReadSeeker, w io.Writer) error {
 }
 
 func readLabels(asm *assembler) error {
-	var address word = 0
+	var address Word = 0
+
 	for {
 		token, err := asm.scanner.Token()
 		if err != nil {
 			return err
 		}
 
-		switch token[0] {
-		case ':':
+		first := token[0]
+		longEnough := len(token) > 1
+
+		switch {
+		case longEnough && first == ':':
 			label := token[1:]
 			prevAddress, ok := asm.labels[label]
 			if ok {
-				return fmt.Errorf("label %q already declared at address '%d'", label, prevAddress)
+				return fmt.Errorf("label %q already declared at address '%d'",
+					label, prevAddress)
 			}
 			asm.labels[label] = address
-		case '@':
-			address += wordSize
-		case '(':
+		case longEnough && first == '@':
+			address += WordSize
+		case first == '(':
 			if err := expandComment(asm); err != nil {
 				return err
 			}
+			continue
 		default:
 			address++
 		}
-		asm.scanner.Consume()
+
+		if err := passTokenThrough(asm); err != nil {
+			return err
+		}
 	}
 }
 
@@ -475,6 +473,10 @@ func resolveLabel(asm *assembler) error {
 	token, err := asm.scanner.Token()
 	if err != nil {
 		return err
+	}
+
+	if len(token) < 2 {
+		return nil
 	}
 	label := token[1:]
 
@@ -509,18 +511,17 @@ func resolveLabel(asm *assembler) error {
 	return nil
 }
 
-// TODO: Handle comments
-func ResolveLabels(r io.ReadSeeker, w io.Writer) error {
-	asm := newAssembler(r, w)
+func ResolveLabels(r io.Reader, w io.Writer) error {
+	labelBuf := &bytes.Buffer{}
+	asm := newAssembler(r, labelBuf)
 
 	if err := readLabels(asm); err != nil && !errors.Is(err, io.EOF) {
 		return scanError(asm, err)
 	}
 
-	if err := asm.scanner.reset(); err != nil {
-		return err
-	}
-
+	labels := asm.labels
+	asm = newAssembler(labelBuf, w)
+	asm.labels = labels
 	for {
 		if err := expectEither(asm, expandComment, resolveLabel, passTokenThrough)(asm); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -576,7 +577,7 @@ func resolveInstruction(asm *assembler) error {
 	return nil
 }
 
-func GenerateMachineCode(r io.ReadSeeker, w io.Writer) error {
+func GenerateMachineCode(r io.Reader, w io.Writer) error {
 	asm := newAssembler(r, w)
 
 	for {
@@ -592,4 +593,26 @@ func GenerateMachineCode(r io.ReadSeeker, w io.Writer) error {
 			return scanError(asm, err)
 		}
 	}
+}
+
+func Assemble(r io.Reader) (dexp, dins string, dopc []byte, err error) {
+	out := bytes.Buffer{}
+	if err := ExpandMacros(r, &out); err != nil {
+		return "", "", nil, err
+	}
+	dexp = out.String()
+
+	out.Reset()
+	if err := ResolveLabels(bytes.NewBufferString(dexp), &out); err != nil {
+		return "", "", nil, err
+	}
+	dins = out.String()
+
+	out.Reset()
+	if err := GenerateMachineCode(bytes.NewBufferString(dins), &out); err != nil {
+		return "", "", nil, err
+	}
+	dopc = out.Bytes()
+
+	return
 }

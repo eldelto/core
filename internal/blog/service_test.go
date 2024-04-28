@@ -17,7 +17,7 @@ func TestStoreFetch(t *testing.T) {
 	AssertNoError(t, err, "bboltOpent")
 	defer db.Close()
 
-	service, err := NewService(db, "", nil)
+	service, err := NewService(db, "", "", nil)
 	AssertNoError(t, err, "NewService")
 	defer os.Remove(dbPath)
 

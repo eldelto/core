@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -14,7 +15,12 @@ const (
 	codeBlockEnd      = "#+end_src"
 	commentBlockStart = "#+begin_comment"
 	commentBlockEnd   = "#+end_comment"
+	blockQuoteStart   = "#+begin_quote"
+	blockQuoteEnd     = "#+end_quote"
 )
+
+var 	orderedListRegex = regexp.MustCompile(`\d+\.\s`)
+
 
 type TextNode interface {
 	GetContent() string
@@ -114,6 +120,18 @@ func (cb *CommentBlock) GetChildren() []TextNode {
 	return nil
 }
 
+type BlockQuote struct {
+	Content string
+}
+
+func (cb *BlockQuote) GetContent() string {
+	return cb.Content
+}
+
+func (cb *BlockQuote) GetChildren() []TextNode {
+	return nil
+}
+
 type UnorderedList struct {
 	Children []TextNode
 }
@@ -129,6 +147,24 @@ func (ul *UnorderedList) GetContent() string {
 }
 
 func (ul *UnorderedList) GetChildren() []TextNode {
+	return ul.Children
+}
+
+type OrderedList struct {
+	Children []TextNode
+}
+
+func NewOrderedList() *OrderedList {
+	return &OrderedList{
+		Children: []TextNode{},
+	}
+}
+
+func (ul *OrderedList) GetContent() string {
+	return ""
+}
+
+func (ul *OrderedList) GetChildren() []TextNode {
 	return ul.Children
 }
 
@@ -224,6 +260,16 @@ func parseHeadline(t *tokenizer) (*Headline, error) {
 	return headline, nil
 }
 
+func indentationLevel(s string) int {
+	for i, r := range s {
+		if r != ' ' {
+			return i
+		}
+	}
+
+	return 0
+}
+
 func isCodeBlock(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), codeBlockStart)
 }
@@ -278,16 +324,6 @@ func isCommentBlockEnd(token string) bool {
 	return strings.HasPrefix(strings.TrimSpace(token), commentBlockEnd)
 }
 
-func indentationLevel(s string) int {
-	for i, r := range s {
-		if r != ' ' {
-			return i
-		}
-	}
-
-	return 0
-}
-
 func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 	token, line, err := t.token()
 	if err != nil {
@@ -317,12 +353,49 @@ func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 	}
 }
 
-func isUnorderedList(token string) bool {
-	return strings.HasPrefix(strings.TrimSpace(token), "- ")
+func isBlockQuote(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), blockQuoteStart)
+}
+
+func isBlockQuoteEnd(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), blockQuoteEnd)
+}
+
+func parseBlockQuote(t *tokenizer) (*BlockQuote, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected block quote: %w", line, err)
+	}
+
+	if !isBlockQuote(token) {
+		return nil, parseError("expected block quote", line, token)
+	}
+
+	blockQuote := &BlockQuote{}
+	t.consume()
+
+	for {
+		token, line, err = t.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected block quote Content: %w", line, err)
+		}
+
+		if isBlockQuoteEnd(token) {
+			t.consume()
+			return blockQuote, nil
+		}
+
+		blockQuote.Content += " " + token
+		t.consume()
+	}
 }
 
 func isText(token string) bool {
 	return !(isHeadline(token) || isCodeBlock(token) || isCommentBlock(token))
+}
+
+func isUnorderedList(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), "- ")
 }
 
 func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
@@ -354,6 +427,51 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 
 		if isUnorderedList(token) {
 			node = NewParagraph(trimmedToken[2:])
+			list.Children = append(list.Children, node)
+		} else {
+			node.Content += " " + trimmedToken
+		}
+
+		t.consume()
+	}
+}
+
+func isOrderedList(token string) bool {
+	return orderedListRegex.MatchString(token)
+}
+
+func parseOrderedList(t *tokenizer) (*OrderedList, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected ordered list: %w", line, err)
+	}
+
+	if !isOrderedList(token) {
+		return nil, parseError("expected ordered list", line, token)
+	}
+
+	list := NewOrderedList()
+	trimmedToken := strings.TrimSpace(token)
+	parts := strings.SplitN(trimmedToken, " ", 2)
+	node := NewParagraph(parts[1])
+	list.Children = append(list.Children, node)
+	t.consume()
+
+	for {
+		token, line, err = t.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected ordered list content: %w", line, err)
+		}
+
+		if !isText(token) || t.sawEmptyLine() {
+			return list, nil
+		}
+
+		trimmedToken := strings.TrimSpace(token)
+
+		if isOrderedList(token) {
+			parts := strings.SplitN(trimmedToken, " ", 2)
+			node = NewParagraph(parts[1])
 			list.Children = append(list.Children, node)
 		} else {
 			node.Content += " " + trimmedToken
@@ -469,8 +587,18 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 				return nil, err
 			}
 			nodes = append(nodes, node)
+		} else if isBlockQuote(token) {
+			if node, err = parseBlockQuote(t); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
 		} else if isUnorderedList(token) {
 			if node, err = parseUnorderedList(t); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
+		} else if isOrderedList(token) {
+			if node, err = parseOrderedList(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)

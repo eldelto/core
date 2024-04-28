@@ -33,6 +33,11 @@ func TestScaleCreation(t *testing.T) {
 			expected: "C - D - E - F# - G - A - B - C",
 			scale:    Scale{Tonic: C, Degrees: LydianScaleDegrees},
 		},
+		{
+			name:     "B hirajōshi",
+			expected: "B - C# - D - F# - G",
+			scale:    Scale{Tonic: B, Degrees: HirajōshiScaleDegrees},
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,2 +1,11 @@
 {{define "title"}} {{.Title}} {{end}}
-{{define "content"}} {{.Content}} {{end}}
+{{define "content"}}
+<article class="h-entry">
+  <div style="display: none;">
+    <a class="u-url" href="{{.Permalink}}"></a>
+    <a class="p-author h-card" href="{{.HomePage}}">eldelto</a>
+  </div>
+
+  {{.Content}}
+</article>
+{{end}}

@@ -1,31 +1,48 @@
 package diatom
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
+	"math"
+	"os"
+	"strings"
 )
 
-type word int32
+type Word int32
 
 const (
-	wordSize    = 4
+	WordSize = 4
+	WordMax  = math.MaxInt32
+	WordMin  = math.MinInt32
+
 	maxTokenLen = 127
+
+	MainTemplate = "{main}"
 )
 
-func wordToBytes(w word) [wordSize]byte {
-	bytes := [wordSize]byte{}
+//go:embed preamble.dasm
+var Preamble string
 
-	for i := 0; i < wordSize; i++ {
+//go:embed stdlib.dia
+var Stdlib string
+
+func wordToBytes(w Word) [WordSize]byte {
+	bytes := [WordSize]byte{}
+
+	for i := 0; i < WordSize; i++ {
 		bytes[i] = byte((w >> (i * 8)) & 0xFF)
 	}
 
 	return bytes
 }
 
-func writeAsBytes(w io.Writer, value word) error {
+func writeAsBytes(w io.Writer, value Word) error {
 	bytes := wordToBytes(value)
 
-	for i := wordSize - 1; i > 0; i-- {
+	// TODO: Is this correct or does it skip the last byte?
+	for i := WordSize - 1; i > 0; i-- {
 		if _, err := fmt.Fprintf(w, "%d ", bytes[i]); err != nil {
 			return err
 		}
@@ -49,7 +66,7 @@ const (
 	SUBTRACT
 	MULTIPLY
 	DIVIDE
-	MOD
+	MODULO
 	DUP
 	DROP
 	SWAP
@@ -83,7 +100,7 @@ var instructions map[string]byte = map[string]byte{
 	"-":     SUBTRACT,
 	"*":     MULTIPLY,
 	"/":     DIVIDE,
-	"%":     MOD,
+	"%":     MODULO,
 	"dup":   DUP,
 	"drop":  DROP,
 	"swap":  SWAP,
@@ -102,6 +119,32 @@ var instructions map[string]byte = map[string]byte{
 	"rpop":  RPOP,
 	"rput":  RPUT,
 	"rpeek": RPEEK,
-	"b@":    BSTORE,
-	"b!":    BFETCH,
+	"b@":    BFETCH,
+	"b!":    BSTORE,
+}
+
+// TODO: Make this more efficient.
+func instructionFromOpcode(b byte) string {
+	for k, v := range instructions {
+		if v == b {
+			return k
+		}
+	}
+
+	return "UNKNOWN"
+}
+
+func WithStdlib(program string) (*VM, error) {
+	main := ".codeword main !interpret .end"
+	repl := strings.Replace(Preamble, MainTemplate, main, 1)
+	_, _, dopc, err := Assemble(bytes.NewBufferString(repl))
+	if err != nil {
+		return nil, err
+	}
+
+	input := io.MultiReader(bytes.NewBufferString(Stdlib+" "),
+		bytes.NewBufferString(program+" "),
+		os.Stdin)
+
+	return NewVM(dopc, input, os.Stdout)
 }

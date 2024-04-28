@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +31,7 @@ func AssertNotEquals(t *testing.T, expected, actual any, title string) {
 	}
 }
 
-func AssertContains(t *testing.T, expected any, testee []any, title string) {
+func AssertContains[T comparable](t *testing.T, expected T, testee []T, title string) {
 	t.Helper()
 
 	for _, actual := range testee {
@@ -40,6 +41,17 @@ func AssertContains(t *testing.T, expected any, testee []any, title string) {
 	}
 
 	t.Errorf("%s did not contain a value '%v': %v", title, expected, testee)
+}
+
+func AssertContainsAll[T comparable](t *testing.T, expected []T, testee []T, title string) {
+	t.Helper()
+
+	// TODO: Think about if this is a good idea or not.
+	// AssertEquals(t, len(expected), len(testee), "length of " + title)
+
+	for i := range expected {
+		AssertEquals(t, expected[i], testee[i], fmt.Sprintf("%s at index %d", title, i))
+	}
 }
 
 func AssertStringContains(t *testing.T, expected, testee, title string) {
@@ -141,7 +153,7 @@ func (ts *TestServer) request(verb, path string, body string) Response {
 		ts.T.Fatalf("http.NewRequest error: %v", err)
 	}
 
-	req.Header.Set(web.ContentType, "application/json")
+	req.Header.Set(web.ContentTypeHeader, web.ContentTypeJSON)
 
 	response, err := ts.Client.Do(req)
 	if err != nil {
