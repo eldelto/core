@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const maxHeadlineDepth = 3
+const maxHeadlineDepth = 2
 
 var (
 	emptyTime  = time.Time{}
@@ -134,12 +134,21 @@ func findArticles(h *Headline, parentPath string) ([]Article, error) {
 }
 
 func ArticlesFromOrgFile(r io.Reader) ([]Article, error) {
-	headline, err := parseOrgFile(r)
+	headlines, err := parseOrgFile(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return findArticles(headline, "")
+	pages := []Article{}
+	for _, root := range headlines {
+		p, err := findArticles(root, "")
+		if err != nil {
+			return nil, err
+		}
+		pages = append(pages, p...)
+	}
+
+	return pages, nil
 }
 
 func tagged(s, tag string, attributes ...string) string {
@@ -210,7 +219,7 @@ func replaceImageLinks() func(string) string {
 				alt = match[5]
 			}
 
-			replacement := fmt.Sprintf("<img src=\"/dynamic/assets/%s\" alt=\"%s\" style=\"width:auto\">",
+			replacement := fmt.Sprintf("<img src=\"/dynamic/%s\" alt=\"%s\" style=\"width:auto\">",
 				match[1], alt)
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
@@ -280,7 +289,7 @@ func TextNodeToHtml(t TextNode) string {
 	switch t := t.(type) {
 	case *Headline:
 		b.WriteString(`<section id="` + urlEncodeTitle(t.Content) + `">`)
-		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-2)))
+		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-1)))
 
 		for _, child := range t.GetChildren() {
 			b.WriteString(TextNodeToHtml(child))
@@ -325,12 +334,12 @@ func TextNodeToHtml(t TextNode) string {
 func writeTableOfContents(a *Article, b *strings.Builder) {
 	// TODO: Move to a template?
 	b.WriteString(`<div id="table-of-contents">`)
-	b.WriteString(tagged("Table of Contents", "strong"))
+	b.WriteString(tagged("Contents", "strong"))
 	b.WriteString("<ul>")
 
 	for _, child := range a.Children {
 		headline, ok := child.(*Headline)
-		if ok && headline.Level == 4 {
+		if ok && headline.Level == 3 {
 			b.WriteString(`<li><a href="#` + urlEncodeTitle(headline.Content) + `">` + headline.Content + `</a></li>`)
 		}
 	}
@@ -343,11 +352,12 @@ func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 
 	b.WriteString(`<div class="timestamps">`)
+	if a.UpdatedAt != emptyTime {
 	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
 		"time",
 		`class="dt-published"`),
 		"span"))
-
+	}
 	if a.UpdatedAt != emptyTime {
 		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly),
 			"time",

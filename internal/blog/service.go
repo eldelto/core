@@ -28,6 +28,7 @@ type Service struct {
 const (
 	articleBucket = "articles"
 	AssetBucket   = "assets"
+	PageBucket   = "pages"
 )
 
 var supportedMediaTypes = []string{
@@ -51,7 +52,7 @@ func init() {
 
 func NewService(db *bbolt.DB, gitHost string, host string, sitmapController *web.SitemapController) (*Service, error) {
 	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(articleBucket))
+		_, err := tx.CreateBucketIfNotExists([]byte(PageBucket))
 		if err != nil {
 			return err
 		}
@@ -86,6 +87,30 @@ func (s *Service) storeMedia(name string, content []byte) error {
 	})
 }
 
+func (s *Service) storePages(articles ...Article) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(PageBucket))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
+		}
+
+		for _, article := range articles {
+			buffer := bytes.Buffer{}
+			if err := gob.NewEncoder(&buffer).Encode(article); err != nil {
+				return fmt.Errorf("failed to encode page %q: %w", article.Title, err)
+			}
+
+			key := article.Path
+			if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
+				return fmt.Errorf("failed to persist page %q: %w", article.Title, err)
+			}
+			log.Printf("successfully stored page %q", key)
+		}
+
+		return nil
+	})
+}
+
 func (s *Service) store(articles ...Article) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(articleBucket))
@@ -113,18 +138,18 @@ func (s *Service) Fetch(key string) (Article, error) {
 	article := Article{}
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(articleBucket))
+		bucket := tx.Bucket([]byte(PageBucket))
 		if bucket == nil {
 			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
 		}
 
 		value := bucket.Get([]byte(key))
 		if value == nil {
-			return fmt.Errorf("failed to find article for key %q", key)
+			return fmt.Errorf("failed to find page for key %q", key)
 		}
 
 		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&article); err != nil {
-			return fmt.Errorf("failed to decode article for key %q: %w", key, err)
+			return fmt.Errorf("failed to decode page for key %q: %w", key, err)
 		}
 
 		return nil
@@ -187,7 +212,7 @@ func (s *Service) UpdateArticles(orgFile string) error {
 		s.sitemapControlle.AddSite(*url)
 	}
 
-	return s.store(articles...)
+	return s.storePages(articles...)
 }
 
 func isSupportedMedia(name string) bool {

@@ -1,247 +1,247 @@
-* Test File
-** Ignored
+* Index
+
    asdflkjasdfoij elkasdf o
 
-** Articles
-*** Raspberry Pi Pico Setup for macOS
-    :PROPERTIES:
-    :CREATED_AT:  <2023-09-12 Tue>
-    :UPDATED_AT:  <2023-09-13 Wed>
-    :END:
+* Articles
+** Raspberry Pi Pico Setup for macOS
+   :PROPERTIES:
+   :CREATED_AT: <2023-09-12 Tue>
+   :UPDATED_AT: <2023-09-13 Wed>
+   :END:
 
-    In this article we will checkout the Raspberry Pi Pico setup.
+   In this article we will checkout the Raspberry Pi Pico setup.
 
-    This should be rendered correctly: (/italic in parenthesis/)
+   This should be rendered correctly: (/italic in parenthesis/)
 
-**** Install required dependencies
+*** Install required dependencies
 
-     First off we have to install a couple of tools so we can actually
-     build the Pico C/C++ SDK:
+    First off we have to install a couple of tools so we can actually
+    build the Pico C/C++ SDK:
 
-     - Make
-     - Cmake
-     - GCC ARM Cross-Compiler
-     - Git
-     - Libusb
+    - Make
+    - Cmake
+    - GCC ARM Cross-Compiler
+    - Git
+    - Libusb
 
-     - ~listed code~
-     - another
+    - ~listed code~
+    - another
 
-     For easier installation we will use the Brew package manager. If
-     you don't already use it you can install it by following their
-     setup guide: https://brew.sh/index
+    For easier installation we will use the Brew package manager. If
+    you don't already use it you can install it by following their
+    setup guide: https://brew.sh/index
 
-     With Brew setup, we can run the following command to install all
-     required dependencies:
-     #+begin_src bash
-       brew install gcc-arm-embedded libusb make cmake git
-     #+end_src
+    With Brew setup, we can run the following command to install all
+    required dependencies:
+    #+begin_src bash
+      brew install gcc-arm-embedded libusb make cmake git
+    #+end_src
 
-**** Get the Pico SDK
+*** Get the Pico SDK
 
-     In our workspace lets create a new folder called ~pico~ to contain
-     all related tools:
-     #+begin_src bash
-       mkdir pico
-     #+end_src
+    In our workspace lets create a new folder called ~pico~ to contain
+    all related tools:
+    #+begin_src bash
+      mkdir pico
+    #+end_src
 
-     We can then change into this directory and checkout the ~pico-sdk~
-     from Github: https://github.com/raspberrypi/pico-sdk
-     #+begin_src bash
-       git clone https://github.com/raspberrypi/pico-sdk.git
-     #+end_src
+    We can then change into this directory and checkout the ~pico-sdk~
+    from Github: https://github.com/raspberrypi/pico-sdk
+    #+begin_src bash
+      git clone https://github.com/raspberrypi/pico-sdk.git
+    #+end_src
 
-     This is going to take a little bit as it downloads the whole
-     project. Once the checkout procedure is done we still need to
-     do a last initialization step as the ~pico-sdk~ project manages
-     its dependencies as Git submodules. So we can execute
-     #+begin_src bash
-       git submodule update --init
-     #+end_src
-     to fetch all referenced submodules.
+    This is going to take a little bit as it downloads the whole
+    project. Once the checkout procedure is done we still need to
+    do a last initialization step as the ~pico-sdk~ project manages
+    its dependencies as Git submodules. So we can execute
+    #+begin_src bash
+      git submodule update --init
+    #+end_src
+    to fetch all referenced submodules.
 
-**** Create and build our project
+*** Create and build our project
 
-     Now we are ready to create our very own project in the root of our
-     workspace. As a starting point we are going to use the ~blink~
-     example from the ~pico-examples~ repository:
-     https://github.com/raspberrypi/pico-examples
+    Now we are ready to create our very own project in the root of our
+    workspace. As a starting point we are going to use the ~blink~
+    example from the ~pico-examples~ repository:
+    https://github.com/raspberrypi/pico-examples
 
-     You can clone it to any location but I like to keep it in the
-     local ~pico~ folder as well:
-     #+begin_src bash
-       cd pico
-       git clone https://github.com/raspberrypi/pico-examples.git
-     #+end_src
+    You can clone it to any location but I like to keep it in the
+    local ~pico~ folder as well:
+    #+begin_src bash
+      cd pico
+      git clone https://github.com/raspberrypi/pico-examples.git
+    #+end_src
 
-     We can then simply copy the example folder to root of our
-     workspace:
-     #+begin_src bash
-       cd ..
-       cp -r pico-examples/blink .
-     #+end_src
+    We can then simply copy the example folder to root of our
+    workspace:
+    #+begin_src bash
+      cd ..
+      cp -r pico-examples/blink .
+    #+end_src
 
-     Make sure to use the examples in the ~pico_w~ directory if you
-     have a Pico W board otherwise they won't work correctly.
+    Make sure to use the examples in the ~pico_w~ directory if you
+    have a Pico W board otherwise they won't work correctly.
 
-     This should leave us with a directory structure like this:
-     #+begin_src bash
-       tree -L 2
-       TODO: Insert tree
-     #+end_src
+    This should leave us with a directory structure like this:
+    #+begin_src bash
+      tree -L 2
+      TODO: Insert tree
+    #+end_src
 
-     We still need some other files to satisfy build process. Namely
-     the ~pico_sdk_import.cmake~ file to initialize the Pico SDK and a
-     ~CMakeLists.txt~ to handle the actual build process. The former
-     can be copied from the ~pico-exampels~ project and an example of
-     the latter can be found on [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][Github]].
+    We still need some other files to satisfy build process. Namely
+    the ~pico_sdk_import.cmake~ file to initialize the Pico SDK and a
+    ~CMakeLists.txt~ to handle the actual build process. The former
+    can be copied from the ~pico-exampels~ project and an example of
+    the latter can be found on [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][Github]].
 
-     Now we have everything setup to actually build this example and
-     push the generated binary to our development board.
+    Now we have everything setup to actually build this example and
+    push the generated binary to our development board.
 
-     First we have to create a ~build~ directory where our binary will
-     be located after the build finishes:
-     #+begin_src bash
-       cd blink
-       mkdir build
-     #+end_src
+    First we have to create a ~build~ directory where our binary will
+    be located after the build finishes:
+    #+begin_src bash
+      cd blink
+      mkdir build
+    #+end_src
 
-     Next we need to set two environment variables that are required
-     by the build process:
-     #+begin_src bash
-       cd build
-       export PICO_SDK_PATH=../../pico/pico-sdk
-       export PICO_BOARD=pico
-       # export PICO_BOARD=pico_w
-     #+end_src
+    Next we need to set two environment variables that are required
+    by the build process:
+    #+begin_src bash
+      cd build
+      export PICO_SDK_PATH=../../pico/pico-sdk
+      export PICO_BOARD=pico
+      # export PICO_BOARD=pico_w
+    #+end_src
 
-     With this out of the way we can finally build our program with the
-     help CMake and Make like this:
-     #+begin_src bash
-       cmake ..
-       make
-     #+end_src
+    With this out of the way we can finally build our program with the
+    help CMake and Make like this:
+    #+begin_src bash
+      cmake ..
+      make
+    #+end_src
 
-     After the compilation process is done we should have a file called
-     ~blink.uf2~ in our build directory.
+    After the compilation process is done we should have a file called
+    ~blink.uf2~ in our build directory.
 
-**** Uploading our binary
+*** Uploading our binary
 
-     Last but not least, we actually need to transfer our program to
-     the Raspberry Pi Pico board.
+    Last but not least, we actually need to transfer our program to
+    the Raspberry Pi Pico board.
 
-     To do this we grab our trusty micro USB cable and connect it to
-     our development machine. Next we hold down the ~BOOTSEL~ button on
-     our Pico and connect the other end of our USB cable while still
-     holding the button down.
+    To do this we grab our trusty micro USB cable and connect it to
+    our development machine. Next we hold down the ~BOOTSEL~ button on
+    our Pico and connect the other end of our USB cable while still
+    holding the button down.
 
-     The Raspberry Pi Pico will now show up as a mass storage device
-     and we can simply copy our binary over. The microcontroller will
-     then restart by itself and start running our program.
+    The Raspberry Pi Pico will now show up as a mass storage device
+    and we can simply copy our binary over. The microcontroller will
+    then restart by itself and start running our program.
 
-     That's it, you've successfully run your first Raspberry Pi Pico
-     program!
+    That's it, you've successfully run your first Raspberry Pi Pico
+    program!
 
-**** Enhancing the build process
+*** Enhancing the build process
 
-     With this setup we have some manual ScaleDegrees that need be repeated
-     every time we change our code. First and foremost unplugging the
-     Raspberry Pi Pico all the time to get it into ~BOOTSEL~ mode.
+    With this setup we have some manual ScaleDegrees that need be repeated
+    every time we change our code. First and foremost unplugging the
+    Raspberry Pi Pico all the time to get it into ~BOOTSEL~ mode.
 
-     Luckily for us their is a better solution using a project called
-     ~picotool~ which we will check out in the next video.
+    Luckily for us their is a better solution using a project called
+    ~picotool~ which we will check out in the next video.
 
-*** Raspberry Pi Pico no Hands Flashing
-    :PROPERTIES:
-    :CREATED_AT:  <2023-09-12 Tue>
-    :END:
+** Raspberry Pi Pico no Hands Flashing
+   :PROPERTIES:
+   :CREATED_AT: <2023-09-12 Tue>
+   :END:
 
-    Today we're gonna check out how to use ~picotool~ to flash our
-    Raspberry Pi Pico without unplugging it.
+   Today we're gonna check out how to use ~picotool~ to flash our
+   Raspberry Pi Pico without unplugging it.
 
-    This tutorial is based on a [[*Raspberry Pi Pico Setup for macOS][previous article]], so make sure to
-    consult the first part if the general SDK setup is unclear.
+   This tutorial is based on a [[*Raspberry Pi Pico Setup for macOS][previous article]], so make sure to
+   consult the first part if the general SDK setup is unclear.
 
-**** Picotool
+*** Picotool
 
-     First things first we have to clone the [[https://github.com/raspberrypi/picotool][picotool repository]]
-     #+begin_src bash
-       git clone https://github.com/raspberrypi/picotool.git
-     #+end_src
+    First things first we have to clone the [[https://github.com/raspberrypi/picotool][picotool repository]]
+    #+begin_src bash
+      git clone https://github.com/raspberrypi/picotool.git
+    #+end_src
 
-     and make sure to have ~libusb~ installed. On macOS we can do this
-     via the ~brew~ package manager:
-     #+begin_src bash
-       brew install libusb
-     #+end_src
+    and make sure to have ~libusb~ installed. On macOS we can do this
+    via the ~brew~ package manager:
+    #+begin_src bash
+      brew install libusb
+    #+end_src
 
-     After that is done we can build the ~picotool~ binary. Let's
-     switch into the ~picotool~ directory and execute the following
-     commands to create a build folder, export the path to our
-     ~pico-sdk~ project and finally build the binary.
-     #+begin_src bash
-       mkdir build
-       cd build
-       export PICO_SDK_PATH=<your path to the pico-sdk directory>
-       cmake ..
-       make
-     #+end_src
+    After that is done we can build the ~picotool~ binary. Let's
+    switch into the ~picotool~ directory and execute the following
+    commands to create a build folder, export the path to our
+    ~pico-sdk~ project and finally build the binary.
+    #+begin_src bash
+      mkdir build
+      cd build
+      export PICO_SDK_PATH=<your path to the pico-sdk directory>
+      cmake ..
+      make
+    #+end_src
 
-     After the compilation has finished we have our finished
-     ~picotool~ binary in our build folder. We can verify our build by
-     running picotool's ~help~ command:
-     #+begin_src bash
-       ./picotool help
-     #+end_src
+    After the compilation has finished we have our finished
+    ~picotool~ binary in our build folder. We can verify our build by
+    running picotool's ~help~ command:
+    #+begin_src bash
+      ./picotool help
+    #+end_src
 
-     #+begin_comment
-     If you're feeling fancy you can add the ~picotool~ binary to your
-     ~PATH~ for maximum efficiency gains.
-     #+end_comment
+    #+begin_comment
+    If you're feeling fancy you can add the ~picotool~ binary to your
+    ~PATH~ for maximum efficiency gains.
+    #+end_comment
 
-**** Pico Preperations
+*** Pico Preperations
 
-     To enable our Raspberry Pi Pico to be restarted via USB while
-     running we need to flash it once /manually/ with a binary enables
-     standard I/O via USB. This feature can be enabled in your
-     ~CMakeLists.txt~ file via the ~pico_enable_stdio_usb~ drective
-     (an example can be found [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]).
+    To enable our Raspberry Pi Pico to be restarted via USB while
+    running we need to flash it once /manually/ with a binary enables
+    standard I/O via USB. This feature can be enabled in your
+    ~CMakeLists.txt~ file via the ~pico_enable_stdio_usb~ drective
+    (an example can be found [[https://gist.github.com/eldelto/0740e8f5259ab528702cef74fa96622e][here]]).
 
-     Rebuild our project and we are all set.
+    Rebuild our project and we are all set.
 
-**** No-Hands Flashing
+*** No-Hands Flashing
 
-     [[file:map-of-control.png]]
-     [[file:riff1.mp3]]
+    [[file:map-of-control.png]]
+    [[file:riff1.mp3]]
 
-     Now the last step to greatness is to keep our Rasberry Pi Pico
-     plugged in, point the ~picotool load~ command to our ~.uf2~ file
-     and off we go:
-     #+begin_src bash
-       picotool load -f <path to .uf2 file>
-     #+end_src
+    Now the last step to greatness is to keep our Rasberry Pi Pico
+    plugged in, point the ~picotool load~ command to our ~.uf2~ file
+    and off we go:
+    #+begin_src bash
+      picotool load -f <path to .uf2 file>
+    #+end_src
 
-     #+begin_comment
-     The ~-f~ flag forces the Pico into /BOOTSEL/ mode even though it
-     is currently running. This is only possible when you build all
-     your binaries with ~pico_enable_stdio_usb~.
-     #+end_comment
+    #+begin_comment
+    The ~-f~ flag forces the Pico into /BOOTSEL/ mode even though it
+    is currently running. This is only possible when you build all
+    your binaries with ~pico_enable_stdio_usb~.
+    #+end_comment
 
-     Congrats! Another step towards ultimate laziness (aka efficiency) has
-     been taken and we no longer need to move away from our beloved
-     keyboard to mingle with those pesky cables. *TODO too ironic?*
+    Congrats! Another step towards ultimate laziness (aka efficiency) has
+    been taken and we no longer need to move away from our beloved
+    keyboard to mingle with those pesky cables. *TODO too ironic?*
 
-**** Going Further
+*** Going Further
 
-     This is all nice and well but there is still some room to improve
-     this setup. We still have to build our code on every change and
-     then flash our microcontroller via the ~picotool~ command. Two
-     ScaleDegrees that definitely could be one...
+    This is all nice and well but there is still some room to improve
+    this setup. We still have to build our code on every change and
+    then flash our microcontroller via the ~picotool~ command. Two
+    ScaleDegrees that definitely could be one...
 
-     To have an even tighter integration into our build
-     process we can add the ~picotool~ execution into a custom
-     ~Makefile~ that in turn depends on our ~.uf2~ file being
-     up-to-date and rebuilds it automatically on changes. I'm not
-     going into too much detail here but instead just point you to one
-     of my [[https://github.com/eldelto/project-ikaros/blob/main/Makefile#L60][projects]] that uses it in a similar way.
+    To have an even tighter integration into our build
+    process we can add the ~picotool~ execution into a custom
+    ~Makefile~ that in turn depends on our ~.uf2~ file being
+    up-to-date and rebuilds it automatically on changes. I'm not
+    going into too much detail here but instead just point you to one
+    of my [[https://github.com/eldelto/project-ikaros/blob/main/Makefile#L60][projects]] that uses it in a similar way.
 

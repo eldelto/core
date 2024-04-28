@@ -1,11 +1,6 @@
 package web
 
 const (
-	MethodGET    = "GET"
-	MethodPOST   = "POST"
-	MethodPUT    = "PUT"
-	MethodDELETE = "DELETE"
-
 	CacheControlHeader = "Cache-Control"
 	ContentTypeHeader  = "Content-Type"
 	ETagHeader         = "ETag"

@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	dateFormat   = "2006-01-02 Mon>"
+
 	codeBlockStart    = "#+begin_src"
 	codeBlockEnd      = "#+end_src"
 	commentBlockStart = "#+begin_comment"
@@ -490,14 +492,13 @@ func isPropertiesEnd(token string) bool {
 }
 
 func parseDateProperty(token string, line uint) (time.Time, error) {
-	parts := strings.Split(token, " ")
-	if len(parts) < 3 {
+	parts := strings.Split(token, "<")
+	if len(parts) < 2 {
 		return time.Time{}, parseError("expected date", line, token)
 	}
 
-	rawDate := strings.TrimSpace(parts[2])
-	rawDate = rawDate[1:]
-	date, err := time.Parse(time.DateOnly, rawDate)
+	rawDate := strings.TrimSpace(parts[1])
+	date, err := time.Parse(dateFormat, rawDate)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("line %d: invalid date format: %w", line, err)
 	}
@@ -623,12 +624,23 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 	}
 }
 
-func parseOrgFile(r io.Reader) (*Headline, error) {
+func parseOrgFile(r io.Reader) ([]*Headline, error) {
 	scanner := bufio.NewScanner(r)
-	headline, err := parseHeadline(&tokenizer{scanner: scanner})
+	t := &tokenizer{scanner: scanner}
+
+	headlines := []*Headline{}
+	for {
+		_, _, err := t.token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+	headline, err := parseHeadline(t)
 	if err != nil {
 		return nil, err
 	}
+		headlines = append(headlines, headline)
+	}
 
-	return headline, nil
+	return headlines, nil
 }

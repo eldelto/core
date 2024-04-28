@@ -8,9 +8,11 @@ import (
 )
 
 func TestParseOrgFile(t *testing.T) {
-	headline, err := parseOrgFile(strings.NewReader(smallTestFile))
+	headlines, err := parseOrgFile(strings.NewReader(smallTestFile))
 	AssertNoError(t, err, "parseOrgFile")
+	AssertEquals(t, 1, len(headlines), "number of headlines")
 
+	headline := headlines[0]
 	AssertEquals(t, "Headline 1", headline.GetContent(), "1. headline")
 	AssertEquals(t, uint(1), headline.Level, "1. headline level")
 	AssertEquals(t, 5, len(headline.GetChildren()), "1. headline getchildren() len")
