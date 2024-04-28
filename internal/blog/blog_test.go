@@ -19,9 +19,9 @@ func TestArticlesFromOrgFile(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
-	AssertEquals(t, 2, len(articles), "articles len")
+	AssertEquals(t, 5, len(articles), "articles len")
 
-	article := articles[0]
+	article := articles[3]
 	AssertEquals(t, "Raspberry Pi Pico Setup for macOS", article.Title,
 		"1. article headline")
 
@@ -36,16 +36,16 @@ func TestArticlesToHtml(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
-	article := articles[0]
+	article := articles[3]
 	AssertEquals(t, createdAt, article.CreatedAt, "article.CreatedAt")
 	AssertEquals(t, updatedAt, article.UpdatedAt, "article.UpdatedAt")
 
-	html := ArticleToHtml(articles[0])
+	html := ArticleToHtml(articles[3])
 	AssertStringContains(t, `<li>Make</li>`, html, "unordered list")
 	AssertStringContains(t, "<li><code>listed code</code></li>", html, "code in list")
 	AssertStringContains(t, `(<cite>italic in parenthesis</cite>)`, html, "nested italics")
 
-	html = ArticleToHtml(articles[1])
+	html = ArticleToHtml(articles[4])
 	AssertStringContains(t, `<h1 class="p-name">Raspberry Pi Pico no Hands Flashing</h1>`, html, "title")
 	AssertStringContains(t, "<h2>Picotool</h2>", html, "sub-headline")
 	AssertStringContains(t,

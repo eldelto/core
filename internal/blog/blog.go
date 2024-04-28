@@ -7,11 +7,14 @@ import (
 	"io"
 	"log"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+const maxHeadlineDepth = 3
 
 var (
 	emptyTime  = time.Time{}
@@ -69,16 +72,18 @@ func (a *Article) Introduction() string {
 	return ""
 }
 
-func headlineToArticle(h *Headline, path string) (Article, error) {
+func headlineToArticle(h *Headline, parentPath string) (Article, error) {
 	children := h.GetChildren()
 	if len(children) < 1 {
 		return Article{}, fmt.Errorf("%q is missing Content: %w",
 			h.GetContent(), errSkipped)
 	}
 
+	title := h.GetContent()
 	article := Article{
-		Title:    h.GetContent(),
+		Title:    title,
 		Children: children,
+		Path: path.Join(parentPath, urlEncodeTitle(title)),
 	}
 
 	for _, child := range children {
@@ -96,8 +101,8 @@ func headlineToArticle(h *Headline, path string) (Article, error) {
 	return article, nil
 }
 
-func findArticles(h *Headline, path string) ([]Article, error) {
-	article, err := headlineToArticle(h, path)
+func findArticles(h *Headline, parentPath string) ([]Article, error) {
+	article, err := headlineToArticle(h, parentPath)
 	if err != nil {
 		if errors.Is(err, errSkipped) {
 			log.Println(err)
@@ -107,13 +112,17 @@ func findArticles(h *Headline, path string) ([]Article, error) {
 	}
 	articles := []Article{article}
 
+	if h.Level >= maxHeadlineDepth {
+		return articles, nil
+	}
+
 	for _, child := range h.Children {
 		childHeadline, isHeadline := child.(*Headline)
 		if !isHeadline {
 			continue
 		}
 
-		childArticles, err := findArticles(childHeadline, article.UrlEncodedTitle())
+		childArticles, err := findArticles(childHeadline, article.Path)
 		if err != nil && !errors.Is(err, errSkipped) {
 			return nil, err
 		}
