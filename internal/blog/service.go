@@ -26,9 +26,8 @@ type Service struct {
 }
 
 const (
-	articleBucket = "articles"
-	AssetBucket   = "assets"
-	PageBucket    = "pages"
+	AssetBucket = "assets"
+	PageBucket  = "pages"
 )
 
 var supportedMediaTypes = []string{
@@ -91,7 +90,7 @@ func (s *Service) store(articles ...Article) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(PageBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
+			return fmt.Errorf("failed to get bucket with name %q", PageBucket)
 		}
 
 		for _, article := range articles {
@@ -104,7 +103,7 @@ func (s *Service) store(articles ...Article) error {
 			if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
 				return fmt.Errorf("failed to persist page %q: %w", article.Title, err)
 			}
-			log.Printf("successfully stored page %q", key)
+			log.Printf("Successfully stored page %q", key)
 		}
 
 		return nil
@@ -117,7 +116,7 @@ func (s *Service) Fetch(key string) (Article, error) {
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(PageBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
+			return fmt.Errorf("failed to get bucket with name %q", PageBucket)
 		}
 
 		value := bucket.Get([]byte(key))
@@ -139,9 +138,9 @@ func (s *Service) FetchAll(includeDraft bool) ([]Article, error) {
 	articles := []Article{}
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(articleBucket))
+		bucket := tx.Bucket([]byte(PageBucket))
 		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
+			return fmt.Errorf("failed to get bucket with name %q", PageBucket)
 		}
 
 		return bucket.ForEach(func(key, value []byte) error {

@@ -352,7 +352,7 @@ func ArticleToHtml(a Article) string {
 	b := strings.Builder{}
 
 	b.WriteString(`<div class="timestamps">`)
-	if a.UpdatedAt != emptyTime {
+	if a.CreatedAt != emptyTime {
 		b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
 			"time",
 			`class="dt-published"`),
