@@ -1,9 +1,10 @@
 ( TODO:
     - [ ] Test conditionals
+    - [ ] Implement 'recurse'
+    - [ ] Implement 'return' for early returns
     - [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
-    - [ ] Implement recurse
-    - [ ] Extend the interpreter to support recursion
+    - [ ] Extend the interpreter to support recursion/overwriting
 )
 
 
@@ -36,9 +37,10 @@ definition. )
 definition. )
 : postpone 'call' b, , ;
 
-( -- )
+( -- int )
 ( Compiles a 'cbranch' call with a dummy offset of 0 into the
-currently compiled definition. )
+currently compiled definition. Leaves the current memory offset on the
+stack. )
 : if immediate
   here @
   0 [compile] literal
@@ -46,14 +48,14 @@ currently compiled definition. )
   ref cbranch postpone
 ;
 
-( -- )
+( int -- )
 ( Retroactively fills the 'cbranch' offset of a previous 'if' call to
 complete the branching construct. )
 : then immediate
   dup here @ swap - 15 - swap 1 + !
 ;
 
-( -- )
+( int -- int )
 ( Slightly modified combination of 'then' and 'if'. It sets the branch
 offset of the 'if' call in a way so it lands just after the 'cbranch'
 of 'else' and therefore executes it. )
@@ -61,3 +63,26 @@ of 'else' and therefore executes it. )
   dup here @ swap - 5 + swap 1 + !
   ref false postpone [compile] if
 ;
+
+( How should the looping construct look like to be general enough but
+  also avoid overflows and off-by-one-errors?
+
+  Common cases:
+  - Iterate over an array
+  - Do n times
+  - Do until something happened
+  - Break out of the loop
+
+  Can every looping construct be replaced with recursion?
+  => Probably.
+
+  Looping constructs could look like this:
+  - array ' func foreach
+  - 10 ' func repeat
+  - Breaks are early function returns
+
+  The disadvantage is, that every loop logic needs to be factored into
+  its own word (for better or worse). Could also be a blessing to be
+  honest. So might as well give it a try.
+
+)
