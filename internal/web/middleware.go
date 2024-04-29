@@ -1,10 +1,8 @@
 package web
 
 import (
-	"encoding/base64"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -39,8 +37,6 @@ func StaticContentMiddleware(next http.Handler) http.Handler {
 
 	return next
 }
-
-var etag = base64.StdEncoding.EncodeToString([]byte(time.Now().String()))
 
 func CachingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

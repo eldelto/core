@@ -83,7 +83,7 @@ func headlineToArticle(h *Headline, parentPath string) (Article, error) {
 	article := Article{
 		Title:    title,
 		Children: children,
-		Path: path.Join(parentPath, urlEncodeTitle(title)),
+		Path:     path.Join(parentPath, urlEncodeTitle(title)),
 	}
 
 	for _, child := range children {
@@ -219,7 +219,7 @@ func replaceImageLinks() func(string) string {
 				alt = match[5]
 			}
 
-			replacement := fmt.Sprintf("<img src=\"/dynamic/%s\" alt=\"%s\" style=\"width:auto\">",
+			replacement := fmt.Sprintf("<img src=\"/dynamic/assets/%s\" alt=\"%s\" style=\"width:auto\">",
 				match[1], alt)
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
@@ -353,10 +353,10 @@ func ArticleToHtml(a Article) string {
 
 	b.WriteString(`<div class="timestamps">`)
 	if a.UpdatedAt != emptyTime {
-	b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
-		"time",
-		`class="dt-published"`),
-		"span"))
+		b.WriteString(tagged("Created: "+tagged(a.CreatedAt.Format(time.DateOnly),
+			"time",
+			`class="dt-published"`),
+			"span"))
 	}
 	if a.UpdatedAt != emptyTime {
 		b.WriteString(tagged("Updated: "+tagged(a.UpdatedAt.Format(time.DateOnly),

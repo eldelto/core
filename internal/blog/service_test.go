@@ -35,12 +35,13 @@ func TestStoreFetch(t *testing.T) {
 			article := Article{
 				Title:    nodeName,
 				Children: []TextNode{node},
+				Path:     nodeName,
 			}
 
 			err := service.store(article)
 			AssertNoError(t, err, "service.store")
 
-			got, err := service.Fetch(article.UrlEncodedTitle())
+			got, err := service.Fetch(article.Path)
 			AssertNoError(t, err, "service.Fetch")
 
 			AssertEquals(t, article, got, "article.Children")

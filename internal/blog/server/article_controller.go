@@ -19,9 +19,9 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "/*"}: getPage(service),
-			{Method: http.MethodGet, Path: "/articles"}:        getArticles(service),
-			{Method: http.MethodGet, Path: "/draft"}:   getDraftArticles(service),
+			{Method: http.MethodGet, Path: "/*"}:        getPage(service),
+			{Method: http.MethodGet, Path: "/articles"}: getArticles(service),
+			{Method: http.MethodGet, Path: "/draft"}:    getDraftArticles(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.CachingMiddleware,
@@ -42,7 +42,7 @@ func getPage(service *blog.Service) web.Handler {
 		if path == "" {
 			path = "index"
 		}
-		
+
 		page, err := service.Fetch(path)
 		if err != nil {
 			return err
@@ -86,4 +86,3 @@ func getDraftArticles(service *blog.Service) web.Handler {
 		return articlesTemplate.Execute(w, articles)
 	}
 }
-

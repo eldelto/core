@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	dateFormat   = "2006-01-02 Mon>"
+	dateFormat = "2006-01-02 Mon>"
 
 	codeBlockStart    = "#+begin_src"
 	codeBlockEnd      = "#+end_src"
@@ -21,8 +21,7 @@ const (
 	blockQuoteEnd     = "#+end_quote"
 )
 
-var 	orderedListRegex = regexp.MustCompile(`\d+\.\s`)
-
+var orderedListRegex = regexp.MustCompile(`\d+\.\s`)
 
 type TextNode interface {
 	GetContent() string
@@ -635,10 +634,10 @@ func parseOrgFile(r io.Reader) ([]*Headline, error) {
 			break
 		}
 
-	headline, err := parseHeadline(t)
-	if err != nil {
-		return nil, err
-	}
+		headline, err := parseHeadline(t)
+		if err != nil {
+			return nil, err
+		}
 		headlines = append(headlines, headline)
 	}
 

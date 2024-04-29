@@ -10,7 +10,7 @@ import (
 func TestParseOrgFile(t *testing.T) {
 	headlines, err := parseOrgFile(strings.NewReader(smallTestFile))
 	AssertNoError(t, err, "parseOrgFile")
-	AssertEquals(t, 1, len(headlines), "number of headlines")
+	AssertEquals(t, 2, len(headlines), "number of headlines")
 
 	headline := headlines[0]
 	AssertEquals(t, "Headline 1", headline.GetContent(), "1. headline")

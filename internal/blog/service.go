@@ -28,7 +28,7 @@ type Service struct {
 const (
 	articleBucket = "articles"
 	AssetBucket   = "assets"
-	PageBucket   = "pages"
+	PageBucket    = "pages"
 )
 
 var supportedMediaTypes = []string{
@@ -87,7 +87,7 @@ func (s *Service) storeMedia(name string, content []byte) error {
 	})
 }
 
-func (s *Service) storePages(articles ...Article) error {
+func (s *Service) store(articles ...Article) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(PageBucket))
 		if bucket == nil {
@@ -105,29 +105,6 @@ func (s *Service) storePages(articles ...Article) error {
 				return fmt.Errorf("failed to persist page %q: %w", article.Title, err)
 			}
 			log.Printf("successfully stored page %q", key)
-		}
-
-		return nil
-	})
-}
-
-func (s *Service) store(articles ...Article) error {
-	return s.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(articleBucket))
-		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name %q", articleBucket)
-		}
-
-		for _, article := range articles {
-			buffer := bytes.Buffer{}
-			if err := gob.NewEncoder(&buffer).Encode(article); err != nil {
-				return fmt.Errorf("failed to encode article %q: %w", article.Title, err)
-			}
-
-			key := urlEncodeTitle(article.Title)
-			if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
-				return fmt.Errorf("failed to persist article %q: %w", article.Title, err)
-			}
 		}
 
 		return nil
@@ -212,7 +189,7 @@ func (s *Service) UpdateArticles(orgFile string) error {
 		s.sitemapControlle.AddSite(*url)
 	}
 
-	return s.storePages(articles...)
+	return s.store(articles...)
 }
 
 func isSupportedMedia(name string) bool {
