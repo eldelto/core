@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -36,7 +35,7 @@ func updateArticles(service *blog.Service, destination string, overwrite bool) {
 		}
 	}
 
-	orgFilePath := path.Join(destination, "notes.org")
+	orgFilePath := filepath.Join(destination, "blog.org")
 
 	_, err := os.Stat(orgFilePath)
 	if errors.Is(err, os.ErrNotExist) {

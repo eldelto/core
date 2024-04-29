@@ -57,6 +57,7 @@ func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
 		Handlers: map[Endpoint]Handler{
 			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
 		},
+		Middleware: []HandlerProvider{CachingMiddleware},
 	}
 
 	if basePath != "" {
@@ -70,7 +71,6 @@ func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
 func getAsset(fileSystem fs.FS) Handler {
 	// TODO: Migrate to http.FileServerFS
 	next := http.FileServer(http.FS(fileSystem))
-	next = StaticContentMiddleware(next)
 
 	return func(w http.ResponseWriter, r *http.Request) error {
 		next.ServeHTTP(w, r)

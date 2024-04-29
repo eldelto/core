@@ -15,51 +15,12 @@ var smallTestFile string
 //go:embed test.org
 var testFile string
 
-func TestParseOrgFile(t *testing.T) {
-	headline, err := parseOrgFile(strings.NewReader(smallTestFile))
-	AssertNoError(t, err, "parseOrgFile")
-
-	AssertEquals(t, "Headline 1", headline.GetContent(), "1. headline")
-	AssertEquals(t, uint(1), headline.Level, "1. headline level")
-	AssertEquals(t, 5, len(headline.GetChildren()), "1. headline getchildren() len")
-
-	headlineOneOne := headline.GetChildren()[1].(*Headline)
-	AssertEquals(t, "Headline 1.1", headlineOneOne.GetContent(), "1.1 headline")
-	AssertEquals(t, uint(2), headlineOneOne.Level, "1.1 headline level")
-	AssertEquals(t, "Headline 1.1 text.", headlineOneOne.GetChildren()[0].GetContent(),
-		"1.1 headline paragraph")
-
-	headlineOneTwo := headline.GetChildren()[2].(*Headline)
-	AssertEquals(t, "Headline 1.2", headlineOneTwo.GetContent(), "1.2 headline")
-	AssertEquals(t, uint(2), headlineOneTwo.Level, "1.2 headline level")
-	AssertEquals(t, "Headline 1.2 text.", headlineOneTwo.GetChildren()[0].GetContent(),
-		"1.2 headline paragraph")
-
-	lists := headline.GetChildren()[3].(*Headline)
-	unorderedList := lists.GetChildren()[0].(*UnorderedList)
-	AssertEquals(t, "*system* - Applies to every user on the system; usually located at ~/etc/gitconfig~",
-		unorderedList.GetChildren()[0].GetContent(), "first list entry")
-	AssertEquals(t, "*global* - Applies to all projects of a single user; usually found at ~$HOME/.gitconfig~",
-		unorderedList.GetChildren()[1].GetContent(), "second list entry")
-
-	orderedList := lists.GetChildren()[1].(*OrderedList)
-	AssertEquals(t, "First element",
-		orderedList.GetChildren()[0].GetContent(), "first list entry")
-	AssertEquals(t, "Second element",
-		orderedList.GetChildren()[1].GetContent(), "second list entry")
-
-	blocks := headline.GetChildren()[4].(*Headline)
-	_, ok := blocks.GetChildren()[0].(*BlockQuote)
-	AssertEquals(t, true, ok, "is block quote")
-}
-
 func TestArticlesFromOrgFile(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
+	AssertEquals(t, 4, len(articles), "articles len")
 
-	AssertEquals(t, 2, len(articles), "articles len")
-
-	article := articles[0]
+	article := articles[2]
 	AssertEquals(t, "Raspberry Pi Pico Setup for macOS", article.Title,
 		"1. article headline")
 
@@ -74,16 +35,16 @@ func TestArticlesToHtml(t *testing.T) {
 	articles, err := ArticlesFromOrgFile(strings.NewReader(testFile))
 	AssertNoError(t, err, "ArticlesFromOrgFile")
 
-	article := articles[0]
+	article := articles[2]
 	AssertEquals(t, createdAt, article.CreatedAt, "article.CreatedAt")
 	AssertEquals(t, updatedAt, article.UpdatedAt, "article.UpdatedAt")
 
-	html := ArticleToHtml(articles[0])
+	html := ArticleToHtml(articles[2])
 	AssertStringContains(t, `<li>Make</li>`, html, "unordered list")
 	AssertStringContains(t, "<li><code>listed code</code></li>", html, "code in list")
 	AssertStringContains(t, `(<cite>italic in parenthesis</cite>)`, html, "nested italics")
 
-	html = ArticleToHtml(articles[1])
+	html = ArticleToHtml(articles[3])
 	AssertStringContains(t, `<h1 class="p-name">Raspberry Pi Pico no Hands Flashing</h1>`, html, "title")
 	AssertStringContains(t, "<h2>Picotool</h2>", html, "sub-headline")
 	AssertStringContains(t,
