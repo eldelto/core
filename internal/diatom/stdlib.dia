@@ -1,9 +1,13 @@
 ( TODO:
     - [ ] Test conditionals
-    - [ ] Implement 'recurse'
     - [ ] Implement 'return' for early returns
+    - [ ] Implement higher-level looping constructs
+      - [ ] array ' func foreach
+      - [ ] 10 ' func repeat
     - [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
+    - [ ] Move most machine words from preamble to stdlib and
+          make them immediate words
     - [ ] Extend the interpreter to support recursion/overwriting
 )
 
@@ -63,6 +67,19 @@ of 'else' and therefore executes it. )
   dup here @ swap - 5 + swap 1 + !
   ref false postpone [compile] if
 ;
+
+( -- )
+( Jumps to the beginning of the current word. )
+: recurse immediate
+  true [compile] literal
+  'jmp' b,
+  latest @ codeword ,
+;
+
+( -- )
+( Inserts a 'ret' instruction into the currently compiled
+definition. )
+: return immediate 'ret' b, ;
 
 ( How should the looping construct look like to be general enough but
   also avoid overflows and off-by-one-errors?

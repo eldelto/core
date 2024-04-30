@@ -34,6 +34,7 @@ cjmp
 .codeword 'ret' const 2 .end
 .codeword 'const' const 3 .end
 .codeword 'call' const 16 .end
+.codeword 'jmp' const 15 .end
 
 
 ( Utilities )
