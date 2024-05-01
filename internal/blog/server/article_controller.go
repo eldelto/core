@@ -2,6 +2,7 @@ package server
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/eldelto/core/internal/blog"
@@ -36,6 +37,18 @@ type articleData struct {
 	Content   template.HTML
 }
 
+func notFound(service *blog.Service, w http.ResponseWriter) error {
+
+	data := articleData{
+		Title:     "Not Found",
+		Permalink: "",
+		HomePage:  service.HomePage(),
+		Content:   "The page you're looking for doesn't exist...",
+	}
+
+	return articleTemplate.Execute(w, data)
+}
+
 func getPage(service *blog.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		path := chi.URLParam(r, "*")
@@ -45,7 +58,8 @@ func getPage(service *blog.Service) web.Handler {
 
 		page, err := service.Fetch(path)
 		if err != nil {
-			return err
+			log.Println(err)
+			return notFound(service, w)
 		}
 
 		htmlArticle := blog.ArticleToHtml(page)

@@ -242,7 +242,7 @@ func (s *Service) HomePage() string {
 }
 
 func (s *Service) Permalink(a Article) (string, error) {
-	permalink, err := url.JoinPath(s.host, "articles", a.UrlEncodedTitle())
+	permalink, err := url.JoinPath(s.host, a.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to create permalink for article %q: %w",
 			a.Title, err)

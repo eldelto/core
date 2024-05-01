@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	dateFormat = "2006-01-02 Mon>"
+	dateFormat = "<2006-01-02 Mon>"
 
 	codeBlockStart    = "#+begin_src"
 	codeBlockEnd      = "#+end_src"
@@ -172,6 +172,7 @@ func (ul *OrderedList) GetChildren() []TextNode {
 type Properties struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	URL       string
 }
 
 func (p *Properties) GetContent() string {
@@ -490,22 +491,7 @@ func isPropertiesEnd(token string) bool {
 	return strings.TrimSpace(token) == ":END:"
 }
 
-func parseDateProperty(token string, line uint) (time.Time, error) {
-	parts := strings.Split(token, "<")
-	if len(parts) < 2 {
-		return time.Time{}, parseError("expected date", line, token)
-	}
-
-	rawDate := strings.TrimSpace(parts[1])
-	date, err := time.Parse(dateFormat, rawDate)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("line %d: invalid date format: %w", line, err)
-	}
-
-	return date, nil
-}
-
-func parseProperties(t *tokenizer) (*Properties, error) {
+func parsePropertyMap(t *tokenizer) (map[string]string, error) {
 	token, line, err := t.token()
 	if err != nil {
 		return nil, fmt.Errorf("line %d: expected properties block: %w", line, err)
@@ -514,10 +500,9 @@ func parseProperties(t *tokenizer) (*Properties, error) {
 	if !isProperties(token) {
 		return nil, parseError("expected properties", line, token)
 	}
-
-	properties := Properties{}
 	t.consume()
 
+	properties := map[string]string{}
 	for {
 		token, line, err = t.token()
 		if err != nil {
@@ -526,27 +511,53 @@ func parseProperties(t *tokenizer) (*Properties, error) {
 
 		if isPropertiesEnd(token) {
 			t.consume()
-			return &properties, nil
+			return properties, nil
 		}
 
-		token = strings.TrimSpace(token)
-
-		if strings.HasPrefix(token, ":CREATED_AT:") {
-			date, err := parseDateProperty(token, line)
-			if err != nil {
-				return nil, err
-			}
-			properties.CreatedAt = date
-		} else if strings.HasPrefix(token, ":UPDATED_AT:") {
-			date, err := parseDateProperty(token, line)
-			if err != nil {
-				return nil, err
-			}
-			properties.UpdatedAt = date
+		parts := strings.Split(token, ":")
+		if len(parts) < 3 {
+			return nil, parseError("invalid property", line, token)
 		}
-
+		properties[parts[1]] = strings.TrimSpace(parts[2])
 		t.consume()
 	}
+}
+
+func parseDateProperty(value string, line uint) (time.Time, error) {
+	if value == "" {
+		return time.Time{}, nil
+	}
+
+	date, err := time.Parse(dateFormat, value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("line %d: invalid date format: %w", line, err)
+	}
+
+	return date, nil
+}
+
+func parseProperties(t *tokenizer) (*Properties, error) {
+	propertyMap, err := parsePropertyMap(t)
+	if err != nil {
+		return nil, err
+	}
+	properties := Properties{}
+
+	createdAt, err := parseDateProperty(propertyMap["CREATED_AT"], t.line)
+	if err != nil {
+		return nil, err
+	}
+	properties.CreatedAt = createdAt
+
+	updatedAt, err := parseDateProperty(propertyMap["UPDATED_AT"], t.line)
+	if err != nil {
+		return nil, err
+	}
+	properties.UpdatedAt = updatedAt
+
+	properties.URL = propertyMap["URL"]
+
+	return &properties, nil
 }
 
 func parseContent(t *tokenizer, level uint) ([]TextNode, error) {

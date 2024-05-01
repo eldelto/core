@@ -1,6 +1,5 @@
 ( TODO:
     - [ ] Test conditionals
-    - [ ] Implement 'return' for early returns
     - [ ] Implement higher-level looping constructs
       - [ ] array ' func foreach
       - [ ] 10 ' func repeat

@@ -21,7 +21,7 @@ var (
 	errSkipped = errors.New("skipped")
 )
 
-func urlEncodeTitle(title string) string {
+func urlEncode(title string) string {
 	title = strings.ToLower(title)
 	replacer := strings.NewReplacer(" ", "-", "'", "")
 	title = replacer.Replace(title)
@@ -47,7 +47,7 @@ type Article struct {
 }
 
 func (a *Article) UrlEncodedTitle() string {
-	return urlEncodeTitle(a.Title)
+	return urlEncode(a.Title)
 }
 
 func (a *Article) CreatedAtString() string {
@@ -83,7 +83,7 @@ func headlineToArticle(h *Headline, parentPath string) (Article, error) {
 	article := Article{
 		Title:    title,
 		Children: children,
-		Path:     path.Join(parentPath, urlEncodeTitle(title)),
+		Path:     path.Join(parentPath, urlEncode(title)),
 	}
 
 	for _, child := range children {
@@ -91,6 +91,10 @@ func headlineToArticle(h *Headline, parentPath string) (Article, error) {
 		if ok {
 			article.CreatedAt = properties.CreatedAt
 			article.UpdatedAt = properties.UpdatedAt
+
+			if properties.URL != "" {
+				article.Path = path.Join(parentPath, urlEncode(properties.URL))
+			}
 			break
 		}
 	}
@@ -248,7 +252,7 @@ func replaceInternalLinks() func(string) string {
 	return func(s string) string {
 		matches := r.FindAllStringSubmatch(s, -1)
 		for _, match := range matches {
-			href := "/articles/" + urlEncodeTitle(match[1])
+			href := "/articles/" + urlEncode(match[1])
 			replacement := fmt.Sprintf("<a href=\"%s\">%s</a>", href, match[2])
 			s = strings.Replace(s, match[0], replacement, 1)
 		}
@@ -288,7 +292,7 @@ func TextNodeToHtml(t TextNode) string {
 	content := html.EscapeString(t.GetContent())
 	switch t := t.(type) {
 	case *Headline:
-		b.WriteString(`<section id="` + urlEncodeTitle(t.Content) + `">`)
+		b.WriteString(`<section id="` + urlEncode(t.Content) + `">`)
 		b.WriteString(tagged(content, "h"+strconv.Itoa(int(t.Level)-1)))
 
 		for _, child := range t.GetChildren() {
@@ -331,21 +335,30 @@ func TextNodeToHtml(t TextNode) string {
 	return b.String()
 }
 
-func writeTableOfContents(a *Article, b *strings.Builder) {
-	// TODO: Move to a template?
+// TODO: Move to a template?
+func writeTableOfContents(a *Article) string {
+	b := strings.Builder{}
 	b.WriteString(`<div id="table-of-contents">`)
 	b.WriteString(tagged("Contents", "strong"))
 	b.WriteString("<ul>")
 
+	headlineCount := 0
 	for _, child := range a.Children {
 		headline, ok := child.(*Headline)
 		if ok && headline.Level == 3 {
-			b.WriteString(`<li><a href="#` + urlEncodeTitle(headline.Content) + `">` + headline.Content + `</a></li>`)
+			headlineCount++
+			b.WriteString(`<li><a href="#` + urlEncode(headline.Content) + `">` + headline.Content + `</a></li>`)
 		}
 	}
 
 	b.WriteString("</ul>")
 	b.WriteString("</div>")
+
+	if headlineCount == 0 {
+		return ""
+	}
+
+	return b.String()
 }
 
 func ArticleToHtml(a Article) string {
@@ -367,7 +380,7 @@ func ArticleToHtml(a Article) string {
 	b.WriteString("</div>")
 
 	b.WriteString(tagged(a.Title, "h1", `class="p-name"`))
-	writeTableOfContents(&a, &b)
+	b.WriteString(writeTableOfContents(&a))
 
 	b.WriteString(`<div class="e-content">`)
 	for _, child := range a.Children {
