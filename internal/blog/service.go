@@ -180,9 +180,16 @@ func (s *Service) UpdateArticles(orgFile string) error {
 			continue
 		}
 
-		url, err := url.Parse("https://www.eldelto.net/articles/" + article.UrlEncodedTitle())
+		rawUrl, err := url.JoinPath(s.host, article.Path)
 		if err != nil {
-			return fmt.Errorf("failed to generate sitemap URL for article %q", article.Title)
+			return fmt.Errorf("failed to construct raw sitemap URL for article %q",
+				article.Title)
+		}
+
+		url, err := url.Parse(rawUrl)
+		if err != nil {
+			return fmt.Errorf("failed to generate sitemap URL for article %q",
+				article.Title)
 		}
 
 		s.sitemapControlle.AddSite(*url)
