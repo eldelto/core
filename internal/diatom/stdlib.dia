@@ -1,8 +1,9 @@
 ( TODO:
+    - [ ] Fix and test rput
     - [ ] Test conditionals
     - [ ] Implement higher-level looping constructs
-      - [ ] array ' func foreach
-      - [ ] 10 ' func repeat
+      - [ ] array ref func foreach
+      - [ ] 10 ref func repeat
     - [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
     - [ ] Move most machine words from preamble to stdlib and
@@ -93,8 +94,8 @@ definition. )
   => Probably.
 
   Looping constructs could look like this:
-  - array ' func foreach
-  - 10 ' func repeat
+  - array ref func foreach
+  - 10 ref func repeat
   - Breaks are early function returns
 
   The disadvantage is, that every loop logic needs to be factored into
@@ -102,3 +103,25 @@ definition. )
   honest. So might as well give it a try.
 
 )
+
+( address int -- )
+( rs: counter -- )
+: repeat-loop
+  rpeek .
+  rpop 1+ rput  ( TODO: rput is broken )
+  over scall
+  recurse
+;
+
+( int address -- )
+( Executes the given word n times. )
+: repeat
+  swap dup rput
+  repeat-loop
+  rpop drop
+  drop drop
+;
+
+
+: a 65 emit ;
+: b 10 ref a repeat ;
