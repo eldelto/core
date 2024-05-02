@@ -1,5 +1,4 @@
 ( TODO:
-    - [ ] Fix and test rput
     - [ ] Test conditionals
     - [ ] Implement higher-level looping constructs
       - [ ] array ref func foreach
@@ -104,24 +103,22 @@ definition. )
 
 )
 
-( address int -- )
-( rs: counter -- )
+( address max counter -- address max counter )
 : repeat-loop
-  rpeek .
-  rpop 1+ rput  ( TODO: rput is broken )
+  dup 1 < if
+    return
+  then
+  
+  rput
   over scall
+  rpop 1-
   recurse
 ;
 
-( int address -- )
+( address max -- )
 ( Executes the given word n times. )
-: repeat
-  swap dup rput
+: times
+  dup
   repeat-loop
-  rpop drop
-  drop drop
+  drop drop drop
 ;
-
-
-: a 65 emit ;
-: b 10 ref a repeat ;

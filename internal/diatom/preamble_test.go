@@ -40,6 +40,9 @@ func TestPreamble(t *testing.T) {
 		{"const 4 const 5 !<", []Word{-1}, []Word{}, "", ""},
 		{"const 5 const 5 !>", []Word{0}, []Word{}, "", ""},
 		{"const 5 const 4 !>", []Word{-1}, []Word{}, "", ""},
+		{"const 7 rput !rpop", []Word{7}, []Word{}, "", ""},
+		{"const 7 !rput !rpop", []Word{7}, []Word{}, "", ""},
+		{"const 7 rput !rpeek !rpop", []Word{7, 7}, []Word{}, "", ""},
 
 		// Utilities
 		{"!word-max", []Word{WordMax}, []Word{}, "", ""},
