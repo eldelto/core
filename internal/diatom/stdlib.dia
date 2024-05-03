@@ -1,16 +1,15 @@
 ( TODO:
-	- [ ] Implement higher-level looping constructs
-	  - [ ] array ref func foreach
-	  - [ ] 10 ref func repeat
+	- [ ] Extend the interpreter to support referencing the previous word version
 	- [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
 	- [ ] Make most machine words immediate words?
-	- [ ] Extend the interpreter to support recursion/overwriting
+	- [ ] Strings
+	- [ ] Arrays
 )
 
 
 ( int -- )
-( Displays the last x bytes of memory. )
+( Displays the last n bytes of memory. )
 : mem-tail here @ swap - here @ mem-view ;
 
 ( int -- )
@@ -92,8 +91,17 @@ definition. )
 
 ( address max -- )
 ( Executes the given word n times. )
-: times
-  dup
-  _times-loop
-  drop drop drop
+: times dup _times-loop drop drop drop ;
+
+( accumulator int -- result )
+: _factorial
+  dup 0 = over 1 = |
+  if return then
+  swap over *
+  swap 1-
+  recurse
 ;
+
+( int -- result )
+( Calculates the factorial of the given number. )
+: factorial 1 swap _factorial drop ;
