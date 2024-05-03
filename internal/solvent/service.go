@@ -6,7 +6,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -141,20 +141,25 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 		return nil, err
 	}
 
-	now := time.Now().Unix()
 	r := bytes.NewBufferString(patch)
 	scanner := bufio.NewScanner(r)
 
 	i := 0
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
 
 		if i == 0 {
-			list.Title.Value = line
-			list.Title.UpdatedAt = now
+			list.Rename(line)
+		} else {
+			// TODO:
+			// - Parse 'line' as a raw to-do item
+			// - Find item by name and update the checked status or rename
+			// - If it doesn't exist in the old list, create it
+			// - If it doesn't exist in the new list, remove it
+
 		}
 	}
 	if err := scanner.Err(); err != nil {
