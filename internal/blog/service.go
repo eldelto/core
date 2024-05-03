@@ -18,13 +18,6 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-type Service struct {
-	gitHost          string
-	host             string
-	db               *bbolt.DB
-	sitemapControlle *web.SitemapController
-}
-
 const (
 	AssetBucket = "assets"
 	PageBucket  = "pages"
@@ -47,6 +40,13 @@ func init() {
 	gob.Register(&UnorderedList{})
 	gob.Register(&OrderedList{})
 	gob.Register(&Properties{})
+}
+
+type Service struct {
+	gitHost          string
+	host             string
+	db               *bbolt.DB
+	sitemapControlle *web.SitemapController
 }
 
 func NewService(db *bbolt.DB, gitHost string, host string, sitmapController *web.SitemapController) (*Service, error) {

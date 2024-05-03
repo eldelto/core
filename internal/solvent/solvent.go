@@ -2,7 +2,9 @@ package solvent
 
 import (
 	"fmt"
+	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/crdt"
@@ -65,6 +67,20 @@ func (t *ToDoItem) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 	}
 
 	return &mergedToDoItem, nil
+}
+
+func (t *ToDoItem) String() string {
+	b := strings.Builder{}
+	b.WriteString("- [")
+	if t.Checked {
+		b.WriteRune('X')
+	} else {
+		b.WriteRune(' ')
+	}
+	b.WriteString("] ")
+	b.WriteString(t.Title)
+
+	return b.String()
 }
 
 // ToDoList represents a whole list of ToDoItems
@@ -300,6 +316,20 @@ func (tdl *ToDoList) IsCompleted() bool {
 	return true
 }
 
+func (tdl *ToDoList) String() string {
+	b := strings.Builder{}
+	b.WriteString(tdl.Title.Value)
+	b.WriteByte('\n')
+	b.WriteByte('\n')
+
+	for _, item := range tdl.GetItems() {
+		b.WriteString(item.String())
+		b.WriteByte('\n')
+	}
+
+	return b.String()
+}
+
 type Notebook struct {
 	ID        uuid.UUID
 	ToDoLists crdt.PSet[*ToDoList]
@@ -370,6 +400,10 @@ func (n *Notebook) GetOpenLists() []*ToDoList {
 		}
 	}
 
+	slices.SortFunc(lists, func(a, b *ToDoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
+
 	return lists
 }
 
@@ -381,6 +415,10 @@ func (n *Notebook) GetCompletedLists() []*ToDoList {
 			lists = append(lists, list)
 		}
 	}
+
+	slices.SortFunc(lists, func(a, b *ToDoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
 
 	return lists
 }

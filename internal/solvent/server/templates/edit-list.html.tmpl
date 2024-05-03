@@ -1,0 +1,14 @@
+{{define "left-action"}}
+{{end}}
+
+{{define "content"}}
+
+<div class="DetailViewMain">
+  <form class="ToDoList"
+		method="POST" action="/lists/{{.Identifier}}">
+	  <textarea name="text-patch">{{.String}}</textarea>
+	  <button>Save</button>
+	</form>
+</div>
+
+{{end}}
