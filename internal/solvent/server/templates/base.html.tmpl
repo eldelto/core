@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Solvent</title>
+  <meta http-equiv="Content-Type" charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Solvent - Your simple to-do list">
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="icon" type="image/svg" href="/assets/favicon.ico">
+  <script src="/assets/htmx.min.js"></script>
+</head>
+
+<body>
+  <div id="root">
+    <div class="App overview">
+        <div class="ViewContainer">
+            <div class="ListView">
+                <header>
+                    <div class="ListViewHeader header">
+					  {{block "left-action" .}}{{end}}
+					  <a href="/lists">
+						<h1 class="HeaderTitle">Solvent</h1>
+					  </a>
+					  {{block "right-action" .}}{{end}}
+                    </div>
+                </header>
+
+				{{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+
+</html>

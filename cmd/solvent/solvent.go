@@ -4,25 +4,44 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
+	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/solvent/server"
+	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 
-func main() {
-	env := server.Init()
-	defer env.Close()
+const (
+	portEnv = "PORT"
+	dbPath  = "blog.db"
+)
 
-	port := 8080
+func main() {
+	rawPort, ok := os.LookupEnv(portEnv)
+	if !ok {
+		rawPort = "8080"
+	}
+
+	port, err := strconv.ParseInt(rawPort, 10, 64)
+	if err != nil {
+		log.Fatalf("%q is not a valid port: %v", rawPort, err)
+	}
+
+	// Services
+	service := &solvent.Service{}
+
 	r := chi.NewRouter()
 
-	// Register controllers
-	env.AssetController.Register(r)
-	env.TemplateController.Register(r)
+	// Controllers
+	web.NewAssetController("", server.AssetsFS).Register(r)
+	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
+	server.NewListController(service).Register(r)
 
 	http.Handle("/", r)
 
-	log.Printf("Solvent listening on localhost:%d", port)
+	log.Printf("Plant-Guilds listening on localhost:%d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 

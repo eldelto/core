@@ -29,6 +29,14 @@
   --light-background-color: #f6f7eb;
 }*/
 
+@font-face {
+  font-family: 'Pattaya';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/assets/Pattaya-Regular.ttf);
+}
+
 #root {
   width: 100vw;
   height: 100vh;

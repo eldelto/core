@@ -27,7 +27,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	// API
+	// Controllers
 	web.NewAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, &server.TemplateData{}).Register(r)
 

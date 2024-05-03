@@ -289,6 +289,17 @@ func (tdl *ToDoList) Merge(other crdt.Mergeable) (crdt.Mergeable, error) {
 	return &mergedToDoList, nil
 }
 
+func (tdl *ToDoList) IsCompleted() bool {
+	liveView := tdl.ToDoItems.LiveView()
+	for _, item := range liveView {
+		if !item.Checked {
+			return false
+		}
+	}
+
+	return true
+}
+
 type Notebook struct {
 	ID        uuid.UUID
 	ToDoLists crdt.PSet[*ToDoList]
@@ -345,6 +356,30 @@ func (n *Notebook) GetLists() []*ToDoList {
 	lists := make([]*ToDoList, 0, len(liveView))
 	for _, list := range liveView {
 		lists = append(lists, list)
+	}
+
+	return lists
+}
+
+func (n *Notebook) GetOpenLists() []*ToDoList {
+	liveView := n.ToDoLists.LiveView()
+	lists := make([]*ToDoList, 0, len(liveView))
+	for _, list := range liveView {
+		if !list.IsCompleted() {
+			lists = append(lists, list)
+		}
+	}
+
+	return lists
+}
+
+func (n *Notebook) GetCompletedLists() []*ToDoList {
+	liveView := n.ToDoLists.LiveView()
+	lists := make([]*ToDoList, 0, len(liveView))
+	for _, list := range liveView {
+		if list.IsCompleted() {
+			lists = append(lists, list)
+		}
 	}
 
 	return lists
