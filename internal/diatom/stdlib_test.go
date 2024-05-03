@@ -26,6 +26,11 @@ func TestStdlib(t *testing.T) {
 		{": test if 11 then 22 ; ", []Word{}, []Word{}, "", ""},
 		{": test if 11 then 22 ; true test", []Word{11, 22}, []Word{}, "", ""},
 		{": test if 11 then 22 ; false test", []Word{22}, []Word{}, "", ""},
+		{": test if 11 else 22 then 33 ; true test", []Word{11, 33}, []Word{}, "", ""},
+		{": test if 11 else 22 then 33 ; false test", []Word{22, 33}, []Word{}, "", ""},
+		{": test if 65 emit false recurse then ; true test", []Word{}, []Word{}, "", "A"},
+		{": test 11 return 22 ; test", []Word{11}, []Word{}, "", ""},
+		{": a 65 emit ; ' a 5 times", []Word{}, []Word{}, "", "AAAAA"},
 	}
 
 	for _, tt := range tests {

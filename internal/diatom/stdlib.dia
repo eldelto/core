@@ -1,13 +1,11 @@
 ( TODO:
-    - [ ] Test conditionals
-    - [ ] Implement higher-level looping constructs
-      - [ ] array ref func foreach
-      - [ ] 10 ref func repeat
-    - [ ] Think about implementing conditionals in terms of
+	- [ ] Implement higher-level looping constructs
+	  - [ ] array ref func foreach
+	  - [ ] 10 ref func repeat
+	- [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
-    - [ ] Move most machine words from preamble to stdlib and
-          make them immediate words
-    - [ ] Extend the interpreter to support recursion/overwriting
+	- [ ] Make most machine words immediate words?
+	- [ ] Extend the interpreter to support recursion/overwriting
 )
 
 
@@ -80,35 +78,12 @@ of 'else' and therefore executes it. )
 definition. )
 : return immediate 'ret' b, ;
 
-( How should the looping construct look like to be general enough but
-  also avoid overflows and off-by-one-errors?
-
-  Common cases:
-  - Iterate over an array
-  - Do n times
-  - Do until something happened
-  - Break out of the loop
-
-  Can every looping construct be replaced with recursion?
-  => Probably.
-
-  Looping constructs could look like this:
-  - array ref func foreach
-  - 10 ref func repeat
-  - Breaks are early function returns
-
-  The disadvantage is, that every loop logic needs to be factored into
-  its own word (for better or worse). Could also be a blessing to be
-  honest. So might as well give it a try.
-
-)
-
 ( address max counter -- address max counter )
 : _times-loop
   dup 1 < if
-    return
+	return
   then
-  
+
   rput
   over scall
   rpop 1-
@@ -122,7 +97,3 @@ definition. )
   _times-loop
   drop drop drop
 ;
-
-
-: a 65 emit ;
-: b ref a 10 times ;

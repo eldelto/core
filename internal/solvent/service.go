@@ -153,14 +153,15 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 
 		if i == 0 {
 			list.Rename(line)
-		} else {
-			// TODO:
-			// - Parse 'line' as a raw to-do item
-			// - Find item by name and update the checked status or rename
-			// - If it doesn't exist in the old list, create it
-			// - If it doesn't exist in the new list, remove it
-
 		}
+		//else {
+		// TODO:
+		// - Parse 'line' as a raw to-do item
+		// - Find item by name and update the checked status or rename
+		// - If it doesn't exist in the old list, create it
+		// - If it doesn't exist in the new list, remove it
+
+		//}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err

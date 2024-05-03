@@ -402,13 +402,13 @@ rpop drop drop drop
 
 ( Creates the header for a new word at the end of the dictionary.
 
-                                            +-- Afterwards, HERE points here.
-                                            |
-                                            V
+											+-- Afterwards, HERE points here.
+											|
+											V
  +---------+---+---+---+---+---+---+---+---+
  | LINK    | 6 | D | O | U | B | L | E | 0 |
  +---------+---+---+---+---+---+---+---+---+
-            len                         pad
+			len                         pad
 )
 ( -- )
 ( Reads the content of 'word-buffer' and creates the dictionary header for new
@@ -525,4 +525,3 @@ exit
 
 .var latest 4 .end
 :here-marker
-
