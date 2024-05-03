@@ -104,7 +104,7 @@ definition. )
 )
 
 ( address max counter -- address max counter )
-: repeat-loop
+: _times-loop
   dup 1 < if
     return
   then
@@ -119,6 +119,10 @@ definition. )
 ( Executes the given word n times. )
 : times
   dup
-  repeat-loop
+  _times-loop
   drop drop drop
 ;
+
+
+: a 65 emit ;
+: b ref a 10 times ;
