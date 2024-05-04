@@ -10,6 +10,7 @@ import (
 func BaseMiddleware(next http.Handler) http.Handler {
 	next = middleware.Recoverer(next)
 	next = middleware.Logger(next)
+	next = middleware.Compress(5)(next)
 
 	return next
 }
@@ -32,7 +33,6 @@ func handleError(handler Handler) http.Handler {
 }
 
 func StaticContentMiddleware(next http.Handler) http.Handler {
-	next = middleware.Compress(5)(next)
 	next = CachingMiddleware(next)
 
 	return next
