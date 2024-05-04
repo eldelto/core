@@ -116,14 +116,12 @@ func newToDoList(title string) (*ToDoList, error) {
 // Rename sets the title of the ToDoList to the given one and updates
 // the UpdatedAt field
 // TODO: Use types for ToDoListID and ToDoItemID
-func (tdl *ToDoList) Rename(title string) (uuid.UUID, error) {
+func (tdl *ToDoList) Rename(title string) {
 	newTitle := Title{
 		Value:     title,
 		UpdatedAt: time.Now().UTC().UnixNano(),
 	}
 	tdl.Title = newTitle
-
-	return tdl.ID, nil
 }
 
 // AddItem creates a new ToDoItem object and adds it to the ToDoList

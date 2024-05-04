@@ -32,10 +32,8 @@ func TestRename(t *testing.T) {
 	oldTs := list.Title.UpdatedAt
 	time.Sleep(1 * time.Millisecond)
 
-	id, err := list.Rename(listTitle1)
-	AssertEquals(t, nil, err, "list.Rename error")
+	list.Rename(listTitle1)
 	AssertEquals(t, listTitle1, list.Title.Value, "title.Value")
-	AssertEquals(t, list.ID, id, "id")
 	AssertEquals(t, true, list.Title.UpdatedAt > oldTs, "title.UpdatedAt")
 }
 

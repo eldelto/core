@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -130,6 +131,49 @@ func (s *Service) Update(userID uuid.UUID, notebook *Notebook) (*Notebook, error
 	return notebook, err
 }
 
+type toDoItem struct {
+	checked  bool
+	position int
+	title    string
+}
+
+var toDoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
+
+func parseTextPatch(patch string) (string, map[string]toDoItem, error) {
+	title := ""
+	items := map[string]toDoItem{}
+
+	r := bytes.NewBufferString(patch)
+	scanner := bufio.NewScanner(r)
+
+	i := -1
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		i++
+
+		if i == 0 {
+			title = line
+		} else {
+			matches := toDoItemRegex.FindStringSubmatch(line)
+			checkboxContent := matches[2]
+			item := toDoItem{
+				checked:  checkboxContent == "X" || checkboxContent == "x",
+				position: i - 1,
+				title:    matches[3],
+			}
+			items[item.title] = item
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", nil, err
+	}
+
+	return title, items, nil
+}
+
 func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Notebook, error) {
 	notebook, err := s.Fetch(userID)
 	if err != nil {
@@ -141,31 +185,41 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 		return nil, err
 	}
 
-	r := bytes.NewBufferString(patch)
-	scanner := bufio.NewScanner(r)
-
-	i := 0
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		if i == 0 {
-			list.Rename(line)
-		}
-		//else {
-		// TODO:
-		// - Parse 'line' as a raw to-do item
-		// - Find item by name and update the checked status or rename
-		// - If it doesn't exist in the old list, create it
-		// - If it doesn't exist in the new list, remove it
-
-		//}
-	}
-	if err := scanner.Err(); err != nil {
+	title, items, err := parseTextPatch(patch)
+	if err != nil {
 		return nil, err
 	}
+
+	list.Rename(title)
+	for _, item := range items {
+		itemID, err := list.AddItem(item.title)
+		if err != nil {
+			return nil, err
+		}
+
+		if item.checked {
+			if _, err := list.CheckItem(itemID); err != nil {
+				return nil, err
+			}
+		}
+
+		if err := list.MoveItem(itemID, item.position); err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO: Properly create/remove items based on diff.
+	/*
+			   Test data:
+			   - [ ]  as dfsdf
+		       - [x] asdfs df
+		       - [X]a sd fs
+		       - asd df ef
+		       -s asd f wf
+		       asdf s d f w
+		       []asdf sd f df
+		       [X]asdf e f sd f
+	*/
 
 	return s.Update(userID, notebook)
 }
