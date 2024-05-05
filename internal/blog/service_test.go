@@ -13,7 +13,7 @@ import (
 const dbPath = "blog-test.db"
 
 func TestStoreFetch(t *testing.T) {
-	db, err := bbolt.Open("blog-test.db", 0660, nil)
+	db, err := bbolt.Open(dbPath, 0660, nil)
 	AssertNoError(t, err, "bboltOpent")
 	defer db.Close()
 

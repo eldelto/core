@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -18,7 +19,8 @@ const (
 )
 
 var (
-	errNotFound = errors.New("not found")
+	errNotFound   = errors.New("not found")
+	toDoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
 )
 
 type Service struct {
@@ -137,9 +139,7 @@ type toDoItem struct {
 	title    string
 }
 
-var toDoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
-
-func parseTextPatch(patch string) (string, map[string]toDoItem, error) {
+func parseListPatch(patch string) (string, map[string]toDoItem, error) {
 	title := ""
 	items := map[string]toDoItem{}
 
@@ -185,26 +185,57 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 		return nil, err
 	}
 
-	title, items, err := parseTextPatch(patch)
+	newTitle, newItems, err := parseListPatch(patch)
 	if err != nil {
 		return nil, err
 	}
+	list.Rename(newTitle)
 
-	list.Rename(title)
-	for _, item := range items {
-		itemID, err := list.AddItem(item.title)
-		if err != nil {
+	// TODO: Return them as map here as well?
+	currentItems := list.GetItems()
+	for _, currentItem := range currentItems {
+		newItem, ok := newItems[currentItem.Title]
+		if !ok {
+			list.RemoveItem(currentItem.ID)
+			continue
+		}
+
+		if err := list.MoveItem(currentItem.ID, newItem.position); err != nil {
 			return nil, err
 		}
 
-		if item.checked {
-			if _, err := list.CheckItem(itemID); err != nil {
+		if newItem.checked {
+			if _, err := list.CheckItem(currentItem.ID); err != nil {
+				return nil, err
+			}
+		} else {
+			if _, err := list.UncheckItem(currentItem.ID); err != nil {
 				return nil, err
 			}
 		}
+	}
 
-		if err := list.MoveItem(itemID, item.position); err != nil {
-			return nil, err
+	sortedNewItems := make([]toDoItem, 0, len(newItems))
+	for _, item := range newItems {
+		sortedNewItems = append(sortedNewItems, item)
+	}
+	slices.SortFunc(sortedNewItems, func(a, b toDoItem) int {
+		return a.position - b.position
+	})
+
+	for _, newItem := range sortedNewItems {
+		if !slices.ContainsFunc(currentItems,
+			func(i ToDoItem) bool { return i.Title == newItem.title }) {
+			itemID, err := list.AddItem(newItem.title)
+			if err != nil {
+				return nil, err
+			}
+
+			if newItem.checked {
+				if _, err := list.CheckItem(itemID); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 

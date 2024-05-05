@@ -173,12 +173,14 @@ func (tdl *ToDoList) RemoveItem(id uuid.UUID) {
 // NotFoundError if no match could be found
 func (tdl *ToDoList) CheckItem(id uuid.UUID) (uuid.UUID, error) {
 	item, err := tdl.GetItem(id)
-	if err == nil {
-		item.Checked = true
-		tdl.ToDoItems.Add(&item)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to check item: %w", err)
 	}
 
-	return item.ID, err
+	item.Checked = true
+	tdl.ToDoItems.Add(&item)
+
+	return item.ID, nil
 }
 
 // UncheckItem unchecks the ToDoItem with the given id by creating a new
@@ -187,13 +189,13 @@ func (tdl *ToDoList) CheckItem(id uuid.UUID) (uuid.UUID, error) {
 func (tdl *ToDoList) UncheckItem(id uuid.UUID) (uuid.UUID, error) {
 	item, err := tdl.GetItem(id)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("failed to uncheck item: %w", err)
 	}
 	tdl.RemoveItem(item.ID)
 
 	newID, err := randomUUID()
 	if err != nil {
-		return newID, err
+		return newID, fmt.Errorf("failed to uncheck item: %w", err)
 	}
 	newItem := ToDoItem{
 		ID:         newID,
@@ -201,9 +203,11 @@ func (tdl *ToDoList) UncheckItem(id uuid.UUID) (uuid.UUID, error) {
 		Checked:    false,
 		OrderValue: item.OrderValue,
 	}
-	err = tdl.ToDoItems.Add(&newItem)
+	if err := tdl.ToDoItems.Add(&newItem); err != nil {
+		return uuid.Nil, fmt.Errorf("failed to uncheck item: %w", err)
+	}
 
-	return newID, err
+	return newID, nil
 }
 
 // TODO: Implement RenameItem(id uuid.UUID, title string)
@@ -218,6 +222,10 @@ func (tdl *ToDoList) GetItems() []ToDoItem {
 		items = append(items, *item)
 	}
 
+	slices.SortFunc(items, func(a, b ToDoItem) int {
+		return int((a.OrderValue.Value - b.OrderValue.Value) * 1000)
+	})
+
 	return items
 }
 
@@ -226,7 +234,7 @@ func (tdl *ToDoList) GetItems() []ToDoItem {
 func (tdl *ToDoList) MoveItem(id uuid.UUID, targetIndex int) error {
 	item, err := tdl.GetItem(id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to move item: %w", err)
 	}
 
 	items := tdl.GetItems()
@@ -260,7 +268,11 @@ func (tdl *ToDoList) MoveItem(id uuid.UUID, targetIndex int) error {
 	}
 	item.OrderValue = newOrderValue
 
-	return tdl.ToDoItems.Add(&item)
+	if err := tdl.ToDoItems.Add(&item); err != nil {
+		return fmt.Errorf("failed to move item: %w", err)
+	}
+
+	return nil
 }
 
 // Identifier returns the ID of the ToDoList
