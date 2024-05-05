@@ -25,6 +25,7 @@ func NewArticleController(service *blog.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "/draft"}:    getDraftArticles(service),
 		},
 		Middleware: []web.HandlerProvider{
+			web.ContentTypeMiddleware(web.ContentTypeHTML),
 			web.CachingMiddleware,
 		},
 	}

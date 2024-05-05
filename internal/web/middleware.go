@@ -46,3 +46,12 @@ func CachingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func ContentTypeMiddleware(contentType string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(ContentTypeHeader, contentType)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
