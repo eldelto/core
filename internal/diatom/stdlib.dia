@@ -77,15 +77,17 @@ of 'else' and therefore executes it. )
 definition. )
 : return immediate 'ret' b, ;
 
+( TODO: Optimize slightly and test )
 ( address max counter -- address max counter )
 : _times-loop
   dup 1 < if
 	return
   then
 
-  rput
-  over scall
-  rpop 1-
+  ( Store looping state on the return stack. )
+  rput rput rput
+  rpeek scall
+  rpop rpop rpop 1-
   recurse
 ;
 
