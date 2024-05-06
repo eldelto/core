@@ -1,8 +1,8 @@
 ( TODO:
-	- [ ] Extend the interpreter to support referencing the previous word version
 	- [ ] Think about implementing conditionals in terms of
 	  'jmp' & 'cjmp' directly
 	- [ ] Make most machine words immediate words?
+	- [ ] Port VM to Javascript
 	- [ ] Strings
 	- [ ] Arrays
 )

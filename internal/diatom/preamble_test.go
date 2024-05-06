@@ -112,6 +112,8 @@ func TestPreamble(t *testing.T) {
 		{"const 0 const 5 !mem-view", []Word{}, []Word{}, "", "0: 3\n1: 255\n2: 255\n3: 255\n4: 255\n5: 15\n"},
 
 		// Dictionary Operations
+		{"const 255 !unset-immediate", []Word{127}, []Word{}, "", ""},
+		{"const 255 !unset-hidden", []Word{191}, []Word{}, "", ""},
 		{"const 777 !latest ! !latest @", []Word{777}, []Word{}, "", ""},
 		{"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
 		{"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "asdf ", ""},
@@ -160,6 +162,7 @@ func TestPreamble(t *testing.T) {
 
 		// Compile-Time Words
 		{"!interpret", []Word{12}, []Word{}, ": add2 2 + ; 10 ( add2 ) add2", ""},
+
 		// Branching
 		{"const 10 const 5 !branch const 20", []Word{10}, []Word{}, "", ""},
 		{"const 10 const 0 !branch const 20", []Word{10, 20}, []Word{}, "", ""},

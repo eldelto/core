@@ -308,16 +308,74 @@ rpop drop drop drop
 
 ( Dictionary Operations )
 
+( -- )
+( Sets the immediate flag of the latest word. )
+.immediate-codeword immediate
+  !latest @ !w+ dup
+  b@ const 128 |
+  swap b!
+.end
+
+( addr -- bool )
+( Checks if the word at the given address contains the immediate flag. )
+.codeword immediate?
+  !w+ b@ const 128 &
+  const 128 =
+.end
+
+( int -- int )
+( Unsets the immediate bit in the word length field. )
+.codeword unset-immediate
+  const 127 &
+.end
+
+( -- )
+( Sets the hidden flag of the latest word. )
+.immediate-codeword hidden
+  !latest @ !w+ dup
+  b@ const 64 |
+  swap b!
+.end
+
+( int -- bool )
+( Checks if the given number contains the hidden flag. )
+.codeword hidden?
+  const 64 & const 64 =
+.end
+
+( int -- int )
+( Unsets the hidden bit in the word length field. )
+.codeword unset-hidden
+  const 191 &
+.end
+
+( -- )
+( Removes the hidden flag of the latest word. )
+.immediate-codeword unhide
+  !latest @ !w+ dup
+  b@ const 191 &
+  swap b!
+.end
+
 ( addr -- bool )
 ( Takes the address past the prev-word pointer and compares it to the value
   stored in 'word-buffer'. )
 .codeword word=
-  ( The most significant bit is the immediate flag and we want to ignore it. )
+  dup b@ !hidden? cjmp @word=-hidden
+
   dup !1+
-  swap b@ const 127 &
+  swap b@
+
+  ( Ignore bit flags. )
+  !unset-immediate
+  !unset-hidden
+
   dup !word-buffer const 3 + b@ = ~ cjmp @word=-false
   !word-buffer !w+
   swap !mem= ret
+
+:word=-hidden
+  const 0
 
 :word=-false
   drop drop
@@ -347,7 +405,8 @@ rpop drop drop drop
 ( Takes the start address of a word and returns the address of its code word. )
 .codeword codeword
   !w+ dup b@
-  const 127 & ( Ignore the immediate flag. )
+  !unset-immediate
+  !unset-hidden
   + !1+
 .end
 
@@ -453,29 +512,14 @@ rpop drop drop drop
 ( -- )
 ( Reads words from stdin and switches into compilation mode. )
 .codeword :
-  !word drop !create
+  !word drop !create !hidden 
   !]
-.end
-
-( -- )
-( Sets the immediate flag of the latest word. )
-.immediate-codeword immediate
-  !latest @ !w+ dup
-  b@ const 128 |
-  swap b!
-.end
-
-( addr -- bool )
-( Checks if the word at the given address contains the immediate flag. )
-.codeword immediate?
-  !w+ b@ const 128 &
-  const 128 =
 .end
 
 ( -- )
 ( Appends 'ret' and ends compilation. )
 .immediate-codeword ;
-  !'ret' !b,
+  !'ret' !b, !unhide
   ![
 .end
 
