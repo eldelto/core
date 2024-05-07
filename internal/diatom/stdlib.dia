@@ -77,7 +77,6 @@ of 'else' and therefore executes it. )
 definition. )
 : return immediate 'ret' b, ;
 
-( TODO: Optimize slightly and test )
 ( address max counter -- address max counter )
 : _times-loop
   dup 1 < if
