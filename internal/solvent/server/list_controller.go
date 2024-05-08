@@ -22,11 +22,16 @@ func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:          getLists(service),
-			{Method: http.MethodPost, Path: ""}:         createList(service),
-			{Method: http.MethodGet, Path: "{id}"}:      getList(service),
-			{Method: http.MethodGet, Path: "{id}/edit"}: editList(service),
-			{Method: http.MethodPost, Path: "{id}"}:     updateList(service),
+			{Method: http.MethodGet, Path: ""}:                             getLists(service),
+			{Method: http.MethodPost, Path: ""}:                            createList(service),
+			{Method: http.MethodGet, Path: "{id}"}:                         getList(service),
+			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
+			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
+			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
+			{Method: http.MethodDelete, Path: "{id}/items/{itemID}/check"}: uncheckItem(service),
+		},
+		Middleware: []web.HandlerProvider{
+			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
 	}
 }
@@ -150,6 +155,59 @@ func updateList(service *solvent.Service) web.Handler {
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		return nil
 	}
+}
+
+func checkItem(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		listID, err := urlParamUUID(r, "id")
+		if err != nil {
+			return err
+		}
+
+		itemID, err := urlParamUUID(r, "itemID")
+		if err != nil {
+			return err
+		}
+
+		list, err := service.CheckItem(uuid.UUID{}, listID, itemID)
+		if err != nil {
+			return err
+		}
+
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
+	}
+}
+
+func uncheckItem(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		listID, err := urlParamUUID(r, "id")
+		if err != nil {
+			return err
+		}
+
+		itemID, err := urlParamUUID(r, "itemID")
+		if err != nil {
+			return err
+		}
+
+		list, err := service.UncheckItem(uuid.UUID{}, listID, itemID)
+		if err != nil {
+			return err
+		}
+
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
+	}
+}
+
+func urlParamUUID(r *http.Request, key string) (uuid.UUID, error) {
+	rawID := chi.URLParam(r, key)
+	id, err := uuid.Parse(rawID)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("failed to parse %q as UUID: %w",
+			rawID, err)
+	}
+
+	return id, nil
 }
 
 //func fromHTMX(r *http.Request) bool {

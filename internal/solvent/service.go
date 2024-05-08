@@ -255,6 +255,50 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 	return s.Update(userID, notebook)
 }
 
+func (s *Service) CheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
+	notebook, err := s.Fetch(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := notebook.GetList(listID)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := list.CheckItem(itemID); err != nil {
+		return nil, err
+	}
+
+	if _, err := s.Update(userID, notebook); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (s *Service) UncheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
+	notebook, err := s.Fetch(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := notebook.GetList(listID)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := list.UncheckItem(itemID); err != nil {
+		return nil, err
+	}
+
+	if _, err := s.Update(userID, notebook); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 func (s *Service) Remove(id uuid.UUID) error {
 	panic("not implemented")
 }

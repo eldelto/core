@@ -6,9 +6,10 @@
 <div class="DetailViewMain">
   <form class="ToDoList"
 		method="POST" action="/lists/{{.Identifier}}">
-	  <textarea name="text-patch">{{.String}}</textarea>
-	  <button>Save</button>
-	</form>
+	<a href="/lists/{{.Identifier}}">Cancel</a>
+	<button>Save</button>
+	<textarea class="auto-grow" name="text-patch" autofocus>{{.String}}</textarea>
+  </form>
 </div>
 
 {{end}}
