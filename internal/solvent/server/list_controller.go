@@ -128,16 +128,6 @@ func updateList(service *solvent.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		notebook, err := service.Fetch(uuid.UUID{})
-		if err != nil {
-			return err
-		}
-
-		list, err := notebook.GetList(id)
-		if err != nil {
-			return err
-		}
-
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
@@ -147,7 +137,7 @@ func updateList(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		redirectURL, err := url.JoinPath("/lists", list.Identifier())
+		redirectURL, err := url.JoinPath("/lists", rawID)
 		if err != nil {
 			return err
 		}

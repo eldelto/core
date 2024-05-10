@@ -2,7 +2,7 @@
 
 <div class="DetailViewMain">
   {{block "toDoListOnly" .}}
-  <div class="ToDoList">
+  <div class="ToDoList {{if .IsCompleted}}checked{{end}}">
 	<a href="/lists/{{.Identifier}}/edit">Edit</a>
     <textarea class="ToDoListTitle" name="title"
 			  placeholder="Title" style="height: 48px !important;">{{.Title.Value}}</textarea>
@@ -37,16 +37,6 @@
 		</div>
 	  </div>
 	  {{end}}
-
-      <div class="AddItemBar">
-        <button class="AddItemBarButton" type="submit" value="" disabled="">
-          <svg width="24" height="24" viewBox="0 0 24 24">
-            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
-          </svg>
-        </button>
-        <textarea class="AddItemBarTitle" placeholder="New item" style="height: 24px !important;"></textarea>
-        <button class="AddItemBarLogo" type="button" disabled="">+</button>
-      </div>
 
     </div>
   </div>
