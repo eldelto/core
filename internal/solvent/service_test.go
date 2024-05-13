@@ -1,11 +1,11 @@
-package solvent_test
+package solvent
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/eldelto/core/internal/solvent"
 	. "github.com/eldelto/core/internal/testutils"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -20,7 +20,7 @@ func TestApplyListPatch(t *testing.T) {
 	AssertNoError(t, err, "bboltOpent")
 	defer db.Close()
 
-	service, err := solvent.NewService(db)
+	service, err := NewService(db)
 	AssertNoError(t, err, "NewService")
 	defer os.Remove(dbPath)
 
@@ -101,5 +101,43 @@ func TestApplyListPatch(t *testing.T) {
 			got := strings.TrimSpace(list.String())
 			AssertEquals(t, tt.want, got, "final list state")
 		})
+	}
+}
+
+func BenchApplyListPatch(b *testing.B) {
+	db, err := bbolt.Open(dbPath, 0660, nil)
+	AssertNoError(b, err, "bboltOpent")
+	defer db.Close()
+
+	service, err := NewService(db)
+	AssertNoError(b, err, "NewService")
+	defer os.Remove(dbPath)
+
+	notebook, err := service.Fetch(userID)
+	AssertNoError(b, err, "NewNotebook")
+
+	for i := 0; i < 100; i++ {
+		list, err := notebook.AddList(fmt.Sprintf("list-%d", i))
+		AssertNoError(b, err, "AddList")
+
+		for j := 0; j < 100; j++ {
+			itemID, err := list.AddItem(fmt.Sprintf("item-%d", i))
+			AssertNoError(b, err, "AddItem")
+
+			_, err = list.CheckItem(itemID)
+			AssertNoError(b, err, "CheckItem")
+
+			if i%2 == 0 {
+				_, err = list.UncheckItem(itemID)
+				AssertNoError(b, err, "UncheckItem")
+			}
+		}
+	}
+
+	err = service.store(userID, notebook)
+	AssertNoError(b, err, "service.store")
+
+	for n := 0; n < b.N; n++ {
+
 	}
 }
