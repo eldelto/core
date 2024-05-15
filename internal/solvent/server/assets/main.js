@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	document.querySelectorAll("textarea[autofocus]")
 		.forEach(e => {
 			e.selectionStart = e.value.length;
-			setTimeout(() => e.scrollIntoView(false), 0);
+			setTimeout(() => e.scrollIntoView({behavior: "smooth", block: "end"}), 10);
 		});
 
 	// Submit form on shift + enter.
