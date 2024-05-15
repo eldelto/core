@@ -4,8 +4,8 @@
 {{define "content"}}
 
 <div class="DetailViewMain">
-  <form class="ToDoList"
-		method="POST" action="/lists/{{.Identifier}}">
+  <form method="POST" action="/lists/{{.Identifier}}"
+		class="ToDoList" data-quick-submit>
 	<a href="/lists/{{.Identifier}}">Cancel</a>
 	<button>Save</button>
 	<textarea class="auto-grow" name="text-patch" autofocus>{{.String}}</textarea>

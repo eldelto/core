@@ -8,7 +8,7 @@
 			  placeholder="Title" style="height: 48px !important;">{{.Title.Value}}</textarea>
     <div class="ToDoListBody">
 
-	  {{range .GetItems}}
+	  {{range .GetOrderedItems true}}
 	  <div class="ToDoItems">
 		<div class="ToDoItem {{if .Checked}}checked{{end}}">
 		  <button class="ToDoItemCheckbox"
