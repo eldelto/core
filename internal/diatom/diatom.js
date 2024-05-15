@@ -43,7 +43,7 @@ class Stack {
 	}
 
 	push(value) {
-		if (this.#cursor+1 >= this.#data.length) {
+		if (this.#cursor + 1 >= this.#data.length) {
 			throw new Error(`push: stack overflow - cursor: ${this.#cursor}, stack size: ${this.#data.length}`);
 		}
 
@@ -66,7 +66,7 @@ class Stack {
 			throw new Error(`peek: stack underflow - cursor: ${this.#cursor}, stack size: ${this.#data.length}`);
 		}
 
-		return this.#data[this.#cursor-1];
+		return this.#data[this.#cursor - 1];
 	}
 }
 
@@ -88,10 +88,53 @@ class DiatomVM {
 	//output = some element;
 	#memory = new Uint8Array(new ArrayBuffer(memorySize));
 
+	validateMemoryAccess(addr) {
+		if (addr >= this.#memory.length) {
+			throw new Error(`out of bound memory access: programCounter=${this.#programCounter} address=${addr}`);
+		}
+	}
+
+	fetchByte(addr) {
+		this.validateMemoryAccess(addr);
+		return this.#memory[addr];
+	}
+
+	storeByte(addr, b) {
+		this.validateMemoryAccess(addr);
+		this.#memory[addr] = b;
+	}
+
+	wordToBytes(w) {
+		const bytes = new Uint8Array(new ArrayBuffer(wordSize));
+
+		for (i = 0; i < wordSize; i++) {
+			bytes[i] = (w >> (i * 8)) & 0xFF;
+		}
+
+		return bytes;
+	}
+
+	fetchWord(addr) {
+		let w = 0;
+		for (i = 0; i < WordSize; i++) {
+			const b = this.fetchByte(addr + i);
+			const shift = (WordSize - (i + 1)) * 8;
+			w = w | (Word(b) << shift);
+		}
+
+		return w;
+	}
+
+	storeWord(addr, w) {
+		const bytes = wordToBytes(w);
+		for (i = 0; i < WordSize; i++) {
+			vm.storeByte(addr + (WordSize - (i + 1)), bytes[i])
+		}
+	}
+
 	load(program) {
 		if (program.length > this.#memory.length) {
 			throw new Error(`program length (${program.length} bytes) exceeds available memory (${this.#memory.length} bytes)`);
-			return;
 		}
 
 		this.#memory.set(new Uint8Array(program));
@@ -113,17 +156,19 @@ class DiatomVM {
 			console.log(instruction);
 
 			switch (instruction) {
-			case 0: // EXIT
-				console.log("VM exited normally");
-				return;
-			case 1: // NOP
-				break;
-			case 2: // RET
-				break;
-			case 2: // CONST
-				break;
-			default: 
-				throw new Error(`unknown instruction '${instruction}' at memory address '${this.#programCounter}' - terminating`);
+				case 0: // EXIT
+					console.log("VM exited normally");
+					return;
+				case 1: // NOP
+					break;
+				case 2: // RET
+					let addr = this.#returnStack.pop();
+					this.#programCounter = addr;
+					continue;
+				case 2: // CONST
+					break;
+				default:
+					throw new Error(`unknown instruction '${instruction}' at memory address '${this.#programCounter}' - terminating`);
 			}
 
 			this.#programCounter++;
@@ -133,18 +178,18 @@ class DiatomVM {
 }
 
 /*
-  How do I want to use that stuff?
+	How do I want to use that stuff?
 
-  <script src="diatom.js" />
-  <script>
-  const vm = DiatomVM.load("my-script.dia");
-  vm.execute();
-  vm.reset();
-  </script>
+	<script src="diatom.js" />
+	<script>
+	const vm = DiatomVM.load("my-script.dia");
+	vm.execute();
+	vm.reset();
+	</script>
 
-  Handling Javascript events would immediately require some sort of
-  event-loop/async programming capabilities but this is out of scope
-  for now.
+	Handling Javascript events would immediately require some sort of
+	event-loop/async programming capabilities but this is out of scope
+	for now.
 */
 
 
