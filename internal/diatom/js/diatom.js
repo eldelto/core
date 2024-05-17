@@ -32,41 +32,54 @@ const BFETCH = 29;
 const BSTORE = 30;
 
 const wordSize = 4;
+const wordMax  = 2147483647;
+const wordMin  = -2147483648;
+
 
 class Stack {
 	#cursor = 0;
-	#data;
 
 	constructor(size) {
 		const buffer = new ArrayBuffer(size * wordSize);
-		this.#data = new Int32Array(buffer);
+		this.data = new Int32Array(buffer);
 	}
 
 	push(value) {
-		if (this.#cursor + 1 >= this.#data.length) {
-			throw new Error(`push: stack overflow - cursor: ${this.#cursor}, stack size: ${this.#data.length}`);
+		if (this.#cursor + 1 >= this.data.length) {
+			throw new Error(`push: stack overflow - cursor: ${this.#cursor}, stack size: ${this.data.length}`);
 		}
 
-		this.#data[this.#cursor] = value;
+		this.data[this.#cursor] = value;
 		this.#cursor++;
 	}
 
 
 	pop() {
 		if (this.#cursor <= 0) {
-			throw new Error(`pop: stack underflow - cursor: ${this.#cursor}, stack size: ${this.#data.length}`);
+			throw new Error(`pop: stack underflow - cursor: ${this.#cursor}, stack size: ${this.data.length}`);
 		}
 
 		this.#cursor--;
-		return this.#data[this.#cursor];
+		return this.data[this.#cursor];
 	}
 
 	peek() {
 		if (this.#cursor <= 0) {
-			throw new Error(`peek: stack underflow - cursor: ${this.#cursor}, stack size: ${this.#data.length}`);
+			throw new Error(`peek: stack underflow - cursor: ${this.#cursor}, stack size: ${this.data.length}`);
 		}
 
-		return this.#data[this.#cursor - 1];
+		return this.data[this.#cursor - 1];
+	}
+}
+
+function add(a, b) {
+	const c = a + b;
+	if (c > wordMax) {
+		return wordMax
+	} else if (c < wordMin) {
+		return wordMin
+	} else {
+		return c
 	}
 }
 
@@ -81,8 +94,8 @@ const memorySize = 8192;
 class DiatomVM {
 
 	#programCounter = 0;
-	#dataStack = new Stack(stackSize);
-	#returnStack = new Stack(stackSize);
+	dataStack = new Stack(stackSize);
+	returnStack = new Stack(stackSize);
 	//#inputBuffer = new Input();
 	//input = some element;
 	//output = some element;
@@ -107,7 +120,7 @@ class DiatomVM {
 	wordToBytes(w) {
 		const bytes = new Uint8Array(new ArrayBuffer(wordSize));
 
-		for (i = 0; i < wordSize; i++) {
+		for (let i = 0; i < wordSize; i++) {
 			bytes[i] = (w >> (i * 8)) & 0xFF;
 		}
 
@@ -116,10 +129,10 @@ class DiatomVM {
 
 	fetchWord(addr) {
 		let w = 0;
-		for (i = 0; i < WordSize; i++) {
+		for (let i = 0; i < wordSize; i++) {
 			const b = this.fetchByte(addr + i);
-			const shift = (WordSize - (i + 1)) * 8;
-			w = w | (Word(b) << shift);
+			const shift = (wordSize - (i + 1)) * 8;
+			w = w | (b << shift);
 		}
 
 		return w;
@@ -127,8 +140,8 @@ class DiatomVM {
 
 	storeWord(addr, w) {
 		const bytes = wordToBytes(w);
-		for (i = 0; i < WordSize; i++) {
-			vm.storeByte(addr + (WordSize - (i + 1)), bytes[i])
+		for (let i = 0; i < wordSize; i++) {
+			vm.storeByte(addr + (wordSize - (i + 1)), bytes[i])
 		}
 	}
 
@@ -137,7 +150,8 @@ class DiatomVM {
 			throw new Error(`program length (${program.length} bytes) exceeds available memory (${this.#memory.length} bytes)`);
 		}
 
-		this.#memory.set(new Uint8Array(program));
+		console.log(program);
+		this.#memory.set(program);
 	}
 
 	loadRemote(path) {
@@ -153,20 +167,30 @@ class DiatomVM {
 	execute() {
 		while (true) {
 			const instruction = this.#memory[this.#programCounter];
-			console.log(instruction);
+			console.debug(instruction);
 
 			switch (instruction) {
-				case 0: // EXIT
-					console.log("VM exited normally");
+				case EXIT:
+					console.debug("VM exited normally");
 					return;
-				case 1: // NOP
+				case NOP:
 					break;
-				case 2: // RET
-					let addr = this.#returnStack.pop();
+				case RET:
+					let addr = this.returnStack.pop();
 					this.#programCounter = addr;
 					continue;
-				case 2: // CONST
-					break;
+				case CONST:
+					this.#programCounter++;
+					const w = this.fetchWord(this.#programCounter);
+					this.dataStack.push(w);
+
+					this.#programCounter += wordSize;
+					continue
+					case ADD:
+						const a = this.dataStack.pop();
+						const b = this.dataStack.pop();
+						this.dataStack.push(add(b, a));
+					break;			
 				default:
 					throw new Error(`unknown instruction '${instruction}' at memory address '${this.#programCounter}' - terminating`);
 			}
@@ -193,16 +217,16 @@ class DiatomVM {
 */
 
 
-const s = new Stack(30);
-s.push(11);
-console.log(s.peek());
-console.log(s.pop());
-console.log(s);
+//const s = new Stack(30);
+//s.push(11);
+//console.log(s.peek());
+//console.log(s.pop());
+//console.log(s);
 
-const program = new Uint8Array(new ArrayBuffer(10));
-program.set([11], 0);
-console.log(program);
+//const program = new Uint8Array(new ArrayBuffer(10));
+//program.set([11], 0);
+//console.log(program);
 
-const vm = new DiatomVM();
-vm.load(program);
-vm.execute();
+//const vm = new DiatomVM();
+//vm.load(program);
+//vm.execute();

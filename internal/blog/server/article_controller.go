@@ -21,7 +21,8 @@ func NewArticleController(service *blog.Service) *web.Controller {
 		BasePath: "/",
 		Handlers: map[web.Endpoint]web.Handler{
 			{Method: http.MethodGet, Path: "/*"}:        getPage(service),
-			{Method: http.MethodGet, Path: "/articles"}: getArticles(service),
+			{Method: http.MethodGet, Path: "/articles"}: getArticles(service, false),
+			{Method: http.MethodGet, Path: "/articles/drafts"}: getArticles(service, true),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -79,10 +80,9 @@ func getPage(service *blog.Service) web.Handler {
 	}
 }
 
-func getArticles(service *blog.Service) web.Handler {
+func getArticles(service *blog.Service, withDrafts bool) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		withDraft := r.URL.Query().Get("draft") == "true"
-		articles, err := service.FetchAll(withDraft)
+		articles, err := service.FetchAll(withDrafts)
 		if err != nil {
 			return err
 		}
