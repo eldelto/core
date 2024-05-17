@@ -24,9 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const testData = [
     new TestData("exit", [EXIT], [], []),
     new TestData("nop", [NOP], [], []),
-
-    //new TestData("const @x rput ret exit :x const 11", [11], []),
-
+    new TestData("ret", [CONST, 0, 0, 0, 8, RPUT, RET, EXIT, CONST, 0, 0, 0, 11], [11], []),
     new TestData("const", [CONST, 0, 0, 0, 11], [11], []),
     new TestData("fetch", [CONST, 0, 0, 0, 7, FETCH, CONST, 0, 0, 0, 11], [11], []),
     new TestData("store", [CONST, 0, 0, 0, 11, CONST, 0, 0, 0, 12, FETCH, CONST, 0, 0, 0, 0], [11], []),
@@ -39,26 +37,22 @@ document.addEventListener("DOMContentLoaded", function () {
     new TestData("drop", [CONST, 0, 0, 0, 7, DUP, DROP], [7], []),
     new TestData("swap", [CONST, 0, 0, 0, 7, CONST, 0, 0, 0, 2, SWAP], [2, 7], []),
     new TestData("over", [CONST, 0, 0, 0, 7, CONST, 0, 0, 0, 2, OVER], [7, 2, 7], []),
+    new TestData("conditional jmp true", [CONST, 255, 255, 255, 255, CJMP, 0, 0, 0, 16, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [11], []),
+    new TestData("conditional jmp false", [CONST, 0, 0, 0, 0, CJMP, 0, 0, 0, 16, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [22], []),
+    new TestData("call without return", [CALL, 0, 0, 0, 11, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [11], [5]),
+    new TestData("call with return", [CALL, 0, 0, 0, 11, CONST, 0, 0, 0, 22, EXIT, RET, CONST, 0, 0, 0, 11], [22], []),
+    new TestData("stack call without return", [CONST, 0, 0, 0, 12, SCALL, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [11], [6]),
+    new TestData("stack call with return", [CONST, 0, 0, 0, 12, SCALL, CONST, 0, 0, 0, 22, EXIT, RET, CONST, 0, 0, 0, 11], [22], []),
+    new TestData("equals true", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 5, EQUALS], [-1], []),
+    new TestData("equals false", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 4, EQUALS], [0], []),
+    new TestData("not", [CONST, 0, 0, 0, 0, NOT], [-1], []),
+    new TestData("and", [CONST, 0, 0, 0, 3, CONST, 0, 0, 0, 5, AND], [1], []),
+    new TestData("or", [CONST, 0, 0, 0, 1, CONST, 0, 0, 0, 6, OR], [7], []),
+    new TestData("lesser than false", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 5, LT], [0], []),
+    new TestData("lesser than true", [CONST, 0, 0, 0, 4, CONST, 0, 0, 0, 5, LT], [-1], []),
+    new TestData("greater than false", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 5, GT], [0], []),
+    new TestData("greater than true", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 4, GT], [-1], []),
 
-
-    // TODO: Fix the jump targets
-    new TestData("cjmp true", [CONST, 255, 255, 255, 255, CJMP, 0, 0, 0, 2, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [11], []),
-    new TestData("cjmp false", [CONST, 0, 0, 0, 0, CJMP, 0, 0, 0, 2, CONST, 0, 0, 0, 22, EXIT, CONST, 0, 0, 0, 11], [22], []),
-
-
-    new TestData("call @x const 22 exit :x const 11", [11], [5]),
-    new TestData("call @x const 22 exit :x ret const 11", [22], []),
-    new TestData("const @x scall const 22 exit :x const 11", [11], [6]),
-    new TestData("const @x scall const 22 exit :x ret const 11", [22], []),
-    new TestData("const 5 const 5 =", [-1], []),
-    new TestData("const 5 const 4 =", [0], []),
-    new TestData("const 0 ~", [-1], []),
-    new TestData("const 3 const 5 &", [1], []),
-    new TestData("const 1 const 6 |", [7], []),
-    new TestData("const 5 const 5 <", [0], []),
-    new TestData("const 4 const 5 <", [-1], []),
-    new TestData("const 5 const 5 >", [0], []),
-    new TestData("const 5 const 4 >", [-1], []),
     new TestData("const 5 rput", [], [5]),
     new TestData("const 5 rput rpop", [5], []),
     new TestData("const 5 rput rpeek", [5], [5]),

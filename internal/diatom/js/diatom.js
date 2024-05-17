@@ -104,6 +104,14 @@ function multiply(a, b) {
 		return c
 	}
 }
+
+function boolToWord(b) {
+	if (b) {
+		return -1;
+	}
+	return 0;
+}
+
 //class Input {
 //	// TODO: Implement
 //}
@@ -258,6 +266,86 @@ class DiatomVM {
 				}
 				case DROP: {
 					this.dataStack.pop();
+					break;
+				}
+				case SWAP: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(a);
+					this.dataStack.push(b);
+					break;
+				}
+				case OVER: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(b);
+					this.dataStack.push(a);
+					this.dataStack.push(b);
+					break;
+				}
+				case CJMP: {
+					this.#programCounter++;
+					const conditional = this.dataStack.pop();
+					if (conditional === -1) {
+						this.#programCounter = this.fetchWord(this.#programCounter);
+					} else {
+						this.#programCounter += wordSize;
+					}
+					continue
+				}
+				case CALL: {
+					this.#programCounter++;
+					this.returnStack.push(this.#programCounter + wordSize);
+
+					this.#programCounter = this.fetchWord(this.#programCounter);
+					continue
+				}
+				case SCALL: {
+					this.#programCounter++;
+					this.returnStack.push(this.#programCounter);
+
+					this.#programCounter = this.dataStack.pop();
+					continue
+				}
+				case EQUALS: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(boolToWord(b == a));
+					break;
+				}
+				case NOT: {
+					const a = this.dataStack.pop();
+					this.dataStack.push(~a);
+					break;
+				}
+				case AND: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(b & a);
+					break;
+				}
+				case OR: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(b | a);
+					break;
+				}
+				case LT: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(boolToWord(b < a));
+					break;
+				}
+				case GT: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(boolToWord(b > a));
+					break;
+				}
+
+				case RPUT: {
+					const a = this.dataStack.pop();
+					this.returnStack.push(a);
 					break;
 				}
 				default:
