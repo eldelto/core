@@ -32,8 +32,8 @@ const BFETCH = 29;
 const BSTORE = 30;
 
 const wordSize = 4;
-const wordMax  = 2147483647;
-const wordMin  = -2147483648;
+const wordMax = 2147483647;
+const wordMin = -2147483648;
 
 
 class Stack {
@@ -83,6 +83,27 @@ function add(a, b) {
 	}
 }
 
+function subtract(a, b) {
+	const c = a - b;
+	if (c > wordMax) {
+		return wordMax
+	} else if (c < wordMin) {
+		return wordMin
+	} else {
+		return c
+	}
+}
+
+function multiply(a, b) {
+	const c = a * b;
+	if (c > wordMax) {
+		return wordMax
+	} else if (c < wordMin) {
+		return wordMin
+	} else {
+		return c
+	}
+}
 //class Input {
 //	// TODO: Implement
 //}
@@ -149,8 +170,6 @@ class DiatomVM {
 		if (program.length > this.#memory.length) {
 			throw new Error(`program length (${program.length} bytes) exceeds available memory (${this.#memory.length} bytes)`);
 		}
-
-		console.log(program);
 		this.#memory.set(program);
 	}
 
@@ -170,27 +189,77 @@ class DiatomVM {
 			console.debug(instruction);
 
 			switch (instruction) {
-				case EXIT:
+				case EXIT: {
 					console.debug("VM exited normally");
 					return;
-				case NOP:
+				}
+				case NOP: {
 					break;
-				case RET:
-					let addr = this.returnStack.pop();
+				}
+				case RET: {
+					const addr = this.returnStack.pop();
 					this.#programCounter = addr;
 					continue;
-				case CONST:
+				}
+				case CONST: {
 					this.#programCounter++;
 					const w = this.fetchWord(this.#programCounter);
 					this.dataStack.push(w);
 
 					this.#programCounter += wordSize;
 					continue
-					case ADD:
-						const a = this.dataStack.pop();
-						const b = this.dataStack.pop();
-						this.dataStack.push(add(b, a));
-					break;			
+				}
+				case FETCH: {
+					const addr = this.dataStack.pop();
+					const w = this.fetchWord(addr);
+					this.dataStack.push(w);
+					break;
+				}
+				case STORE: {
+					const addr = this.dataStack.pop();
+					const value = vm.dataStack.pop();
+					this.storeWord(addr, value);
+					break;
+				}
+				case ADD: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(add(b, a));
+					break;
+				}
+				case SUBTRACT: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(subtract(b, a));
+					break;
+				}
+				case MULTIPLY: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(multiply(b, a));
+					break;
+				}
+				case DIVIDE: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(b / a);
+					break;
+				}
+				case MODULO: {
+					const a = this.dataStack.pop();
+					const b = this.dataStack.pop();
+					this.dataStack.push(b % a);
+					break;
+				}
+				case DUP: {
+					const a = this.dataStack.peek();
+					this.dataStack.push(a);
+					break;
+				}
+				case DROP: {
+					this.dataStack.pop();
+					break;
+				}
 				default:
 					throw new Error(`unknown instruction '${instruction}' at memory address '${this.#programCounter}' - terminating`);
 			}
