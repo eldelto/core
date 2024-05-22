@@ -53,7 +53,6 @@ class Stack {
 		this.#cursor++;
 	}
 
-
 	pop() {
 		if (this.#cursor <= 0) {
 			throw new Error(`pop: stack underflow - cursor: ${this.#cursor}, stack size: ${this.data.length}`);
@@ -126,8 +125,8 @@ class DiatomVM {
 	dataStack = new Stack(stackSize);
 	returnStack = new Stack(stackSize);
 	//#inputBuffer = new Input();
-	//input = some element;
-	//output = some element;
+	#inputElement = null;
+	#outputElement = null;
 	#memory = new Uint8Array(new ArrayBuffer(memorySize));
 
 	validateMemoryAccess(addr) {
@@ -174,11 +173,22 @@ class DiatomVM {
 		}
 	}
 
+	withInput(selector) {
+		this.#inputElement = document.querySelector(selector);
+		return this;
+	}
+
+	withOutput(selector) {
+		this.#outputElement = document.querySelector(selector);
+		return this;
+	}
+
 	load(program) {
 		if (program.length > this.#memory.length) {
 			throw new Error(`program length (${program.length} bytes) exceeds available memory (${this.#memory.length} bytes)`);
 		}
 		this.#memory.set(program);
+		return this;
 	}
 
 	loadRemote(path) {
@@ -308,9 +318,23 @@ class DiatomVM {
 				continue
 			}
 			case KEY:{
+				/*
+				  Attach an event listener to the input element so we
+				  pull the value into an internal buffer on 'enter'.
+
+				  What do we do when no new input is available?
+				  => Return a promise and only fullfill it once we
+				  have user input.
+				 */
 				break;
 			}
 			case EMIT: {
+				const value = String.fromCharCode(this.dataStack.pop());
+				if (this.#outputElement) {
+					this.#outputElement.textContent += value;
+				} else {
+					console.log(value);
+				}
 				break;
 			}
 			case EQUALS: {
