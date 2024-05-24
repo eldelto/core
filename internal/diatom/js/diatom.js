@@ -138,7 +138,7 @@ class Input {
 	}
 
 	nextChar() {
-		if (this.#buffer.length > 0) {
+		if (this.#cursor < this.#buffer.length) {
 			const c = this.#buffer[this.#cursor];
 			this.#cursor++;
 
@@ -204,16 +204,16 @@ class DiatomVM {
 	}
 
 	storeWord(addr, w) {
-		const bytes = wordToBytes(w);
+		const bytes = this.wordToBytes(w);
 		for (let i = 0; i < wordSize; i++) {
-			vm.storeByte(addr + (wordSize - (i + 1)), bytes[i])
+			this.storeByte(addr + (wordSize - (i + 1)), bytes[i])
 		}
 	}
 
 	handleInput = e => {
 		if (e.key == "Enter") {
 			var enc = new TextEncoder();
-			const data = enc.encode(e.target.value);
+			const data = enc.encode(e.target.value + " ");
 			this.#inputBuffer.pushData(data);
 			e.target.value = "";
 		}
@@ -242,6 +242,7 @@ class DiatomVM {
 		if (program.length > this.#memory.length) {
 			throw new Error(`program length (${program.length} bytes) exceeds available memory (${this.#memory.length} bytes)`);
 		}
+
 		this.#memory.set(program);
 		return this;
 	}
@@ -273,11 +274,10 @@ class DiatomVM {
 	async execute() {
 		while (true) {
 			const instruction = this.#memory[this.#programCounter];
-			console.debug(instruction);
 
 			switch (instruction) {
 			case EXIT: {
-				console.debug("VM exited normally");
+				console.log("VM exited normally");
 				return;
 			}
 			case NOP: {
@@ -304,7 +304,7 @@ class DiatomVM {
 			}
 			case STORE: {
 				const addr = this.dataStack.pop();
-				const value = vm.dataStack.pop();
+				const value = this.dataStack.pop();
 				this.storeWord(addr, value);
 				break;
 			}

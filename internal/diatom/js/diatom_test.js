@@ -29,7 +29,7 @@ async function runTests() {
 		new TestData("ret", [CONST, 0, 0, 0, 8, RPUT, RET, EXIT, CONST, 0, 0, 0, 11], [11], [],"",""),
 		new TestData("const", [CONST, 0, 0, 0, 11], [11], [],"",""),
 		new TestData("fetch", [CONST, 0, 0, 0, 7, FETCH, CONST, 0, 0, 0, 11], [11], [],"",""),
-		new TestData("store", [CONST, 0, 0, 0, 11, CONST, 0, 0, 0, 12, FETCH, CONST, 0, 0, 0, 0], [11], [],"",""),
+		new TestData("store", [CONST, 0, 0, 0, 11, CONST, 0, 0, 0, 19, STORE, CONST, 0,0,0,19, FETCH, CONST, 0, 0, 0, 0], [11], [],"",""),
 		new TestData("add", [CONST, 0, 0, 0, 5, CONST, 0, 0, 0, 3, ADD], [8], [],"",""),
 		new TestData("subtract", [CONST, 0, 0, 0, 3, CONST, 0, 0, 0, 5, SUBTRACT], [-2], [],"",""),
 		new TestData("multiply", [CONST, 0, 0, 0, 3, CONST, 0, 0, 0, 5, MULTIPLY], [15], [],"",""),
@@ -102,9 +102,19 @@ async function runTests() {
 		testResults.append(row);
 	}
 
-	const vm = new DiatomVM().withInput("#test-input")
+
+	const fileInput = document.querySelector("#file-input");
+	fileInput.addEventListener("change", async e => {
+		const file = e.target.files[0];
+
+		const vm = new DiatomVM().withInput("#test-input")
 		  .withOutput("#test-output");
-	await vm.execute();
+
+		const program = new Uint8Array(await file.arrayBuffer());
+		vm.load(program);
+		vm.execute();
+	});
+
 }
 
 document.addEventListener("DOMContentLoaded", runTests);
