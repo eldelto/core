@@ -20,7 +20,7 @@ class TestData {
 	}
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+async function runTests() {
 	const testResults = document.querySelector("#test-results");
 
 	const testData = [
@@ -59,11 +59,12 @@ document.addEventListener("DOMContentLoaded", function () {
 		new TestData("rpeek", [CONST, 0,0,0,5, RPUT, RPEEK], [5], [5],"",""),
 		new TestData("byte fetch", [CONST, 0,0,0,10, BFETCH, EXIT, 0,0,0,5], [5], [],"",""),
 		new TestData("byte store", [CONST, 0,0,0,7, CONST, 0,0,0,20, BSTORE, CONST, 0,0,0,20, BFETCH, EXIT, 0,0,0,5], [7], [],"",""),
+		new TestData("dump", [CONST, 0,0,0,7, DUMP], [], [],"",""),
 		new TestData("key", [KEY], [65], [], "A", ""),
 		new TestData("emit", [CONST, 0,0,0,65, EMIT], [], [], "", "A"),
 	];
 
-	testData.forEach(tt => {
+	for (const tt of testData) {
 		const row = document.createElement("tr");
 
 		const testName = document.createElement("td");
@@ -79,11 +80,11 @@ document.addEventListener("DOMContentLoaded", function () {
 		inputElement.value = tt.input;
 		const outputElement = document.querySelector("#test-output");
 
+		const vm = new DiatomVM().withInput("#test-input")
+			  .withOutput("#test-output");
 		try {
-			const vm = new DiatomVM().withInput("#test-input")
-				  .withOutput("#test-output");
 			vm.load(tt.program);
-			vm.execute();
+			await vm.execute();
 
 			assertStack(tt.wantDataStack, vm.dataStack, "vm.dataStack");
 			assertStack(tt.wantReturnStack, vm.returnStack, "vm.returnStack");
@@ -92,10 +93,18 @@ document.addEventListener("DOMContentLoaded", function () {
 			testResult.textContent = "❌";
 			testError.textContent = error;
 			console.error(error);
+		} finally {
+			vm.reset();
 		}
 
 		row.append(testResult);
 		row.append(testError);
 		testResults.append(row);
-	})
-});
+	}
+
+	const vm = new DiatomVM().withInput("#test-input")
+		  .withOutput("#test-output");
+	await vm.execute();
+}
+
+document.addEventListener("DOMContentLoaded", runTests);

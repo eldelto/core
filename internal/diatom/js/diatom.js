@@ -30,11 +30,15 @@ const RPUT = 27;
 const RPEEK = 28;
 const BFETCH = 29;
 const BSTORE = 30;
+const DUMP = 31;
 
 const wordSize = 4;
 const wordMax = 2147483647;
 const wordMin = -2147483648;
 
+const stackSize = 30;
+const ioBufferSize = 4096;
+const memorySize = 8192;
 
 class Stack {
 	#cursor = 0;
@@ -111,23 +115,56 @@ function boolToWord(b) {
 	return 0;
 }
 
-//class Input {
-//	// TODO: Implement
-//}
+class Input {
+	#cursor = 0;
+	#buffer = new Uint8Array(new ArrayBuffer(0));
+	#resolve = null;
 
-const stackSize = 30;
-const ioBufferSize = 4096;
-const memorySize = 8192;
+	pushData(data) {
+		const remaining = this.#buffer.slice(this.#cursor);
+
+		this.#buffer = new Uint8Array(remaining.length + data.length);
+		this.#buffer.set(remaining);
+		this.#buffer.set(data, remaining.length);
+
+		this.#cursor = 0;
+
+		if (this.#resolve) {
+			const c = this.#buffer[this.#cursor];
+			this.#cursor++;
+			this.#resolve(c);
+			this.#resolve = null;
+		}
+	}
+
+	nextChar() {
+		if (this.#buffer.length > 0) {
+			const c = this.#buffer[this.#cursor];
+			this.#cursor++;
+
+			return Promise.resolve(c);
+		}
+
+		const promise = new Promise((res, _rej) => {
+			this.#resolve = res;
+		});
+
+		return promise;
+	}
+}
 
 class DiatomVM {
-
 	#programCounter = 0;
-	dataStack = new Stack(stackSize);
-	returnStack = new Stack(stackSize);
-	//#inputBuffer = new Input();
+	dataStack = null;
+	returnStack = null;
+	#inputBuffer = null;
 	#inputElement = null;
 	#outputElement = null;
-	#memory = new Uint8Array(new ArrayBuffer(memorySize));
+	#memory = null;
+
+	constructor() {
+		this.reset();
+	}
 
 	validateMemoryAccess(addr) {
 		if (addr >= this.#memory.length) {
@@ -173,8 +210,26 @@ class DiatomVM {
 		}
 	}
 
+	handleInput = e => {
+		if (e.key == "Enter") {
+			var enc = new TextEncoder();
+			const data = enc.encode(e.target.value);
+			this.#inputBuffer.pushData(data);
+			e.target.value = "";
+		}
+	}
+
 	withInput(selector) {
-		this.#inputElement = document.querySelector(selector);
+		const input = document.querySelector(selector);
+		this.#inputElement = input;
+
+		input.addEventListener("keyup", this.handleInput);
+
+		// Hack to fetch the initial text content of the element.
+		const event = new Event("keyup");
+		event.key = "Enter";
+		input.dispatchEvent(event);
+
 		return this;
 	}
 
@@ -201,7 +256,21 @@ class DiatomVM {
 		});
 	}
 
-	execute() {
+	reset() {
+		if (this.#inputElement) {
+			this.#inputElement.removeEventListener("keyup", this.handleInput);
+		}
+
+		this.#programCounter = 0;
+		this.dataStack = new Stack(stackSize);
+		this.returnStack = new Stack(stackSize);
+		this.#inputBuffer = new Input();
+		this.#inputElement = null;
+		this.#outputElement = null;
+		this.#memory = new Uint8Array(new ArrayBuffer(memorySize));
+	}
+
+	async execute() {
 		while (true) {
 			const instruction = this.#memory[this.#programCounter];
 			console.debug(instruction);
@@ -318,14 +387,8 @@ class DiatomVM {
 				continue
 			}
 			case KEY:{
-				/*
-				  Attach an event listener to the input element so we
-				  pull the value into an internal buffer on 'enter'.
-
-				  What do we do when no new input is available?
-				  => Return a promise and only fullfill it once we
-				  have user input.
-				 */
+				const b = await this.#inputBuffer.nextChar();
+				this.dataStack.push(b);
 				break;
 			}
 			case EMIT: {
@@ -399,6 +462,11 @@ class DiatomVM {
 				this.storeByte(addr, value);
 				break;
 			}
+			case DUMP: {
+				// Basically a no-op as dumping is not supported.
+				this.dataStack.pop();
+				break;
+			}
 			default:
 				throw new Error(`unknown instruction '${instruction}' at memory address '${this.#programCounter}' - terminating`);
 			}
@@ -406,35 +474,4 @@ class DiatomVM {
 			this.#programCounter++;
 		}
 	}
-	// TODO: Implement
 }
-
-/*
-  How do I want to use that stuff?
-
-  <script src="diatom.js" />
-  <script>
-  const vm = DiatomVM.load("my-script.dia");
-  vm.execute();
-  vm.reset();
-  </script>
-
-  Handling Javascript events would immediately require some sort of
-  event-loop/async programming capabilities but this is out of scope
-  for now.
-*/
-
-
-//const s = new Stack(30);
-//s.push(11);
-//console.log(s.peek());
-//console.log(s.pop());
-//console.log(s);
-
-//const program = new Uint8Array(new ArrayBuffer(10));
-//program.set([11], 0);
-//console.log(program);
-
-//const vm = new DiatomVM();
-//vm.load(program);
-//vm.execute();
