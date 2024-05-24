@@ -31,6 +31,7 @@ cjmp
 .codeword rpeek rpop rpeek swap rput .end
 .codeword b@ b@ .end
 .codeword b! b! .end
+
 .codeword 'ret' const 2 .end
 .codeword 'const' const 3 .end
 .codeword 'call' const 16 .end
@@ -545,6 +546,10 @@ backwards if the bool is true. )
 .end
 
 ( -- )
+( Dumps the memory content from 0 to 'here' to disk. )
+.codeword dump !here @ dump .end
+
+( -- )
 ( Manually sets 'word-buffer' to find and call the 'main' dictionary
  word. )
 .codeword run-main
@@ -558,11 +563,16 @@ backwards if the bool is true. )
   !find !codeword scall
 .end
 
+( The 'main' codeword will be inserted here so 'here' and 'latest'
+still point to the right offsets. )
 {main}
 
 
 ( Initialization Code )
+.var init? 4 .end
+
 :init
+const @_varinit? @ cjmp @init-skip
 
 ( Init 'base' )
 const 10
@@ -577,6 +587,9 @@ const @here-marker
 const @_varhere !
 
 ( Start executing )
+const -1 const @_varinit? !
+
+:init-skip
 call @_dictrun-main
 exit
 

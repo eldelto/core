@@ -201,6 +201,15 @@ func (vm *VM) emit(b byte) error {
 	return nil
 }
 
+func (vm *VM) dumpMemory(fileName string, endAddr Word) error {
+	if err := os.WriteFile(fileName, vm.memory[:endAddr], 0644); err != nil {
+		return fmt.Errorf("failed to dump memory addresses 0 - %d to file %q",
+			endAddr, fileName)
+	}
+
+	return nil
+}
+
 func boolToWord(b bool) Word {
 	if b {
 		return -1
@@ -579,6 +588,14 @@ func (vm *VM) execute() error {
 				return err
 			}
 			if err := vm.storeByte(addr, byte(value)); err != nil {
+				return err
+			}
+		case DUMP:
+			endAddr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dumpMemory("dump.dopc", endAddr); err != nil {
 				return err
 			}
 		default:
