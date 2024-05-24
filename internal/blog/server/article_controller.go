@@ -20,8 +20,8 @@ func NewArticleController(service *blog.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "/*"}:        getPage(service),
-			{Method: http.MethodGet, Path: "/articles"}: getArticles(service, false),
+			{Method: http.MethodGet, Path: "/*"}:               getPage(service),
+			{Method: http.MethodGet, Path: "/articles"}:        getArticles(service, false),
 			{Method: http.MethodGet, Path: "/articles/drafts"}: getArticles(service, true),
 		},
 		Middleware: []web.HandlerProvider{

@@ -544,7 +544,20 @@ backwards if the bool is true. )
   rpop swap - rput
 .end
 
-( The main codeword goes here. )
+( -- )
+( Manually sets 'word-buffer' to find and call the 'main' dictionary
+ word. )
+.codeword run-main
+  !word-buffer
+  const 4   over !  !w+
+  const 109 over b! !1+
+  const 97  over b! !1+
+  const 105 over b! !1+
+  const 110 over b! drop
+
+  !find !codeword scall
+.end
+
 {main}
 
 
@@ -564,7 +577,7 @@ const @here-marker
 const @_varhere !
 
 ( Start executing )
-call @_dictmain
+call @_dictrun-main
 exit
 
 .var latest 4 .end

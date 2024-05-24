@@ -87,6 +87,7 @@ const (
 	RPEEK
 	BFETCH
 	BSTORE
+	DUMP
 )
 
 var instructions map[string]byte = map[string]byte{
@@ -121,6 +122,7 @@ var instructions map[string]byte = map[string]byte{
 	"rpeek": RPEEK,
 	"b@":    BFETCH,
 	"b!":    BSTORE,
+	"dump":  DUMP,
 }
 
 // TODO: Make this more efficient.
