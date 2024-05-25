@@ -37,9 +37,15 @@
 	src: url(/assets/Pattaya-Regular.ttf);
 }
 
-#root {
-	position: relative;
-	overflow: hidden;
+body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+#content {
+	width: 100%;
+	max-width: 900px;
 }
 
 body {
@@ -114,35 +120,6 @@ svg {
 	fill: var(--light-background-color);
 }
 
-.App {
-	width: 100vw;
-	display: flex;
-	transition: transform .1s;
-}
-
-.ViewContainer {
-	width: 100vw;
-	padding-bottom: 2em;
-	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.ListView,
-.DetailView {
-	width: 100%;
-	max-width: 900px;
-}
-
-.DetailViewMain {
-	padding: 0 1em;
-}
-
-.ListViewMain {
-	padding: 0 1em;
-}
-
 .ListViewToDoListsTitle {
 	width: 100%;
 	display: inline-block;
@@ -175,11 +152,11 @@ svg {
 
 .ListViewAddListButton {
 	width: 100%;
+	font-size: 1em;
 	height: 3.5em;
 	display: block;
 	margin: 1em 0;
 	padding: 0 1em;
-	text-align: left;
 	border: 1px dashed var(--light-background-color);
 	cursor: pointer;
 	background-color: rgba(0, 0, 0, 0);

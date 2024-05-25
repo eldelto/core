@@ -1,37 +1,35 @@
 {{define "content"}}
 
-<div class="ListViewMain">
-  <div>
-    <span class="ListViewToDoListsTitle">Open</span>
+<div>
+  <span class="ListViewToDoListsTitle">Open</span>
 
-	<form method="POST" action="/lists">
-	  <button class="ListViewAddListButton">
-		<svg width="24" height="24" viewBox="0 0 24 24">
-		  <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
-		</svg>
-	  </button>
-	</form>
+  <form method="POST" action="/lists">
+	<button class="ListViewAddListButton">
+	  <svg width="24" height="24" viewBox="0 0 24 24">
+		<path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
+	  </svg>
+	</button>
+  </form>
 
-	{{range .Open }}
-    <a href="/lists/{{.Identifier}}">
-	  <button class="ListViewToDoList">
-		<span class="ListViewToDoListTitle">{{.Title.Value}}</span>
-	  </button>
-	</a>
-	{{end}}
-  </div>
+  {{range .Open }}
+  <a href="/lists/{{.Identifier}}">
+	<button class="ListViewToDoList">
+	  <span class="ListViewToDoListTitle">{{.Title.Value}}</span>
+	</button>
+  </a>
+  {{end}}
+</div>
 
-  <div>
-	<span class="ListViewToDoListsTitle">Done</span>
+<div>
+  <span class="ListViewToDoListsTitle">Done</span>
 
-	{{range .Completed }}
-    <a href="/lists/{{.Identifier}}">
-	  <button class="ListViewToDoList checked">
-		<span class="ListViewToDoListTitle">{{.Title.Value}}</span>
-	  </button>
-	</a>
-	{{end}}
-  </div>
+  {{range .Completed }}
+  <a href="/lists/{{.Identifier}}">
+	<button class="ListViewToDoList checked">
+	  <span class="ListViewToDoListTitle">{{.Title.Value}}</span>
+	</button>
+  </a>
+  {{end}}
 </div>
 
 {{end}}
