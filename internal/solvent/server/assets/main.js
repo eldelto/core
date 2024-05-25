@@ -15,14 +15,22 @@ document.addEventListener("DOMContentLoaded", function() {
 			setTimeout(() => e.scrollIntoView({behavior: "smooth", block: "end"}), 10);
 		});
 
-	// Submit form on shift + enter.
+	// Submit form on ctrl + enter.
 	document.querySelectorAll("form[data-quick-submit]")
 		.forEach(e => {
 			e.addEventListener("keydown", e => {
-				if (e.key == "Enter" && e.shiftKey) {
-				  e.currentTarget.submit();
+				if (e.key == "Enter" && e.ctrlKey) {
+					e.currentTarget.submit();
 				}
 			});
+		});
+
+	document.querySelector("body")
+		.addEventListener("keydown", e => {
+			if (e.key == "e" && e.ctrlKey) {
+				const editLink = document.querySelector("#edit-link");
+				editLink && editLink.click();
+			}
 		});
 });
 

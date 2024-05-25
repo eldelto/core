@@ -227,13 +227,9 @@ button:disabled:hover {
 }
 
 .ToDoListTitle {
-	width: 100%;
 	margin: .5em 0 .3em 0;
-	font-size: 2em;
 	font-family: 'Merriweather Sans', sans-serif;
-	border: none;
-	background: none;
-	color: var(--text-color);
+	font-weight: normal;
 }
 
 .ToDoList.checked .ToDoListTitle {
@@ -382,9 +378,9 @@ button:disabled:hover {
 }
 
 textarea[name="text-patch"] {
-    width: 100%;
-    background: none;
-    border: none;
-    font-size: 1em;
-    line-height: 2em;
+	width: 100%;
+	background: none;
+	border: none;
+	font-size: 1em;
+	line-height: 2em;
 }

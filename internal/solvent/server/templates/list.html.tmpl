@@ -2,9 +2,11 @@
 
 {{block "toDoListOnly" .}}
 <div class="ToDoList {{if .IsCompleted}}checked{{end}}">
-  <a href="/lists/{{.Identifier}}/edit">Edit</a>
-  <textarea class="ToDoListTitle" name="title"
-			placeholder="Title" style="height: 48px !important;">{{.Title.Value}}</textarea>
+  <a id="edit-link" href="/lists/{{.Identifier}}/edit">Edit</a>
+  <h1 class="ToDoListTitle" name="title"
+	  placeholder="Title" style="height: 48px !important;">
+	{{.Title.Value}}
+  </h1>
   <div class="ToDoListBody">
 
 	{{range .GetOrderedItems true}}
@@ -22,7 +24,7 @@
 		  	<path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"></path>
 		  </svg>
 		</button>
-		<textarea class="ToDoItemTitle" style="height: 24px !important;">{{.Title}}</textarea>
+		<span class="ToDoItemTitle" style="height: 24px !important;">{{.Title}}</span>
 		<button class="ToDoItemDelete">
 		  <svg width="24" height="24" viewBox="0 0 24 24">
 		  	<path d="M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z"></path>
