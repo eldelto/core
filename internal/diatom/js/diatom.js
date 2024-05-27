@@ -219,22 +219,27 @@ class DiatomVM {
 		}
 	}
 
-	withInput(selector) {
-		const input = document.querySelector(selector);
-		this.#inputElement = input;
+	withInput(selectorOrElement) {
+		this.#inputElement = selectorOrElement;
+		if (typeof selectorOrElement === "string") {
+			this.#inputElement = document.querySelector(selectorOrElement);
+		}
 
-		input.addEventListener("keyup", this.handleInput);
+		this.#inputElement.addEventListener("keyup", this.handleInput);
 
 		// Hack to fetch the initial text content of the element.
 		const event = new Event("keyup");
 		event.key = "Enter";
-		input.dispatchEvent(event);
+		this.#inputElement.dispatchEvent(event);
 
 		return this;
 	}
 
-	withOutput(selector) {
-		this.#outputElement = document.querySelector(selector);
+	withOutput(selectorOrElement) {
+		this.#outputElement = selectorOrElement;
+		if (typeof selectorOrElement === "string") {
+			this.#outputElement = document.querySelector(selectorOrElement);
+		}
 		return this;
 	}
 
@@ -248,12 +253,14 @@ class DiatomVM {
 	}
 
 	loadRemote(path) {
-		fetch(path).then(response => {
+		return fetch(path).then(response => {
 			if (!response.ok) {
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
-
-			const program = new Uint8Array(response.arrayBuffer());
+			return response.arrayBuffer();
+		}).then(data => {
+			const program = new Uint8Array(data);
+			this.load(program);
 		});
 	}
 
@@ -480,33 +487,39 @@ class DiatomRepl extends HTMLElement {
 	static observedAttributes = ["src"];
 	#vm = new DiatomVM();
 
-  constructor() {
-    super();
-  }
+	constructor() {
+		super();
+	}
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    console.log(
-      `Attribute ${name} has changed from ${oldValue} to ${newValue}.`,
-    );
-  }
+	attributeChangedCallback(name, oldValue, newValue) {
+		// TODO: Do we need this?
+		console.log(
+			`Attribute ${name} has changed from ${oldValue} to ${newValue}.`,
+		);
+	}
 
-connectedCallback() {
-	console.log("Connected");
-    const shadow = this.attachShadow({ mode: "open" });
+	connectedCallback() {
+		const shadow = this.attachShadow({ mode: "open" });
 
-	/*
-	  TODO: Create input and output elements.
-	  Attach VM callbacks
-	  Copy input text to output on "Enter"
-	  Load remote script and start VM on src change
-	  */
-	//const input = 
-    // Create spans
-    const wrapper = document.createElement("span");
-	wrapper.textContent = "asdfsdfas";
-	shadow.appendChild(wrapper);
-	console.log(shadow);
-  }
+		const wrapper = document.createElement("div");
+		wrapper.setAttribute("class", "diatom-prompt");
+
+		const output = document.createElement("output");
+		output.setAttribute("class", "diatom-output");
+		wrapper.appendChild(output);
+
+		const input = document.createElement("input");
+		input.setAttribute("type", "text");
+		input.setAttribute("class", "diatom-input");
+		wrapper.appendChild(input);
+
+		shadow.appendChild(wrapper);
+
+		this.#vm.withInput(input);
+		this.#vm.withOutput(output);
+		this.#vm.loadRemote(this.getAttribute("src"))
+			.then(_ => this.#vm.execute());
+	}
 }
 
 customElements.define("diatom-repl", DiatomRepl);
