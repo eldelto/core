@@ -475,3 +475,38 @@ class DiatomVM {
 		}
 	}
 }
+
+class DiatomRepl extends HTMLElement {
+	static observedAttributes = ["src"];
+	#vm = new DiatomVM();
+
+  constructor() {
+    super();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    console.log(
+      `Attribute ${name} has changed from ${oldValue} to ${newValue}.`,
+    );
+  }
+
+connectedCallback() {
+	console.log("Connected");
+    const shadow = this.attachShadow({ mode: "open" });
+
+	/*
+	  TODO: Create input and output elements.
+	  Attach VM callbacks
+	  Copy input text to output on "Enter"
+	  Load remote script and start VM on src change
+	  */
+	//const input = 
+    // Create spans
+    const wrapper = document.createElement("span");
+	wrapper.textContent = "asdfsdfas";
+	shadow.appendChild(wrapper);
+	console.log(shadow);
+  }
+}
+
+customElements.define("diatom-repl", DiatomRepl);
