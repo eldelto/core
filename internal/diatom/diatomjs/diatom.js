@@ -513,6 +513,9 @@ class DiatomRepl extends HTMLElement {
 		input.setAttribute("class", "diatom-input");
 		wrapper.appendChild(input);
 
+		// TODO: On Enter we should insert the text value of the input
+		// into the output element
+
 		shadow.appendChild(wrapper);
 
 		this.#vm.withInput(input);

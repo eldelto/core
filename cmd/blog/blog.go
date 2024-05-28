@@ -122,6 +122,7 @@ func main() {
 	//web.NewTemplateController(server.TemplatesFS, nil).Register(r)
 	server.NewArticleController(service).Register(r)
 	server.NewFeedController(service).Register(r)
+	server.NewDiatomController().Register(r)
 
 	http.Handle("/", r)
 

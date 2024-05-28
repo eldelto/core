@@ -2,11 +2,16 @@
 
 # High-level commands
 .PHONY: all
-all: lint test build
+all: lint test generate build
 
 .PHONY: build
 build:
 	go install -ldflags="-s -w" github.com/eldelto/core/cmd/...
+
+.PHONY: generate
+generate:
+	echo "dump exit" | go run cmd/diatom/diatom.go
+	mv dump.dopc internal/diatom/repl.dopc
 
 .PHONY: init
 init: download

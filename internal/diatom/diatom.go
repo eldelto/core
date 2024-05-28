@@ -28,6 +28,9 @@ var Preamble string
 //go:embed stdlib.dia
 var Stdlib string
 
+//go:embed repl.dopc
+var ReplDopc []byte
+
 func wordToBytes(w Word) [WordSize]byte {
 	bytes := [WordSize]byte{}
 
