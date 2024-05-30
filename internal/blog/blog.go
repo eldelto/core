@@ -311,6 +311,8 @@ func TextNodeToHtml(t TextNode) string {
 		b.WriteString(tagged(content, "aside"))
 	case *BlockQuote:
 		b.WriteString(tagged(content, "blockquote"))
+	case *HtmlBlock:
+		b.WriteString(t.GetContent())
 	case *UnorderedList:
 		b.WriteString("<ul>")
 		for _, child := range t.Children {

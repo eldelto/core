@@ -37,6 +37,7 @@ func init() {
 	gob.Register(&CodeBlock{})
 	gob.Register(&CommentBlock{})
 	gob.Register(&BlockQuote{})
+	gob.Register(&HtmlBlock{})
 	gob.Register(&UnorderedList{})
 	gob.Register(&OrderedList{})
 	gob.Register(&Properties{})

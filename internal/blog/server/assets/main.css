@@ -213,3 +213,28 @@ nav#nav-bar>a:hover {
     justify-content: space-between;
 }
 
+
+.diatom-prompt {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 5px;
+}
+
+.diatom-output,
+.diatom-input {
+    width: 100%;
+    display: block;
+    background-color: var(--dark);
+    color: var(--white);
+    border: none;
+padding: 5px 10px;
+}
+
+.diatom-output {
+        height: 5em;
+}
+
+.diatom-input {
+    border-top: 1px solid var(--highlight);
+    font-size: 1em;
+}

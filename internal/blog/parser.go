@@ -19,6 +19,8 @@ const (
 	commentBlockEnd   = "#+end_comment"
 	blockQuoteStart   = "#+begin_quote"
 	blockQuoteEnd     = "#+end_quote"
+	htmlBlockStart    = "#+begin_export html"
+	htmlBlockEnd      = "#+end_export"
 )
 
 var orderedListRegex = regexp.MustCompile(`\d+\.\s`)
@@ -130,6 +132,18 @@ func (cb *BlockQuote) GetContent() string {
 }
 
 func (cb *BlockQuote) GetChildren() []TextNode {
+	return nil
+}
+
+type HtmlBlock struct {
+	Content string
+}
+
+func (cb *HtmlBlock) GetContent() string {
+	return cb.Content
+}
+
+func (cb *HtmlBlock) GetChildren() []TextNode {
 	return nil
 }
 
@@ -301,7 +315,7 @@ func parseCodeBlock(t *tokenizer) (*CodeBlock, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected code block Content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected code block content: %w", line, err)
 		}
 
 		if isCodeBlockEnd(token) {
@@ -342,7 +356,7 @@ func parseCommentBlock(t *tokenizer) (*CommentBlock, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected comment block Content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected comment block content: %w", line, err)
 		}
 
 		if isCommentBlockEnd(token) {
@@ -379,7 +393,7 @@ func parseBlockQuote(t *tokenizer) (*BlockQuote, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected block quote Content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected block quote content: %w", line, err)
 		}
 
 		if isBlockQuoteEnd(token) {
@@ -388,6 +402,43 @@ func parseBlockQuote(t *tokenizer) (*BlockQuote, error) {
 		}
 
 		blockQuote.Content += " " + token
+		t.consume()
+	}
+}
+
+func isHtmlBlock(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), htmlBlockStart)
+}
+
+func isHtmlBlockEnd(token string) bool {
+	return strings.HasPrefix(strings.TrimSpace(token), htmlBlockEnd)
+}
+
+func parseHtmlBlock(t *tokenizer) (*HtmlBlock, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected HTML block: %w", line, err)
+	}
+
+	if !isHtmlBlock(token) {
+		return nil, parseError("expected HTML block", line, token)
+	}
+
+	htmlBlock := &HtmlBlock{}
+	t.consume()
+
+	for {
+		token, line, err = t.token()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: expected HTML block content: %w", line, err)
+		}
+
+		if isHtmlBlockEnd(token) {
+			t.consume()
+			return htmlBlock, nil
+		}
+
+		htmlBlock.Content += " " + token
 		t.consume()
 	}
 }
@@ -418,7 +469,7 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 	for {
 		token, line, err = t.token()
 		if err != nil {
-			return nil, fmt.Errorf("line %d: expected unordered list Content: %w", line, err)
+			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
 		}
 
 		if !isText(token) || t.sawEmptyLine() {
@@ -600,6 +651,11 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 			nodes = append(nodes, node)
 		} else if isBlockQuote(token) {
 			if node, err = parseBlockQuote(t); err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
+		} else if isHtmlBlock(token) {
+			if node, err = parseHtmlBlock(t); err != nil {
 				return nil, err
 			}
 			nodes = append(nodes, node)

@@ -499,8 +499,6 @@ class DiatomRepl extends HTMLElement {
 	}
 
 	connectedCallback() {
-		const shadow = this.attachShadow({ mode: "open" });
-
 		const wrapper = document.createElement("div");
 		wrapper.setAttribute("class", "diatom-prompt");
 
@@ -511,12 +509,14 @@ class DiatomRepl extends HTMLElement {
 		const input = document.createElement("input");
 		input.setAttribute("type", "text");
 		input.setAttribute("class", "diatom-input");
+		input.setAttribute("placeholder", "Enter your commands ...");
 		wrapper.appendChild(input);
 
 		// TODO: On Enter we should insert the text value of the input
 		// into the output element
 
-		shadow.appendChild(wrapper);
+		//shadow.appendChild(wrapper);
+		this.appendChild(wrapper);
 
 		this.#vm.withInput(input);
 		this.#vm.withOutput(output);
