@@ -1,11 +1,11 @@
 :root {
-    --white: #ffffff;
-    --black: #141414;
-    --highlight: #a01ed9;
-    --light-highlight: #d174fa;
-    --ultra-light-highlight: rgba(209, 116, 250, 0.31);
-    --dark-highlight: #631685;
-    --dark: rgb(0, 23, 62);
+	--white: #ffffff;
+	--black: #141414;
+	--highlight: #a01ed9;
+	--light-highlight: #d174fa;
+	--ultra-light-highlight: rgba(209, 116, 250, 0.31);
+	--dark-highlight: #631685;
+	--dark: rgb(0, 23, 62);
 }
 
 @font-face {
@@ -227,11 +227,13 @@ nav#nav-bar>a:hover {
     background-color: var(--dark);
     color: var(--white);
     border: none;
-padding: 5px 10px;
+	padding: 5px 10px;
 }
 
 .diatom-output {
-        height: 5em;
+    height: 5em;
+	white-space: pre-line;
+	overflow-y: scroll;
 }
 
 .diatom-input {

@@ -510,12 +510,14 @@ class DiatomRepl extends HTMLElement {
 		input.setAttribute("type", "text");
 		input.setAttribute("class", "diatom-input");
 		input.setAttribute("placeholder", "Enter your commands ...");
+		input.addEventListener("keyup", e => {
+		if (e.key == "Enter") {
+			output.textContent += input.value + "\r\n"
+			output.scrollTop = output.scrollHeight + 100;
+		}
+		});
 		wrapper.appendChild(input);
 
-		// TODO: On Enter we should insert the text value of the input
-		// into the output element
-
-		//shadow.appendChild(wrapper);
 		this.appendChild(wrapper);
 
 		this.#vm.withInput(input);
