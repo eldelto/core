@@ -491,11 +491,17 @@ class DiatomRepl extends HTMLElement {
 		super();
 	}
 
-	attributeChangedCallback(name, oldValue, newValue) {
-		// TODO: Do we need this?
-		console.log(
-			`Attribute ${name} has changed from ${oldValue} to ${newValue}.`,
-		);
+	init(input, output) {
+		output.textContent = "";
+
+		this.#vm.reset();
+		this.#vm.withInput(input);
+		this.#vm.withOutput(output);
+		this.#vm.loadRemote(this.getAttribute("src"))
+			.then(_ => this.#vm.execute())
+			.catch(error => {
+				output.textContent += "\r\n" + error + "\r\n";
+			});
 	}
 
 	connectedCallback() {
@@ -504,26 +510,34 @@ class DiatomRepl extends HTMLElement {
 
 		const output = document.createElement("output");
 		output.setAttribute("class", "diatom-output");
-		wrapper.appendChild(output);
 
 		const input = document.createElement("input");
 		input.setAttribute("type", "text");
 		input.setAttribute("class", "diatom-input");
 		input.setAttribute("placeholder", "Enter your commands ...");
 		input.addEventListener("keyup", e => {
-		if (e.key == "Enter") {
-			output.textContent += input.value + "\r\n"
-			output.scrollTop = output.scrollHeight + 100;
-		}
+			if (e.key == "Enter") {
+				output.textContent += input.value + "\r\n";
+				setTimeout(() => { output.scrollTop = output.scrollHeight }, 10);
+			}
 		});
+
+		const resetButton = document.createElement("button");
+		resetButton.setAttribute("class", "diatom-reset");
+		resetButton.textContent = "Reset";
+		resetButton.addEventListener("click", e => {
+			this.init(input, output);
+		});
+
+		wrapper.appendChild(resetButton);
+		wrapper.appendChild(output);
 		wrapper.appendChild(input);
 
-		this.appendChild(wrapper);
+		// TODO: Add reset button
+		//       Pipe errors to the output as well
 
-		this.#vm.withInput(input);
-		this.#vm.withOutput(output);
-		this.#vm.loadRemote(this.getAttribute("src"))
-			.then(_ => this.#vm.execute());
+		this.appendChild(wrapper);
+		this.init(input, output);
 	}
 }
 

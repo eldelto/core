@@ -218,12 +218,29 @@ nav#nav-bar>a:hover {
     width: 100%;
     overflow: hidden;
     border-radius: 5px;
+    background-color: var(--dark);
+}
+
+.diatom-reset {
+    float: right;
+    margin: .7em .7em;
+    background-color: rgba(0,0,0,0);
+    border: 2px solid var(--light-highlight);
+    color: var(--light-highlight);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.diatom-reset:hover {
+    color: var(--dark);
+    background-color: var(--light-highlight);
 }
 
 .diatom-output,
 .diatom-input {
     width: 100%;
     display: block;
+    box-sizing: border-box;
     background-color: var(--dark);
     color: var(--white);
     border: none;
@@ -233,10 +250,10 @@ nav#nav-bar>a:hover {
 .diatom-output {
     height: 5em;
 	white-space: pre-line;
-	overflow-y: scroll;
+	overflow-y: auto;
 }
 
 .diatom-input {
-    border-top: 1px solid var(--highlight);
+    border-top: 1px solid var(--light-highlight);
     font-size: 1em;
 }
