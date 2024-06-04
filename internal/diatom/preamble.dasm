@@ -460,16 +460,6 @@ rpop drop drop drop
 
 ( Compilation )
 
-( Creates the header for a new word at the end of the dictionary.
-
-											+-- Afterwards, HERE points here.
-											|
-											V
- +---------+---+---+---+---+---+---+---+---+
- | LINK    | 6 | D | O | U | B | L | E | 0 |
- +---------+---+---+---+---+---+---+---+---+
-			len                         pad
-)
 ( -- )
 ( Reads the content of 'word-buffer' and creates the dictionary header for new
   word with the given name. The header consists of a pointer to the previous
