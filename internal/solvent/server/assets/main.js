@@ -2,7 +2,7 @@ const keydownEvent = new Event("keydown");
 
 document.addEventListener("DOMContentLoaded", function() {
 	// Resize textarea to fit the contained content.
-	document.querySelectorAll("textarea.auto-grow")
+	document.querySelectorAll("textarea[data-auto-grow]")
 		.forEach(e => {
 			e.addEventListener("keydown", autosize);
 			e.dispatchEvent(keydownEvent);
@@ -19,8 +19,9 @@ document.addEventListener("DOMContentLoaded", function() {
 	document.querySelectorAll("form[data-quick-submit]")
 		.forEach(e => {
 			e.addEventListener("keydown", e => {
-				if (e.key == "Enter" && e.ctrlKey) {
+				if (e.key == "Enter" && (e.ctrlKey || e.shiftKey)) {
 					e.currentTarget.submit();
+					e.preventDefault();
 				}
 			});
 		});
@@ -30,16 +31,15 @@ document.addEventListener("DOMContentLoaded", function() {
 			if (e.key == "e" && e.ctrlKey) {
 				const editLink = document.querySelector("#edit-link");
 				editLink && editLink.click();
+				e.preventDefault();
 			}
 		});
 });
 
 function autosize(){
-	var el = this;
-	setTimeout(function(){
-		//el.style.cssText = 'height:auto; padding:0';
-		// for box-sizing other than "content-box" use:
-		// el.style.cssText = '-moz-box-sizing:content-box';
-		el.style.cssText = 'height:' + el.scrollHeight + 'px';
-	},0);
+	const el = this;
+	setTimeout(() => {
+		el.style.height = "auto";
+		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
+	}, 10);
 }

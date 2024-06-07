@@ -243,13 +243,9 @@ button:disabled:hover {
 	align-items: center;
 }
 
-.ToDoItems {
-	width: 100%;
-}
-
 .ToDoItem {
+	width: 100%;
 	min-height: 3em;
-	/*padding-left: 5%;*/
 	padding: .4em 0;
 	box-sizing: border-box;
 	display: flex;
@@ -275,6 +271,9 @@ button:disabled:hover {
 }
 
 .ToDoItemTitle {
+	flex-shrink: 10000;
+    max-height: 5em;
+    overflow-y: auto;
 	font-size: 1em;
 	margin: 0 .3em;
 	padding: 0 .5em;
@@ -382,5 +381,4 @@ textarea[name="text-patch"] {
 	background: none;
 	border: none;
 	font-size: 1em;
-	line-height: 2em;
 }
