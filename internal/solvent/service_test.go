@@ -134,7 +134,7 @@ func BenchApplyListPatch(b *testing.B) {
 		}
 	}
 
-	err = service.store(userID, notebook)
+	_, err = service.store(userID, notebook)
 	AssertNoError(b, err, "service.store")
 
 	for n := 0; n < b.N; n++ {

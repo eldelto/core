@@ -41,25 +41,46 @@ func NewService(db *bbolt.DB) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) store(userID uuid.UUID, notebook *Notebook) error {
-	return s.db.Update(func(tx *bbolt.Tx) error {
+func (s *Service) store(userID uuid.UUID, notebook *Notebook) (*Notebook, error) {
+	var mergedNotebook *Notebook
+
+	err := s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(notebookBucket))
 		if bucket == nil {
 			return fmt.Errorf("failed to get bucket with name %q", notebookBucket)
 		}
 
+		key := userID.String()
+		value := bucket.Get([]byte(key))
+		if value == nil {
+			mergedNotebook = notebook
+		} else {
+
+			oldNotebook := Notebook{}
+			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&oldNotebook); err != nil {
+				return fmt.Errorf("failed to decode notebook for key %q: %w", key, err)
+			}
+
+			merged, err := oldNotebook.Merge(notebook)
+			if err != nil {
+				return err
+			}
+			mergedNotebook = merged.(*Notebook)
+		}
+
 		buffer := bytes.Buffer{}
-		if err := gob.NewEncoder(&buffer).Encode(notebook); err != nil {
+		if err := gob.NewEncoder(&buffer).Encode(mergedNotebook); err != nil {
 			return fmt.Errorf("failed to encode noteboook %q: %w", notebook.Identifier(), err)
 		}
 
-		key := userID.String()
 		if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
 			return fmt.Errorf("failed to persist notebook %q: %w", notebook.Identifier(), err)
 		}
 
 		return nil
 	})
+
+	return mergedNotebook, err
 }
 
 func (s *Service) fetch(userID uuid.UUID) (*Notebook, error) {
@@ -93,7 +114,8 @@ func (s *Service) Create(userID uuid.UUID) (*Notebook, error) {
 		return nil, err
 	}
 
-	if err := s.store(userID, notebook); err != nil {
+	notebook, err = s.store(userID, notebook)
+	if err != nil {
 		return nil, err
 	}
 
@@ -124,13 +146,35 @@ func (s *Service) CreateList(userID uuid.UUID) (*ToDoList, error) {
 		return nil, err
 	}
 
-	err = s.store(userID, notebook)
+	_, err = s.store(userID, notebook)
 	return list, err
 }
 
 func (s *Service) Update(userID uuid.UUID, notebook *Notebook) (*Notebook, error) {
-	err := s.store(userID, notebook)
-	return notebook, err
+	return s.store(userID, notebook)
+}
+
+func (s *Service) updateList(userID, listID uuid.UUID, f func(l *ToDoList) error) (*ToDoList, error) {
+	notebook, err := s.Fetch(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := notebook.GetList(listID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := f(list); err != nil {
+		return nil, err
+	}
+
+	notebook, err = s.Update(userID, notebook)
+	if err != nil {
+		return nil, err
+	}
+
+	return notebook.GetList(listID)
 }
 
 type toDoItem struct {
@@ -256,47 +300,17 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 }
 
 func (s *Service) CheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
-	notebook, err := s.Fetch(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	list, err := notebook.GetList(listID)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := list.CheckItem(itemID); err != nil {
-		return nil, err
-	}
-
-	if _, err := s.Update(userID, notebook); err != nil {
-		return nil, err
-	}
-
-	return list, nil
+	return s.updateList(userID, listID, func(l *ToDoList) error {
+		_, err := l.CheckItem(itemID)
+		return err
+	})
 }
 
 func (s *Service) UncheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
-	notebook, err := s.Fetch(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	list, err := notebook.GetList(listID)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := list.UncheckItem(itemID); err != nil {
-		return nil, err
-	}
-
-	if _, err := s.Update(userID, notebook); err != nil {
-		return nil, err
-	}
-
-	return list, nil
+	return s.updateList(userID, listID, func(l *ToDoList) error {
+		_, err := l.UncheckItem(itemID)
+		return err
+	})
 }
 
 func (s *Service) Remove(id uuid.UUID) error {
