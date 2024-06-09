@@ -127,9 +127,8 @@ func (s *Service) Fetch(userID uuid.UUID) (*Notebook, error) {
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return s.Create(userID)
-		} else {
-			return nil, err
 		}
+			return nil, err
 	}
 
 	return notebook, nil
@@ -303,6 +302,14 @@ func (s *Service) AddItem(userID, listID uuid.UUID, title string) (*ToDoList, er
 	return s.updateList(userID, listID, func(l *ToDoList) error {
 		_, err := l.AddItem(title)
 		return err
+	})
+}
+
+func (s *Service) RemoveItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
+	return s.updateList(userID, listID, func(l *ToDoList) error {
+		l.RemoveItem(itemID)
+		return nil
+
 	})
 }
 

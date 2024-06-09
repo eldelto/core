@@ -55,6 +55,15 @@ func (p *PSet[M]) Identifier() string {
 }
 
 func (p *PSet[M]) Merge(other Mergeable) (Mergeable, error) {
+	// Weird-ass hack to prevent uninitialized nested PSets from
+	// blocking the merge.
+	if p.Identifier() == "" {
+		return other, nil
+	}
+	if other.Identifier() == "" {
+		return p, nil
+	}
+
 	if p.Identifier() != other.Identifier() {
 		err := NewCannotBeMergedError(p, other)
 		return nil, err

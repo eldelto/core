@@ -28,6 +28,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
 			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
 			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
+			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}:       removeItem(service),
 			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
 			{Method: http.MethodDelete, Path: "{id}/items/{itemID}/check"}: uncheckItem(service),
 		},
@@ -161,6 +162,28 @@ func addItem(service *solvent.Service) web.Handler {
 		title := r.PostForm.Get("title")
 
 		list, err := service.AddItem(uuid.UUID{}, listID, title)
+		if err != nil {
+			return err
+		}
+
+		// TODO: Conditionally render subset everywhere.
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
+	}
+}
+
+func removeItem(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		listID, err := urlParamUUID(r, "id")
+		if err != nil {
+			return err
+		}
+
+		itemID, err := urlParamUUID(r, "itemID")
+		if err != nil {
+			return err
+		}
+
+		list, err := service.RemoveItem(uuid.UUID{}, listID, itemID)
 		if err != nil {
 			return err
 		}

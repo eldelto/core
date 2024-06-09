@@ -1,4 +1,5 @@
 const keydownEvent = new Event("keydown");
+const deleteItemEvent = new Event("delete-item");
 
 document.addEventListener("DOMContentLoaded", function() {
 	// Resize textarea to fit the contained content.
@@ -15,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			setTimeout(() => e.scrollIntoView({behavior: "smooth", block: "end"}), 10);
 		});
 
+	// TODO: Move shortcuts into HTMX.
 	// Submit form on ctrl + enter.
 	document.querySelectorAll("form[data-quick-submit]")
 		.forEach(e => {
@@ -26,15 +28,29 @@ document.addEventListener("DOMContentLoaded", function() {
 			});
 		});
 
-	document.querySelector("body")
-		.addEventListener("keydown", e => {
-			if (e.key == "e" && e.ctrlKey) {
-				const editLink = document.querySelector("#edit-link");
-				editLink && editLink.click();
-				e.preventDefault();
-			}
-		});
+	const body = document.querySelector("body");
+	body.addEventListener("keydown", e => {
+		if (e.key == "e" && e.ctrlKey) {
+			const editLink = document.querySelector("#edit-link");
+			editLink && editLink.click();
+			e.preventDefault();
+		}
+	});
+	body.addEventListener("htmx:afterSwap", e => {
+		init();
+	});
+});
 
+function autosize(){
+	const el = this;
+	setTimeout(() => {
+		el.style.height = "auto";
+		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
+	}, 10);
+}
+
+let pressTimer;
+function init() {
 	document.querySelector("#AddItemBarTitle")
 		.addEventListener("input", e => {
 			const addItemButton = document.querySelector("#AddItemBarButton");
@@ -44,12 +60,18 @@ document.addEventListener("DOMContentLoaded", function() {
 				addItemButton.disabled = true;
 			}
 		});
-});
 
-function autosize(){
-	const el = this;
-	setTimeout(() => {
-		el.style.height = "auto";
-		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
-	}, 10);
+	document.querySelectorAll(".ToDoItem")
+		.forEach(e => {
+			e.addEventListener("mouseup", e => {
+				clearTimeout(pressTimer);
+			});
+
+			e.addEventListener("mousedown", e => {
+				const item = e.currentTarget;
+				pressTimer = window.setTimeout(() => {
+					item.dispatchEvent(deleteItemEvent);
+				}, 750);
+			});
+		});
 }
