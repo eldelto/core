@@ -299,6 +299,13 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 	return s.Update(userID, notebook)
 }
 
+func (s *Service) AddItem(userID, listID uuid.UUID, title string) (*ToDoList, error) {
+	return s.updateList(userID, listID, func(l *ToDoList) error {
+		_, err := l.AddItem(title)
+		return err
+	})
+}
+
 func (s *Service) CheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
 	return s.updateList(userID, listID, func(l *ToDoList) error {
 		_, err := l.CheckItem(itemID)

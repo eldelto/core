@@ -27,6 +27,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "{id}"}:                         getList(service),
 			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
 			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
+			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
 			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
 			{Method: http.MethodDelete, Path: "{id}/items/{itemID}/check"}: uncheckItem(service),
 		},
@@ -43,7 +44,7 @@ type listsData struct {
 
 func getLists(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		// TODO: User actual user ID.
+		// TODO: Use actual user ID.
 		notebook, err := service.Fetch(uuid.UUID{})
 		if err != nil {
 			return err
@@ -144,6 +145,28 @@ func updateList(service *solvent.Service) web.Handler {
 
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		return nil
+	}
+}
+
+func addItem(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		listID, err := urlParamUUID(r, "id")
+		if err != nil {
+			return err
+		}
+
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+		title := r.PostForm.Get("title")
+
+		list, err := service.AddItem(uuid.UUID{}, listID, title)
+		if err != nil {
+			return err
+		}
+
+		// TODO: Conditionally render subset everywhere.
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
 }
 

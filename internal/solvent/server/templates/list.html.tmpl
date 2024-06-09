@@ -31,15 +31,19 @@
 	</div>
 	{{end}}
 
-	 <div class="AddItemBar">
-      <button class="AddItemBarButton" type="submit" value="" disabled="">
+	<form method="POST" action="/lists/{{$.Identifier}}/items"
+		  class="AddItemBar"
+		  hx-post="/lists/{{$.Identifier}}/items"
+		  hx-target="closest .ToDoList"
+		  hx-swap="outerHTML">
+      <button class="AddItemBarButton" type="submit" value="">
         <svg width="24" height="24" viewBox="0 0 24 24">
           <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
         </svg>
       </button>
-      <textarea class="AddItemBarTitle" placeholder="New item" style="height: 24px !important;"></textarea>
-      <button class="AddItemBarLogo" type="button" disabled="">+</button>
-    </div>
+	  <input type="text" name="title" class="AddItemBarTitle"
+			 placeholder="New item" />
+    </form>
   </div>
 </div>
 {{end}}
