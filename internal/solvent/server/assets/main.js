@@ -34,6 +34,16 @@ document.addEventListener("DOMContentLoaded", function() {
 				e.preventDefault();
 			}
 		});
+
+	document.querySelector("#AddItemBarTitle")
+		.addEventListener("input", e => {
+			const addItemButton = document.querySelector("#AddItemBarButton");
+			if (e.target.value.length > 0) {
+				addItemButton.disabled = false;
+			} else {
+				addItemButton.disabled = true;
+			}
+		});
 });
 
 function autosize(){

@@ -167,7 +167,7 @@ svg {
 	fill: var(--light-background-color);
 }
 
-button {
+button, svg {
 	transition: all .1s ease !important;
 }
 
@@ -322,14 +322,7 @@ button:disabled:hover {
 	align-items: center;
 }
 
-.AddItemBarLogo {
-	width: 2em;
-	height: 2em;
-	text-align: center;
-	visibility: hidden;
-}
-
-.AddItemBarTitle {
+#AddItemBarTitle {
 	font-size: 1em;
 	margin: 0 .3em;
 	padding: 0 .5em;
@@ -338,7 +331,7 @@ button:disabled:hover {
 	background: none;
 }
 
-.AddItemBarButton {
+#AddItemBarButton {
 	height: 2em;
 	width: 2em;
 	padding: 0;
@@ -349,16 +342,16 @@ button:disabled:hover {
 	justify-content: center;
 }
 
-.AddItemBarButton>svg {
+#AddItemBarButton>svg {
 	fill: var(--light-brand-color);
 }
 
-.AddItemBarButton:disabled {
+#AddItemBarButton:disabled {
 	opacity: var(--disabled-opacity);
 	cursor: default;
 }
 
-.AddItemBarButton:disabled>svg {
+#AddItemBarButton:disabled>svg {
 	fill: var(--disabled-color);
 }
 
