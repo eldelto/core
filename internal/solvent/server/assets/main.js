@@ -39,6 +39,8 @@ document.addEventListener("DOMContentLoaded", function() {
 	body.addEventListener("htmx:afterSwap", e => {
 		init();
 	});
+
+	init();
 });
 
 function autosize(){
