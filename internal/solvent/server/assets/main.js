@@ -1,12 +1,58 @@
-const keydownEvent = new Event("keydown");
-const deleteItemEvent = new Event("delete-item");
+const deletingClass = "deleting";
+
+function keydownEvent() { return new Event("keydown") };
+function deleteItemEvent() { return new Event("delete-item") };
+
+function autosize(){
+	const el = this;
+	setTimeout(() => {
+		el.style.height = "auto";
+		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
+	}, 10);
+}
+
+let pressTimer;
+function startLongPress(e) {
+	const item = e.currentTarget;
+	item.classList.add(deletingClass);
+	pressTimer = window.setTimeout(() => {
+		item.classList.remove(deletingClass);
+		item.dispatchEvent(deleteItemEvent());
+		console.log("long-press");
+	}, 750);
+}
+
+function cancelLongPress(e) {
+	e.currentTarget.classList.remove(deletingClass);
+	clearTimeout(pressTimer);
+}
+
+function init() {
+	document.querySelector("#AddItemBarTitle")
+		.addEventListener("input", e => {
+			const addItemButton = document.querySelector("#AddItemBarButton");
+			if (e.target.value.length > 0) {
+				addItemButton.disabled = false;
+			} else {
+				addItemButton.disabled = true;
+			}
+		});
+
+	document.querySelectorAll(".ToDoItem")
+		.forEach(e => {
+			e.addEventListener("mousedown", startLongPress);
+			e.addEventListener("mouseup", cancelLongPress);
+			e.addEventListener("touchstart", startLongPress);
+			e.addEventListener("touchend", cancelLongPress);
+		});
+}
 
 document.addEventListener("DOMContentLoaded", function() {
 	// Resize textarea to fit the contained content.
 	document.querySelectorAll("textarea[data-auto-grow]")
 		.forEach(e => {
 			e.addEventListener("keydown", autosize);
-			e.dispatchEvent(keydownEvent);
+			e.dispatchEvent(keydownEvent());
 		});
 
 	// Move cursor to the end of the textarea.
@@ -42,38 +88,3 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	init();
 });
-
-function autosize(){
-	const el = this;
-	setTimeout(() => {
-		el.style.height = "auto";
-		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
-	}, 10);
-}
-
-let pressTimer;
-function init() {
-	document.querySelector("#AddItemBarTitle")
-		.addEventListener("input", e => {
-			const addItemButton = document.querySelector("#AddItemBarButton");
-			if (e.target.value.length > 0) {
-				addItemButton.disabled = false;
-			} else {
-				addItemButton.disabled = true;
-			}
-		});
-
-	document.querySelectorAll(".ToDoItem")
-		.forEach(e => {
-			e.addEventListener("mouseup", e => {
-				clearTimeout(pressTimer);
-			});
-
-			e.addEventListener("mousedown", e => {
-				const item = e.currentTarget;
-				pressTimer = window.setTimeout(() => {
-					item.dispatchEvent(deleteItemEvent);
-				}, 750);
-			});
-		});
-}
