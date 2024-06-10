@@ -13,13 +13,17 @@ function autosize(){
 
 let pressTimer;
 function startLongPress(e) {
+	clearTimeout(pressTimer);
+
 	const item = e.currentTarget;
 	item.classList.add(deletingClass);
+
 	pressTimer = window.setTimeout(() => {
 		item.classList.remove(deletingClass);
 		item.dispatchEvent(deleteItemEvent());
-		console.log("long-press");
 	}, 750);
+
+	e.preventDefault();
 }
 
 function cancelLongPress(e) {
@@ -41,8 +45,10 @@ function init() {
 	document.querySelectorAll(".ToDoItem")
 		.forEach(e => {
 			e.addEventListener("mousedown", startLongPress);
+			e.addEventListener("mousemove", cancelLongPress);
 			e.addEventListener("mouseup", cancelLongPress);
 			e.addEventListener("touchstart", startLongPress);
+			e.addEventListener("touchmove", cancelLongPress);
 			e.addEventListener("touchend", cancelLongPress);
 		});
 }
