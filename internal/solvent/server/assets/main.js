@@ -22,8 +22,6 @@ function startLongPress(e) {
 		item.classList.remove(deletingClass);
 		item.dispatchEvent(deleteItemEvent());
 	}, 750);
-
-	e.preventDefault();
 }
 
 function cancelLongPress(e) {
