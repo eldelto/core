@@ -15,7 +15,7 @@ let pressTimer;
 function startLongPress(e) {
 	clearTimeout(pressTimer);
 
-	const item = e.currentTarget;
+	const item = e.currentTarget.closest(".ToDoItem");
 	item.classList.add(deletingClass);
 
 	pressTimer = window.setTimeout(() => {
@@ -27,7 +27,8 @@ function startLongPress(e) {
 }
 
 function cancelLongPress(e) {
-	e.currentTarget.classList.remove(deletingClass);
+	const item = e.currentTarget.closest(".ToDoItem");
+	item.classList.remove(deletingClass);
 	clearTimeout(pressTimer);
 }
 
@@ -42,7 +43,7 @@ function init() {
 			}
 		});
 
-	document.querySelectorAll(".ToDoItem")
+	document.querySelectorAll(".ToDoItemTitle")
 		.forEach(e => {
 			e.addEventListener("mousedown", startLongPress);
 			e.addEventListener("mousemove", cancelLongPress);

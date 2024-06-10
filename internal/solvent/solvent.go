@@ -215,17 +215,10 @@ func (tdl *ToDoList) UncheckItem(id uuid.UUID) (uuid.UUID, error) {
 // GetItems returns a slice with all ToDoItems that are in the liveSet
 // but not in the tombstoneSet and are therefore considered active
 func (tdl *ToDoList) GetItems() []ToDoItem {
-	return tdl.GetOrderedItems(false)
-}
-
-func (tdl *ToDoList) GetOrderedItems(doneToBottom bool) []ToDoItem {
 	// TODO: Benchmark pre-allocation
 	liveView := tdl.ToDoItems.LiveView()
 	items := make([]ToDoItem, 0, len(liveView))
 	for _, item := range liveView {
-		if doneToBottom && item.Checked {
-			item.OrderValue.Value = item.OrderValue.Value + 1000
-		}
 		items = append(items, *item)
 	}
 

@@ -8,7 +8,7 @@
   </h1>
   <div class="ToDoListBody">
 
-	{{range .GetOrderedItems true}}
+	{{range .GetItems}}
 	<div class="ToDoItem {{if .Checked}}checked{{end}}">
 	  <button class="ToDoItemCheckbox"
 			  {{if .Checked}}
