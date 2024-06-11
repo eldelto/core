@@ -167,8 +167,8 @@ svg {
 	fill: var(--light-background-color);
 }
 
-button, svg {
-	transition: all .1s ease !important;
+button {
+	transition: transform .1s ease !important;
 }
 
 button:hover {
@@ -343,7 +343,7 @@ button:disabled:hover {
 	justify-content: center;
 }
 
-#AddItemBarButton>svg {
+#AddItemBarButton > svg {
 	fill: var(--light-brand-color);
 }
 
@@ -352,8 +352,16 @@ button:disabled:hover {
 	cursor: default;
 }
 
-#AddItemBarButton:disabled>svg {
+#AddItemBarButton:disabled > svg {
 	fill: var(--disabled-color);
+}
+
+#AddItemBarButton:enabled > #AddItemButtonDisabled {
+	display: none;
+}
+
+#AddItemBarButton:disabled > #AddItemButtonEnabled {
+	display: none;
 }
 
 .HeaderSpacer {
