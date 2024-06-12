@@ -128,7 +128,7 @@ func (s *Service) Fetch(userID uuid.UUID) (*Notebook, error) {
 		if errors.Is(err, errNotFound) {
 			return s.Create(userID)
 		}
-			return nil, err
+		return nil, err
 	}
 
 	return notebook, nil

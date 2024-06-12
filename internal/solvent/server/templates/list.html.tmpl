@@ -6,10 +6,16 @@
   <h1 class="ToDoListTitle" name="title" placeholder="Title">
 	{{.Title.Value}}
   </h1>
-  <div class="ToDoListBody">
+  <form method="POST" action="/lists/{{.Identifier}}/quick-edit"
+		class="ToDoListBody sortable"
+		hx-boost="true"
+		hx-target="closest .ToDoList"
+		hx-swap="outerHTML"
+		hx-trigger="end">
 
 	{{range .GetItems}}
 	<div class="ToDoItem {{if .Checked}}checked{{end}}">
+	  <input type="hidden" name="{{.Identifier}}" value="" />
 	  <button class="ToDoItemCheckbox"
 			  {{if .Checked}}
 			  hx-delete="/lists/{{$.Identifier}}/items/{{.Identifier}}/check"
@@ -27,7 +33,7 @@
 		</svg>
 	  </button>
 	  <span class="ToDoItemTitle">{{.Title}}</span>
-	  <span class="ToDoItemDragHandle" tabindex="0" role="button">
+	  <span class="ToDoItemDragHandle sort-handle" tabindex="0" role="button">
 		<svg width="24" height="24" viewBox="0 0 24 24">
 		  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"></path>
 		</svg>
@@ -40,24 +46,24 @@
 			  hx-swap="outerHTML"></button>
 	</div>
 	{{end}}
+  </form>
 
-	<form method="POST" action="/lists/{{$.Identifier}}/items"
-		  class="AddItemBar"
-		  hx-post="/lists/{{$.Identifier}}/items"
-		  hx-target="closest .ToDoList"
-		  hx-swap="outerHTML">
-      <button id="AddItemBarButton" type="submit" value="" disabled>
-        <svg id="AddItemButtonDisabled" width="24" height="24" viewBox="0 0 24 24">
-          <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
-        </svg>
-		<svg id="AddItemButtonEnabled" width="24" height="24" viewBox="0 0 24 24">
-		  <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
-		</svg>
-      </button>
-	  <input type="text" name="title" id="AddItemBarTitle"
-			 placeholder="New item" />
-    </form>
-  </div>
+  <form method="POST" action="/lists/{{$.Identifier}}/items"
+		class="AddItemBar"
+		hx-post="/lists/{{$.Identifier}}/items"
+		hx-target="closest .ToDoList"
+		hx-swap="outerHTML">
+	<button id="AddItemBarButton" type="submit" value="" disabled>
+	  <svg id="AddItemButtonDisabled" width="24" height="24" viewBox="0 0 24 24">
+		<path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
+	  </svg>
+	  <svg id="AddItemButtonEnabled" width="24" height="24" viewBox="0 0 24 24">
+		<path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+	  </svg>
+	</button>
+	<input type="text" name="title" id="AddItemBarTitle"
+		   placeholder="New item" />
+  </form>
 </div>
 {{end}}
 

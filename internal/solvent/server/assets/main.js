@@ -52,6 +52,40 @@ function init() {
 		});
 }
 
+htmx.onLoad(function(content) {
+	var sortables = content.querySelectorAll(".sortable");
+	for (var i = 0; i < sortables.length; i++) {
+		const sortable = sortables[i];
+		const sortableInstance = new Sortable(sortable, {
+			animation: 150,
+			handle: ".sort-handle",
+			ghostClass: 'blue-background-class',
+
+			// Make the `.htmx-indicator` unsortable
+			filter: ".htmx-indicator",
+			onMove: function (evt) {
+				return evt.related.className.indexOf('htmx-indicator') === -1;
+			},
+
+			onUpdate: function (evt) {
+				const input = evt.item.querySelector("input");
+				input.value = evt.newIndex;
+			},
+
+			// Disable sorting on the `end` event
+			onEnd: function (evt) {
+				console.log(this);
+				this.option("disabled", true);
+			}
+		});
+
+		// Re-enable sorting on the `htmx:afterSwap` event
+		sortable.addEventListener("htmx:afterRequest", function() {
+			sortableInstance.option("disabled", false);
+		});
+	}
+})
+
 document.addEventListener("DOMContentLoaded", function() {
 	// Resize textarea to fit the contained content.
 	document.querySelectorAll("textarea[data-auto-grow]")

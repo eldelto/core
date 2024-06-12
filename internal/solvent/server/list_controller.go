@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
@@ -27,6 +28,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "{id}"}:                         getList(service),
 			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
 			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
+			{Method: http.MethodPost, Path: "{id}/quick-edit"}:             quickEditList(service),
 			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
 			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}:       removeItem(service),
 			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
@@ -145,6 +147,63 @@ func updateList(service *solvent.Service) web.Handler {
 		}
 
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		return nil
+	}
+}
+
+func quickEditList(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		rawID := chi.URLParam(r, "id")
+		id, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		// TODO: Move into service.
+		notebook, err := service.Fetch(uuid.UUID{})
+		if err != nil {
+			return err
+		}
+
+		list, err := notebook.GetList(id)
+		if err != nil {
+			return err
+		}
+
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+
+		for rawItemID, values := range r.PostForm {
+			if len(values) < 1 {
+				continue
+			}
+
+			rawIndex := values[0]
+			if rawIndex == "" {
+				continue
+			}
+
+			index, err := strconv.Atoi(rawIndex)
+			if err != nil {
+				return err
+			}
+
+			itemID, err := uuid.Parse(rawItemID)
+			if err != nil {
+				return err
+			}
+
+			if err := list.MoveItem(itemID, index); err != nil {
+				return err
+			}
+		}
+
+		if _, err := service.Update(uuid.UUID{}, notebook); err != nil {
+			return err
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 }
