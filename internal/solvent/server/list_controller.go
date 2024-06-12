@@ -175,18 +175,9 @@ func quickEditList(service *solvent.Service) web.Handler {
 		}
 
 		for rawItemID, values := range r.PostForm {
+			fmt.Printf("%v: %v\n", rawItemID, values)
 			if len(values) < 1 {
 				continue
-			}
-
-			rawIndex := values[0]
-			if rawIndex == "" {
-				continue
-			}
-
-			index, err := strconv.Atoi(rawIndex)
-			if err != nil {
-				return err
 			}
 
 			itemID, err := uuid.Parse(rawItemID)
@@ -194,8 +185,32 @@ func quickEditList(service *solvent.Service) web.Handler {
 				return err
 			}
 
-			if err := list.MoveItem(itemID, index); err != nil {
-				return err
+			checked := false
+			for _, value := range values {
+				if value == "" {
+					continue
+				} else if value == "on" {
+					checked = true
+				} else {
+					index, err := strconv.Atoi(value)
+					if err != nil {
+						return err
+					}
+
+					if err := list.MoveItem(itemID, index); err != nil {
+						return err
+					}
+				}
+			}
+
+			if checked {
+				if _, err := list.CheckItem(itemID); err != nil {
+					return err
+				}
+			} else {
+				if _, err := list.UncheckItem(itemID); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -203,8 +218,8 @@ func quickEditList(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		w.WriteHeader(http.StatusNoContent)
-		return nil
+
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
 }
 
