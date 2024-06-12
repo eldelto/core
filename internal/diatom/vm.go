@@ -94,6 +94,13 @@ type traceEntry struct {
 	returnStack    Stack
 }
 
+type ExtensionFunc func(vm *VM)
+
+type Extension struct {
+	Addr      uint16
+	Functions []ExtensionFunc
+}
+
 type VM struct {
 	programCounter Word
 	dataStack      Stack
@@ -103,6 +110,7 @@ type VM struct {
 	output         io.Writer
 	memory         [MemorySize]byte
 	executionTrace collections.RingBuffer[traceEntry]
+	extensions     map[Word]ExtensionFunc
 }
 
 func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
@@ -116,6 +124,7 @@ func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 		input:          input,
 		output:         output,
 		executionTrace: collections.NewRingBuffer[traceEntry](StackSize),
+		extensions:     map[Word]ExtensionFunc{},
 	}
 	copy(vm.memory[:], program)
 
