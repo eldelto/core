@@ -232,7 +232,7 @@ button:disabled:hover {
 	font-weight: normal;
 }
 
-.ToDoList.checked .ToDoListTitle {
+.ToDoListTitle.checked {
 	text-decoration: line-through;
 	opacity: var(--inactive-opacity-light-bg);
 }
@@ -266,11 +266,6 @@ button:disabled:hover {
 	cursor: pointer;
 }
 
-.ToDoItem.checked > .ToDoItemCheckbox {
-	opacity: 1;
-	fill: var(--light-brand-color);
-}
-
 .ToDoItemTitle {
 	flex-shrink: 10000;
     max-height: 5em;
@@ -283,9 +278,29 @@ button:disabled:hover {
 	background: none;
 }
 
-.ToDoItem.checked>.ToDoItemTitle {
+.ToDoItem > input[checked] ~ .ToDoItemTitle {
 	text-decoration: line-through;
 	opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoItem > input + label{
+	background-image: url("/assets/icons/checkbox-blank-circle-outline.svg");
+	background-size: 30px 30px;
+	background-repeat: no-repeat;
+	transition: transform .1s ease;
+}
+
+.ToDoItem > input + label:hover{
+	transform: translateY(-2px);
+}
+
+.ToDoItem > input[checked]+label{
+	opacity: 1;
+	background-image: url("/assets/icons/check-circle-outline.svg");
+}
+
+.ToDoItem > input {
+	display: none;
 }
 
 .ToDoItemDelete {

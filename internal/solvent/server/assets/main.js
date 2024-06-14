@@ -31,17 +31,13 @@ function cancelLongPress(e) {
 }
 
 function init() {
-	document.querySelector("#AddItemBarTitle")
-		.addEventListener("input", e => {
+	document.querySelectorAll("#AddItemBarTitle")
+		.forEach(e => e.addEventListener("keyup", e => {
 			const addItemButton = document.querySelector("#AddItemBarButton");
-			if (e.target.value.length > 0) {
-				addItemButton.disabled = false;
-			} else {
-				addItemButton.disabled = true;
-			}
-		});
+			addItemButton.disabled = e.target.value.length < 1;
+		}));
 
-	document.querySelectorAll(".ToDoItemTitle")
+	document.querySelectorAll(".ToDoItemCheckbox")
 		.forEach(e => {
 			e.addEventListener("mousedown", startLongPress);
 			e.addEventListener("mousemove", cancelLongPress);
@@ -50,10 +46,15 @@ function init() {
 			e.addEventListener("touchmove", cancelLongPress);
 			e.addEventListener("touchend", cancelLongPress);
 		});
+
+	document.querySelectorAll("form")
+		.forEach(e => e.addEventListener("htmx:afterRequest", e => {
+			if (e.detail.successful) e.target.reset();
+		}));
 }
 
 htmx.onLoad(function(content) {
-	var sortables = content.querySelectorAll(".sortable");
+	var sortables = document.querySelectorAll(".sortable");
 	for (var i = 0; i < sortables.length; i++) {
 		const sortable = sortables[i];
 		const sortableInstance = new Sortable(sortable, {
@@ -74,7 +75,6 @@ htmx.onLoad(function(content) {
 
 			// Disable sorting on the `end` event
 			onEnd: function (evt) {
-				console.log(this);
 				this.option("disabled", true);
 			}
 		});

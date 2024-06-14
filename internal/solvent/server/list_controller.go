@@ -31,8 +31,6 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{id}/quick-edit"}:             quickEditList(service),
 			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
 			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}:       removeItem(service),
-			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
-			{Method: http.MethodDelete, Path: "{id}/items/{itemID}/check"}: uncheckItem(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -175,7 +173,6 @@ func quickEditList(service *solvent.Service) web.Handler {
 		}
 
 		for rawItemID, values := range r.PostForm {
-			fmt.Printf("%v: %v\n", rawItemID, values)
 			if len(values) < 1 {
 				continue
 			}
@@ -217,7 +214,6 @@ func quickEditList(service *solvent.Service) web.Handler {
 		if _, err := service.Update(uuid.UUID{}, notebook); err != nil {
 			return err
 		}
-
 
 		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
@@ -263,48 +259,6 @@ func removeItem(service *solvent.Service) web.Handler {
 		}
 
 		// TODO: Conditionally render subset everywhere.
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func checkItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		itemID, err := urlParamUUID(r, "itemID")
-		if err != nil {
-			return err
-		}
-
-		list, err := service.CheckItem(uuid.UUID{}, listID, itemID)
-		if err != nil {
-			return err
-		}
-
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func uncheckItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		itemID, err := urlParamUUID(r, "itemID")
-		if err != nil {
-			return err
-		}
-
-		list, err := service.UncheckItem(uuid.UUID{}, listID, itemID)
-		if err != nil {
-			return err
-		}
-
 		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
 }

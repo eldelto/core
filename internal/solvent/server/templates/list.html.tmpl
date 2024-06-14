@@ -1,45 +1,37 @@
 {{define "content"}}
 
-{{block "toDoListOnly" .}}
-<div class="ToDoList {{if .IsCompleted}}checked{{end}}">
-  <a id="edit-link" href="/lists/{{.Identifier}}/edit">Edit</a>
-  <h1 class="ToDoListTitle" name="title" placeholder="Title">
-	{{.Title.Value}}
-  </h1>
+<div class="ToDoList">
   <form method="POST" action="/lists/{{.Identifier}}/quick-edit"
-		class="ToDoListBody sortable"
-		hx-boost="true"
-		hx-target="closest .ToDoList"
-		hx-swap="outerHTML"
-		hx-push-url="false"
-		hx-trigger="end, change from:.ToDoItem>input">
+		id="ToDoItemForm"
+		hx-post="/lists/{{.Identifier}}/quick-edit"
+		hx-trigger="end, change target:.ToDoItem>input">
 
-	{{range .GetItems}}
-	<div class="ToDoItem {{if .Checked}}checked{{end}}">
-	  <input type="hidden" name="{{.Identifier}}" value="" />
-	  <input type="checkbox" name="{{.Identifier}}" id="{{.Identifier}}"
-			 {{if .Checked}}checked{{end}} />
-	  <label for="{{.Identifier}}" class="ToDoItemCheckbox">
-		<svg width="24" height="24" viewBox="0 0 24 24">
-		  {{if .Checked}}
-		  <path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M16.59 7.58L10 14.17L7.41 11.59L6 13L10 17L18 9L16.59 7.58Z" />
-		  {{else}}
-		  <path d="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"></path>
-		  {{end}}
-		</svg>
-		</label>
-	  <span class="ToDoItemTitle">{{.Title}}</span>
-	  <span class="ToDoItemDragHandle sort-handle" tabindex="0" role="button">
-		<svg width="24" height="24" viewBox="0 0 24 24">
-		  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"></path>
-		</svg>
-	  </span>
-	  <button class="ToDoItemDeleteButton" hidden
-			  hx-delete="/lists/{{$.Identifier}}/items/{{.Identifier}}"
-			  hx-trigger="delete-item from:closest .ToDoItem"
-			  hx-confirm="Delete the selected to-do item?"
-			  hx-target="closest .ToDoList"
-			  hx-swap="outerHTML"></button>
+	{{block "toDoListOnly" .}}
+	<a id="edit-link" href="/lists/{{.Identifier}}/edit">Edit</a>
+	<h1 class="ToDoListTitle {{if .IsCompleted}}checked{{end}}">
+	  {{.Title.Value}}
+	</h1>
+
+	<div class="ToDoItems sortable">
+	  {{range .GetItems}}
+	  <div class="ToDoItem">
+		<input type="hidden" name="{{.Identifier}}" value="" />
+		<input type="checkbox" name="{{.Identifier}}" id="{{.Identifier}}"
+			   {{if .Checked}}checked{{end}} />
+		<label for="{{.Identifier}}" class="ToDoItemCheckbox"></label>
+		<span class="ToDoItemTitle">{{.Title}}</span>
+		<span class="ToDoItemDragHandle sort-handle" tabindex="0" role="button">
+		  <svg width="24" height="24" viewBox="0 0 24 24">
+			<path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"></path>
+		  </svg>
+		</span>
+		<button class="ToDoItemDeleteButton" hidden
+				hx-delete="/lists/{{$.Identifier}}/items/{{.Identifier}}"
+				hx-trigger="delete-item from:closest .ToDoItem"
+				hx-confirm="Delete the selected to-do item?"
+				hx-target="#ToDoItemForm"></button>
+	  </div>
+	  {{end}}
 	</div>
 	{{end}}
   </form>
@@ -47,8 +39,7 @@
   <form method="POST" action="/lists/{{$.Identifier}}/items"
 		class="AddItemBar"
 		hx-post="/lists/{{$.Identifier}}/items"
-		hx-target="closest .ToDoList"
-		hx-swap="outerHTML">
+		hx-target="#ToDoItemForm">
 	<button id="AddItemBarButton" type="submit" value="" disabled>
 	  <svg id="AddItemButtonDisabled" width="24" height="24" viewBox="0 0 24 24">
 		<path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"></path>
@@ -61,6 +52,5 @@
 		   placeholder="New item" />
   </form>
 </div>
-{{end}}
 
 {{end}}
