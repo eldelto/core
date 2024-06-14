@@ -23,14 +23,14 @@ func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:                             getLists(service),
-			{Method: http.MethodPost, Path: ""}:                            createList(service),
-			{Method: http.MethodGet, Path: "{id}"}:                         getList(service),
-			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
-			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
-			{Method: http.MethodPost, Path: "{id}/quick-edit"}:             quickEditList(service),
-			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
-			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}:       removeItem(service),
+			{Method: http.MethodGet, Path: ""}:                       getLists(service),
+			{Method: http.MethodPost, Path: ""}:                      createList(service),
+			{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
+			{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
+			{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
+			{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
+			{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
+			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),

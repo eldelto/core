@@ -177,7 +177,7 @@ func (tdl *ToDoList) CheckItem(id uuid.UUID) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("failed to check item: %w", err)
 	}
 
-	if item.Checked == true {
+	if item.Checked {
 		return item.ID, nil
 	}
 
@@ -196,7 +196,7 @@ func (tdl *ToDoList) UncheckItem(id uuid.UUID) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("failed to uncheck item: %w", err)
 	}
 
-	if item.Checked == false {
+	if !item.Checked {
 		return item.ID, nil
 	}
 
