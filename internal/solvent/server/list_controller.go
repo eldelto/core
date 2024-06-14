@@ -23,16 +23,14 @@ func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:                             getLists(service),
-			{Method: http.MethodPost, Path: ""}:                            createList(service),
-			{Method: http.MethodGet, Path: "{id}"}:                         getList(service),
-			{Method: http.MethodGet, Path: "{id}/edit"}:                    editList(service),
-			{Method: http.MethodPost, Path: "{id}"}:                        updateList(service),
-			{Method: http.MethodPost, Path: "{id}/quick-edit"}:             quickEditList(service),
-			{Method: http.MethodPost, Path: "{id}/items"}:                  addItem(service),
-			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}:       removeItem(service),
-			{Method: http.MethodPut, Path: "{id}/items/{itemID}/check"}:    checkItem(service),
-			{Method: http.MethodDelete, Path: "{id}/items/{itemID}/check"}: uncheckItem(service),
+			{Method: http.MethodGet, Path: ""}:                       getLists(service),
+			{Method: http.MethodPost, Path: ""}:                      createList(service),
+			{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
+			{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
+			{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
+			{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
+			{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
+			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -179,23 +177,37 @@ func quickEditList(service *solvent.Service) web.Handler {
 				continue
 			}
 
-			rawIndex := values[0]
-			if rawIndex == "" {
-				continue
-			}
-
-			index, err := strconv.Atoi(rawIndex)
-			if err != nil {
-				return err
-			}
-
 			itemID, err := uuid.Parse(rawItemID)
 			if err != nil {
 				return err
 			}
 
-			if err := list.MoveItem(itemID, index); err != nil {
-				return err
+			checked := false
+			for _, value := range values {
+				if value == "" {
+					continue
+				} else if value == "on" {
+					checked = true
+				} else {
+					index, err := strconv.Atoi(value)
+					if err != nil {
+						return err
+					}
+
+					if err := list.MoveItem(itemID, index); err != nil {
+						return err
+					}
+				}
+			}
+
+			if checked {
+				if _, err := list.CheckItem(itemID); err != nil {
+					return err
+				}
+			} else {
+				if _, err := list.UncheckItem(itemID); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -203,8 +215,7 @@ func quickEditList(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		w.WriteHeader(http.StatusNoContent)
-		return nil
+		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
 }
 
@@ -248,48 +259,6 @@ func removeItem(service *solvent.Service) web.Handler {
 		}
 
 		// TODO: Conditionally render subset everywhere.
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func checkItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		itemID, err := urlParamUUID(r, "itemID")
-		if err != nil {
-			return err
-		}
-
-		list, err := service.CheckItem(uuid.UUID{}, listID, itemID)
-		if err != nil {
-			return err
-		}
-
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func uncheckItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		itemID, err := urlParamUUID(r, "itemID")
-		if err != nil {
-			return err
-		}
-
-		list, err := service.UncheckItem(uuid.UUID{}, listID, itemID)
-		if err != nil {
-			return err
-		}
-
 		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
 	}
 }
