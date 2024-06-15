@@ -167,12 +167,16 @@ svg {
 	fill: var(--light-background-color);
 }
 
-button {
-	transition: transform .1s ease !important;
+button, .action {
+	transition: transform .1s ease;
+	cursor: pointer;
+	color: var(--text-color);
+	opacity: var(--inactive-opacity-light-bg);
 }
 
-button:hover {
+button:hover, .action:hover {
 	transform: translateY(-2px);
+	text-decoration: underline;
 }
 
 button:disabled:hover {
@@ -217,6 +221,14 @@ button:disabled:hover {
 	visibility: hidden;
 }
 
+#edit-link {
+	float: right;
+	background-image: url("/assets/icons/edit-pen-icon.svg");
+	background-repeat: no-repeat;
+	padding-left: 1.5em;
+	margin-right: .5em;
+}
+
 .ToDoList {
 	width: 100%;
 	padding: 1em 1em .3em 1em;
@@ -227,7 +239,7 @@ button:disabled:hover {
 }
 
 .ToDoListTitle {
-	margin: .5em 0 .3em 0;
+	margin: .3em 0 .3em 0;
 	font-family: 'Merriweather Sans', sans-serif;
 	font-weight: normal;
 }
