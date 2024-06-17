@@ -99,6 +99,7 @@ type ExtensionFunc func(vm *VM)
 type Extension struct {
 	Addr      uint16
 	Functions []ExtensionFunc
+	Name      string
 }
 
 type VM struct {
@@ -133,6 +134,21 @@ func NewVM(program []byte, input io.Reader, output io.Writer) (*VM, error) {
 
 func NewDefaultVM(program []byte) (*VM, error) {
 	return NewVM(program, os.Stdin, os.Stdout)
+}
+
+func (vm *VM) RegisterExtension(ext Extension) error {
+	moduleAddr := Word(ext.Addr) << 16
+	for funcAddr, extFunc := range ext.Functions {
+		addr := moduleAddr | Word(funcAddr)
+		if _, ok := vm.extensions[addr]; ok {
+			return fmt.Errorf("extension %q: function already exists at address '%d'",
+				ext.Name, addr)
+		}
+
+		vm.extensions[addr] = extFunc
+	}
+
+	return nil
 }
 
 func (vm *VM) appendTraceEntry(instruction byte) {
@@ -599,6 +615,17 @@ func (vm *VM) execute() error {
 			if err := vm.storeByte(addr, byte(value)); err != nil {
 				return err
 			}
+		case ECALL:
+			addr, err := vm.dataStack.Pop()
+			if err != nil {
+				return err
+			}
+			extFunc, ok := vm.extensions[addr]
+			if !ok {
+				return fmt.Errorf("extension function at address '%d' not found",
+					addr)
+			}
+			extFunc(vm)
 		case DUMP:
 			endAddr, err := vm.dataStack.Pop()
 			if err != nil {

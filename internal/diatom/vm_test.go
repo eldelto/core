@@ -7,6 +7,17 @@ import (
 	. "github.com/eldelto/core/internal/testutils"
 )
 
+var testExtension = Extension{
+	Addr: 1,
+	Functions: []ExtensionFunc{
+		func(vm *VM) {
+			word, _ := vm.dataStack.Pop()
+			_ = vm.dataStack.Push(word * word)
+		},
+	},
+	Name: "Test Extension",
+}
+
 func TestVM(t *testing.T) {
 	tests := []struct {
 		assembly        string
@@ -50,6 +61,8 @@ func TestVM(t *testing.T) {
 		{"const 10 b@ exit 5", []Word{5}, []Word{}, false},
 		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{}, false},
 		{"const 777 const 20 ! const 20 @ exit 5", []Word{777}, []Word{}, false},
+		{"const 10 const 65536 ecall", []Word{100}, []Word{}, false},
+		{"const 10 const 5 ecall", []Word{}, []Word{}, true},
 		{"const 10 dump", []Word{}, []Word{}, false},
 
 		// TODO: Test failure modes
@@ -62,13 +75,18 @@ func TestVM(t *testing.T) {
 
 			vm, err := NewDefaultVM(program)
 			AssertNoError(t, err, "NewVM")
+			err = vm.RegisterExtension(testExtension)
+			AssertNoError(t, err, "RegisterExtension")
 
 			err = vm.Execute()
 			if tt.expectError {
 				AssertError(t, err, "vm.Execute")
 			} else {
+				AssertNoError(t, err, "vm.Execute")
+
 				dataSlice := vm.dataStack.data[:vm.dataStack.cursor]
 				AssertEquals(t, tt.wantDataStack, dataSlice, "vm.dataStack")
+
 				returnSlice := vm.returnStack.data[:vm.returnStack.cursor]
 				AssertEquals(t, tt.wantReturnStack, returnSlice, "vm.returnStack")
 			}
