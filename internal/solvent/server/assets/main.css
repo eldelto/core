@@ -167,16 +167,30 @@ svg {
 	fill: var(--light-background-color);
 }
 
-button, .action {
+.primary-action, .secondary-action {
 	transition: transform .1s ease;
 	cursor: pointer;
+}
+
+.primary-action {
+	color: var(--light-background-color);
+	border: none;
+	background-color: var(--light-brand-color);
+	font-size: 1em;
+	padding: .3em .5em;
+}
+
+.secondary-action {
 	color: var(--text-color);
 	opacity: var(--inactive-opacity-light-bg);
 }
 
-button:hover, .action:hover {
+button:hover, .primary-action:hover, .secondary-action:hover {
 	transform: translateY(-2px);
-	text-decoration: underline;
+}
+
+.secondary-action:hover {
+	opacity: 1;
 }
 
 button:disabled:hover {
