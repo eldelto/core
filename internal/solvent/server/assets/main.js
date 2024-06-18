@@ -21,7 +21,7 @@ function startLongPress(e) {
 	pressTimer = window.setTimeout(() => {
 		item.classList.remove(deletingClass);
 		item.dispatchEvent(deleteItemEvent());
-	}, 750);
+	}, 500);
 }
 
 function cancelLongPress(e) {
@@ -30,12 +30,18 @@ function cancelLongPress(e) {
 	clearTimeout(pressTimer);
 }
 
+function enableAddItemButton(e) {
+	const input = document.querySelector("#AddItemBarTitle");
+	const button = document.querySelector("#AddItemBarButton");
+	button.disabled = input.value.length < 1;
+}
+
 function init() {
-	document.querySelectorAll("#AddItemBarTitle")
-		.forEach(e => e.addEventListener("keyup", e => {
-			const addItemButton = document.querySelector("#AddItemBarButton");
-			addItemButton.disabled = e.target.value.length < 1;
-		}));
+	document.querySelectorAll(".AddItemBar")
+		.forEach(e => {
+			e.addEventListener("keyup", enableAddItemButton);
+			e.addEventListener("reset", enableAddItemButton);
+		});
 
 	document.querySelectorAll(".ToDoItemCheckbox")
 		.forEach(e => {
