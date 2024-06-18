@@ -5,9 +5,11 @@
 
 <form method="POST" action="/lists/{{.Identifier}}"
 	  class="ToDoList" data-quick-submit>
-  <a href="/lists/{{.Identifier}}" class="secondary-action">Cancel</a>
-  <button class="primary-action">Save</button>
   <textarea data-auto-grow name="text-patch" autofocus>{{.String}}</textarea>
+  <div id="ToDoListFooter">
+	<a href="/lists/{{.Identifier}}" class="secondary-action">Cancel</a>
+	<button class="primary-action">Save</button>
+  </div>
 </form>
 
 {{end}}

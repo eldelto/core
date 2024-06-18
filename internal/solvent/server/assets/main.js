@@ -6,8 +6,8 @@ function deleteItemEvent() { return new Event("delete-item") };
 function autosize(){
 	const el = this;
 	setTimeout(() => {
-		el.style.height = "auto";
-		el.style = "height:" + (el.scrollHeight) + "px;overflow-y:hidden;";
+		// Subtract 10px so the element doesn't keep growing.
+		el.style = "height:" + (el.scrollHeight - 10) + "px;overflow-y:hidden;";
 	}, 10);
 }
 

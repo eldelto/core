@@ -173,9 +173,9 @@ svg {
 }
 
 .primary-action {
-	color: var(--light-background-color);
-	border: none;
-	background-color: var(--light-brand-color);
+	color: var(--light-brand-color);
+	background-color: var(--light-background-color);
+	border: solid 1px var(--light-brand-color);
 	font-size: 1em;
 	padding: .3em .5em;
 }
@@ -183,6 +183,11 @@ svg {
 .secondary-action {
 	color: var(--text-color);
 	opacity: var(--inactive-opacity-light-bg);
+}
+
+.primary-action:hover {
+	color: var(--light-background-color);
+	background-color: var(--light-brand-color);
 }
 
 .secondary-action:hover {
@@ -237,7 +242,7 @@ svg {
 
 .ToDoList {
 	width: 100%;
-	padding: 1em 1em .3em 1em;
+	padding: 1em; 
 	box-sizing: border-box;
 	border-radius: 10px;
 	box-shadow: var(--box-shadow);
@@ -341,7 +346,7 @@ svg {
 	cursor: move;
 }
 
-.AddItemBar {
+.AddItemBar, #ToDoListFooter {
 	height: 3em;
 	width: 100%;
 	padding: .4em 0;
