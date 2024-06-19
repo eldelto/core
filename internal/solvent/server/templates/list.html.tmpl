@@ -7,7 +7,7 @@
 		hx-trigger="end, change target:.ToDoItem>input">
 
 	{{block "toDoListOnly" .}}
-	<a href="/lists/{{.Identifier}}/edit" id="edit-link" class="secondary-action">Bulk edit</a>
+	<a href="/lists/{{.Identifier}}/edit" id="edit-link" class="edit">Bulk edit</a>
 	<h1 class="ToDoListTitle {{if .IsCompleted}}checked{{end}}">
 	  {{.Title.Value}}
 	</h1>

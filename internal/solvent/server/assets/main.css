@@ -168,29 +168,74 @@ svg {
 	fill: var(--light-background-color);
 }
 
-.primary-action, .secondary-action {
+.confirm,
+.cancel,
+.edit {
 	cursor: pointer;
-}
-
-.primary-action {
-	color: var(--light-brand-color);
-	background-color: var(--light-background-color);
-	border: solid 1px var(--light-brand-color);
 	font-size: 1em;
+	height: 2.2em;
 	padding: .3em .5em;
+	align-items: center;
+	display: flex;
+	transition: all ease .1s;
 }
 
-.secondary-action {
-	color: var(--text-color);
-	opacity: var(--inactive-opacity-light-bg);
+.confirm::before,
+.cancel::before,
+.edit::before {
+	content: "";
+	background-repeat: no-repeat;
+	background-size: 1.5em 1.5em;
+	width: 2em;
+	height: 1.5em;
+	display: inline-block;
 }
 
-.primary-action:hover {
+.confirm {
 	color: var(--light-background-color);
+	background-color: var(--dark-brand-color);
+	border: none;
+	border-bottom: solid 2px var(--dark-brand-color);
+}
+
+.confirm::before {
+	background-image: url("/assets/icons/checked-white.svg");
+}
+
+.confirm:hover {
 	background-color: var(--light-brand-color);
 }
 
-.secondary-action:hover {
+.cancel {
+	color: var(--alert-color);
+}
+
+.cancel::before {
+	background-image: url("/assets/icons/cancel.svg");
+}
+
+.edit {
+	color: var(--dark-brand-color);
+}
+
+.edit::before {
+	background-image: url("/assets/icons/edit.svg");
+	background-size: 1.3em 1.3em;
+	width: 1.7em;
+}
+
+.edit, .cancel {
+	opacity: var(--inactive-opacity);
+}
+
+.confirm:hover,
+.cancel:hover,
+.edit:hover {
+	transform: translateY(-1px);
+}
+
+.cancel:hover,
+.edit:hover {
 	opacity: 1;
 }
 
@@ -234,15 +279,11 @@ svg {
 
 #edit-link {
 	float: right;
-	background-image: url("/assets/icons/edit-pen-icon.svg");
-	background-repeat: no-repeat;
-	padding-left: 1.5em;
-	margin-right: .5em;
 }
 
 .ToDoList {
 	width: 100%;
-	padding: 1em; 
+	padding: 1em;
 	box-sizing: border-box;
 	border-radius: 10px;
 	box-shadow: var(--box-shadow);
@@ -291,8 +332,8 @@ svg {
 
 .ToDoItemTitle {
 	flex-shrink: 10000;
-    max-height: 5em;
-    overflow-y: auto;
+	max-height: 5em;
+	overflow-y: auto;
 	font-size: 1em;
 	margin: 0 .3em;
 	padding: 0 .5em;
@@ -314,7 +355,7 @@ svg {
 
 .ToDoItem > input[checked]+label{
 	opacity: 1;
-	background-image: url("/assets/icons/check-circle-outline.svg");
+	background-image: url("/assets/icons/checked-brand.svg");
 }
 
 .ToDoItem > input {
