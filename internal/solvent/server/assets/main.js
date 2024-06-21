@@ -60,7 +60,7 @@ function init() {
 }
 
 htmx.onLoad(function(content) {
-	var sortables = document.querySelectorAll(".sortable");
+	const sortables = content.querySelectorAll(".sortable");
 	for (var i = 0; i < sortables.length; i++) {
 		const sortable = sortables[i];
 		const sortableInstance = new Sortable(sortable, {
