@@ -48,9 +48,9 @@ function init() {
 			e.addEventListener("mousedown", startLongPress);
 			e.addEventListener("mousemove", cancelLongPress);
 			e.addEventListener("mouseup", cancelLongPress);
-			e.addEventListener("touchstart", startLongPress);
-			e.addEventListener("touchmove", cancelLongPress);
-			e.addEventListener("touchend", cancelLongPress);
+			e.addEventListener("touchstart", startLongPress, {passive: true});
+			e.addEventListener("touchmove", cancelLongPress, {passive: true});
+			e.addEventListener("touchend", cancelLongPress, {passive: true});
 		});
 
 	document.querySelectorAll("form")

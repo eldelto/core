@@ -11,23 +11,14 @@
 	--dark-brand-color: #21897e;
 	--accent-color: #ff9f1c;
 	--alert-color: #a20021;
-	--inactive-opacity: .6;
-	--inactive-opacity-light-bg: .2;
+	--inactive-opacity: .7;
+	--inactive-opacity-light-bg: .3;
 	--disabled-color: black;
 	--disabled-opacity: .2;
-	--disabled-opacity-light-bg: .2;
 	--light-background-color: #f6f7eb;
 	--border-radius: 6px;
 	--box-shadow: 0px 2px 3px rgba(0, 0, 0, .3);
 }
-
-/*:root {
-  --light-brand-color: #abf0e9;
-  --dark-brand-color: #63b7af;
-  --accent-color: #ff9f1c;
-  --alert-color: #a20021;
-  --light-background-color: #f6f7eb;
-}*/
 
 @font-face {
 	font-family: 'Pattaya';
@@ -91,7 +82,6 @@ svg {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	/*box-shadow: 0px 1px 5px rgba(0, 0, 0, .2);*/
 }
 
 .footer {
@@ -117,7 +107,7 @@ svg {
 	cursor: pointer;
 }
 
-.menuButton>svg {
+.menuButton > svg {
 	fill: var(--light-background-color);
 }
 
@@ -168,20 +158,26 @@ svg {
 	fill: var(--light-background-color);
 }
 
+button,
 .confirm,
+.action,
 .cancel,
 .edit {
 	cursor: pointer;
-	font-size: 1em;
-	height: 2.2em;
-	padding: .3em .5em;
-	align-items: center;
-	display: flex;
 	transition: all ease .1s;
 }
 
+.confirm,
+.action,
+.cancel,
+.edit {
+	font-size: 1em;
+	padding: .3em .5em;
+	align-items: center;
+	display: flex;
+}
+
 .confirm::before,
-.cancel::before,
 .edit::before {
 	content: "";
 	background-repeat: no-repeat;
@@ -210,10 +206,6 @@ svg {
 	color: var(--alert-color);
 }
 
-.cancel::before {
-	background-image: url("/assets/icons/cancel.svg");
-}
-
 .edit {
 	color: var(--dark-brand-color);
 }
@@ -228,15 +220,23 @@ svg {
 	opacity: var(--inactive-opacity);
 }
 
+button:hover,
 .confirm:hover,
+.action:hover,
 .cancel:hover,
 .edit:hover {
 	transform: translateY(-1px);
 }
 
+button:disabled:hover {
+	transform: none;
+}
+
+.action:hover,
 .cancel:hover,
 .edit:hover {
 	opacity: 1;
+	text-decoration: underline;
 }
 
 .ListViewSearchBarLogo {
@@ -247,7 +247,7 @@ svg {
 	cursor: pointer;
 }
 
-.ListViewSearchBarLogo>svg {
+.ListViewSearchBarLogo > svg {
 	fill: var(--text-color);
 	opacity: var(--inactive-opacity-light-bg);
 }
@@ -372,10 +372,6 @@ svg {
 	visibility: hidden;
 }
 
-.ToDoItemDelete>svg {
-	fill: var(--alert-color);
-}
-
 .ToDoItemTitle:focus+.ToDoItemDelete {
 	visibility: visible;
 }
@@ -390,7 +386,7 @@ svg {
 .AddItemBar, #ToDoListFooter {
 	height: 3em;
 	width: 100%;
-	padding: .4em 0;
+	padding: .4em 0 0 0;
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: row;
@@ -422,11 +418,7 @@ svg {
 #AddItemBarButton:disabled {
 	background-image: url("/assets/icons/plus.svg");
 	opacity: var(--disabled-opacity);
-}
-
-.HeaderSpacer {
-	height: 2em;
-	width: 2em;
+	cursor: default;
 }
 
 .HeaderTitle {
@@ -446,7 +438,7 @@ textarea[name="text-patch"] {
 }
 
 .deleting {
-	transition: all 500ms ease;
+	transition: all 250ms ease;
 	transition-delay: 250ms;
 	background-color: var(--alert-color);
 	color: var(--light-background-color);

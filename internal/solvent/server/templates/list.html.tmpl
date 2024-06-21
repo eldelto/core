@@ -19,7 +19,7 @@
 		<input type="checkbox" name="{{.Identifier}}" id="{{.Identifier}}"
 			   {{if .Checked}}checked{{end}} />
 		<label for="{{.Identifier}}"
-			   class="ToDoItemCheckbox secondary-action"></label>
+			   class="ToDoItemCheckbox action"></label>
 		<span class="ToDoItemTitle">{{.Title}}</span>
 		<span class="ToDoItemDragHandle sort-handle" tabindex="0" role="button">
 		  <svg width="24" height="24" viewBox="0 0 24 24">
@@ -30,7 +30,9 @@
 				hx-delete="/lists/{{$.Identifier}}/items/{{.Identifier}}"
 				hx-trigger="delete-item from:closest .ToDoItem"
 				hx-confirm="Delete the selected to-do item?"
-				hx-target="#ToDoItemForm"></button>
+				hx-target="#ToDoItemForm"
+				aria-label="delete item">
+		</button>
 	  </div>
 	  {{end}}
 	</div>
@@ -41,7 +43,11 @@
 		class="AddItemBar"
 		hx-post="/lists/{{$.Identifier}}/items"
 		hx-target="#ToDoItemForm">
-	<button id="AddItemBarButton" type="submit" value="" disabled>
+	<button id="AddItemBarButton"
+			type="submit"
+			value=""
+			aria-label="add item"
+			disabled>
 	</button>
 	<input type="text" name="title" id="AddItemBarTitle"
 		   placeholder="New item" />
