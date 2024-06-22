@@ -317,6 +317,7 @@ button:disabled:hover {
 	justify-content: space-between;
 	align-items: center;
 	border-radius: var(--border-radius);
+	background-color: var(--light-background-color);
 }
 
 .ToDoItemCheckbox {
@@ -442,4 +443,12 @@ textarea[name="text-patch"] {
 	transition-delay: 250ms;
 	background-color: var(--alert-color);
 	color: var(--light-background-color);
+}
+
+.sortDrag {
+	border: dashed 1px var(--text-color);
+}
+
+.sortGhost {
+	opacity: 0;
 }

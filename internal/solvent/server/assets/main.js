@@ -65,8 +65,9 @@ htmx.onLoad(function(content) {
 		const sortable = sortables[i];
 		const sortableInstance = new Sortable(sortable, {
 			animation: 150,
-			handle: ".sort-handle",
-			ghostClass: 'blue-background-class',
+			handle: ".sortHandle",
+			dragClass: "sortDrag",
+			ghostClass: "sortGhost",
 
 			// Make the `.htmx-indicator` unsortable
 			filter: ".htmx-indicator",
