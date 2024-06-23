@@ -1,0 +1,16 @@
+{{define "content"}}
+<table>
+  <thead>
+	<td>Name</td>
+	<td>Amount</td>
+  </thead>
+  <tbody>
+	{{range .}}
+	<tr>
+	  <td>{{.Name}}</td>
+	  <td>{{.Amount.String}}</td>
+	</tr>
+	{{end}}
+  </tbody>
+</table>
+{{end}}

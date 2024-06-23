@@ -1,10 +1,15 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/eldelto/core/internal/ofx"
 	"github.com/eldelto/core/internal/web"
+)
+
+var (
+	templater      = web.NewTemplater(TemplatesFS)
+	resultTemplate = templater.GetP("expense-result.html")
 )
 
 func NewExpensesController() *web.Controller {
@@ -18,7 +23,19 @@ func NewExpensesController() *web.Controller {
 
 func calculateExpenses() web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		fmt.Println("Testobjekt")
-		return nil
+		file, _, err := r.FormFile("moneten")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		// TODO: Check file type
+
+		transactions, err := ofx.Parse(file)
+		if err != nil {
+			return err
+		}
+
+		return resultTemplate.Execute(w, transactions)
 	}
 }

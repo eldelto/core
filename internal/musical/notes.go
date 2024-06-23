@@ -2,38 +2,10 @@ package musical
 
 import (
 	"fmt"
+	"github.com/eldelto/core/internal/util"
 	"math"
-	"slices"
 	"strconv"
-
-	"golang.org/x/exp/constraints"
 )
-
-func ClampI[A constraints.Integer](value, min, max A) A {
-	if value < min {
-		return min
-	} else if value > max {
-		return max
-	} else {
-		return value
-	}
-}
-
-func AbsI[A constraints.Integer](value A) A {
-	if value < 0 {
-		return -value
-	}
-
-	return value
-}
-
-func ReverseCopy[T any](slice []T) []T {
-	result := make([]T, len(slice))
-	copy(result, slice)
-
-	slices.Reverse(result)
-	return result
-}
 
 type Accidental int
 
@@ -83,7 +55,7 @@ var baseOctave = []Note{
 	B,
 }
 
-var baseOctaveReversed = ReverseCopy(baseOctave)
+var baseOctaveReversed = util.ReverseCopy(baseOctave)
 
 func (n Note) totalValue() uint {
 	return n.value + uint(n.accidental) + n.octave*(B.value+1)
@@ -127,7 +99,11 @@ func (n Note) TransposeSemitone(x int) Note {
 		return n.raiseSemitone(uint(x))
 	}
 
-	return n.lowerSemitone(uint(AbsI(x)))
+	return n.lowerSemitone(uint(util.AbsI(x)))
+}
+
+func AbsI(x int) {
+	panic("unimplemented")
 }
 
 func (n Note) raiseSemitone(x uint) Note {
@@ -141,7 +117,7 @@ func (n Note) lowerSemitone(x uint) Note {
 
 func (n Note) TransposeOctave(x int) Note {
 	o := int(n.octave) + x
-	n.octave = uint(ClampI(o, 0, math.MaxInt))
+	n.octave = uint(util.ClampI(o, 0, math.MaxInt))
 	return n
 }
 

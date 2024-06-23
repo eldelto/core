@@ -282,19 +282,6 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Noteb
 		}
 	}
 
-	// TODO: Properly create/remove items based on diff.
-	/*
-			   Test data:
-			   - [ ]  as dfsdf
-		       - [x] asdfs df
-		       - [X]a sd fs
-		       - asd df ef
-		       -s asd f wf
-		       asdf s d f w
-		       []asdf sd f df
-		       [X]asdf e f sd f
-	*/
-
 	return s.Update(userID, notebook)
 }
 
