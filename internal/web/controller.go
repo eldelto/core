@@ -28,14 +28,24 @@ type Handler func(http.ResponseWriter, *http.Request) error
 
 type HandlerProvider func(http.Handler) http.Handler
 
+type ErrorHandler func(http.ResponseWriter, *http.Request, error) Handler
+
 type Controller struct {
-	BasePath   string
-	Handlers   map[Endpoint]Handler
-	Middleware []HandlerProvider
+	BasePath     string
+	Handlers     map[Endpoint]Handler
+	Middleware   []HandlerProvider
+	ErrorHandler ErrorHandler
 }
 
 func (c *Controller) middleware(handler Handler) http.Handler {
-	next := ControllerMiddleware(handler)
+	var next http.Handler
+	if c.ErrorHandler != nil {
+		next = withErrorHandler(handler, c.ErrorHandler)
+	} else {
+		next = handleError(handler)
+	}
+	next = BaseMiddleware(next)
+
 	for _, mw := range c.Middleware {
 		next = mw(next)
 	}

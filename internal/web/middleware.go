@@ -15,19 +15,21 @@ func BaseMiddleware(next http.Handler) http.Handler {
 	return next
 }
 
-func ControllerMiddleware(handler Handler) http.Handler {
-	next := handleError(handler)
-	next = BaseMiddleware(next)
-
-	return next
-}
-
 func handleError(handler Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := handler(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("Error while handling request: %v", err)
+		}
+	})
+}
+
+func withErrorHandler(handler Handler, errorHandler ErrorHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := handler(w, r)
+		if err != nil {
+			handleError(errorHandler(w, r, err)).ServeHTTP(w, r)
 		}
 	})
 }

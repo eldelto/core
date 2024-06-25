@@ -133,4 +133,10 @@ document.addEventListener("DOMContentLoaded", function() {
 	});
 
 	init();
+
+	htmx.on("htmx:responseError", function (evt) {
+		const dialog = document.querySelector("#error-dialog");
+		dialog.innerHTML = evt.detail.xhr.response;
+		dialog.showModal();
+    });
 });

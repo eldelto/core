@@ -17,6 +17,7 @@ var (
 	listsTemplate    = templater.GetP("lists.html")
 	listTemplate     = templater.GetP("list.html")
 	editListTemplate = templater.GetP("edit-list.html")
+	errorTemplate    = templater.GetP("error.html")
 )
 
 func NewListController(service *solvent.Service) *web.Controller {
@@ -34,6 +35,14 @@ func NewListController(service *solvent.Service) *web.Controller {
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
+		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) web.Handler {
+
+			return func(w http.ResponseWriter, r *http.Request) error {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Header().Set(web.ContentTypeHeader, web.ContentTypeHTML)
+				return errorTemplate.ExecuteTemplate(w, "error", err.Error())
+			}
 		},
 	}
 }
