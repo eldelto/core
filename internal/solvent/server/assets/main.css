@@ -285,6 +285,7 @@ button:disabled:hover {
 	width: 100%;
 	padding: 1em;
 	box-sizing: border-box;
+	border: none;
 	border-radius: 10px;
 	box-shadow: var(--box-shadow);
 	background-color: var(--light-background-color);
@@ -451,4 +452,14 @@ textarea[name="text-patch"] {
 
 .sortGhost {
 	opacity: 0;
+}
+
+#error-dialog > form {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+#error-dialog::backdrop {
+	backdrop-filter: saturate(.4);
 }
