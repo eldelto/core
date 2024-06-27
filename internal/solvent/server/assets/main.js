@@ -21,7 +21,7 @@ function startLongPress(e) {
 	pressTimer = window.setTimeout(() => {
 		item.classList.remove(deletingClass);
 		item.dispatchEvent(deleteItemEvent());
-	}, 500);
+	}, 450);
 }
 
 function cancelLongPress(e) {
@@ -109,7 +109,6 @@ document.addEventListener("DOMContentLoaded", function() {
 		});
 
 	// TODO: Move shortcuts into HTMX.
-	// Submit form on ctrl + enter.
 	document.querySelectorAll("form[data-quick-submit]")
 		.forEach(e => {
 			e.addEventListener("keydown", e => {
@@ -125,6 +124,13 @@ document.addEventListener("DOMContentLoaded", function() {
 		if (e.key == "e" && e.ctrlKey) {
 			const editLink = document.querySelector("#edit-link");
 			editLink && editLink.click();
+			e.preventDefault();
+		}
+	});
+	body.addEventListener("keydown", e => {
+		if (e.key == "a" && e.ctrlKey) {
+			const addItemInput = document.querySelector("#AddItemBarTitle");
+			addItemInput.focus();
 			e.preventDefault();
 		}
 	});
