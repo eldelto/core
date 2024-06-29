@@ -78,7 +78,7 @@ type TodoList struct {
 	CreatedAt int64
 	UpdatedAt int64
 	Title     string
-	items     []TodoItem
+	Items     []TodoItem
 }
 
 func NewTodoList(title string) *TodoList {
@@ -87,12 +87,12 @@ func NewTodoList(title string) *TodoList {
 		CreatedAt: now,
 		UpdatedAt: now,
 		Title:     title,
-		items:     []TodoItem{},
+		Items:     []TodoItem{},
 	}
 }
 
 func (l *TodoList) getItem(title string) (*TodoItem, uint) {
-	for i, item := range l.items {
+	for i, item := range l.Items {
 		if item.Title == title {
 			return &item, uint(i)
 		}
@@ -101,13 +101,18 @@ func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 	return nil, 0
 }
 
+func (l *TodoList) AddItem(title string) {
+	item := NewTodoItem(title)
+	l.Items = append(l.Items, item)
+}
+
 func (l *TodoList) CheckItem(title string) {
 	item, index := l.getItem(title)
 	if item == nil {
 		return
 	}
 
-	l.items[index].Check()
+	l.Items[index].Check()
 }
 
 func (l *TodoList) UncheckItem(title string) {
@@ -116,7 +121,7 @@ func (l *TodoList) UncheckItem(title string) {
 		return
 	}
 
-	l.items[index].Uncheck()
+	l.Items[index].Uncheck()
 }
 
 func (l *TodoList) RemoveItem(title string) {
@@ -125,7 +130,7 @@ func (l *TodoList) RemoveItem(title string) {
 		return
 	}
 
-	l.items = append(l.items[:index], l.items[index+1:]...)
+	l.Items = append(l.Items[:index], l.Items[index+1:]...)
 }
 
 func (l *TodoList) MoveItem(title string, targetIndex uint) {
@@ -134,10 +139,22 @@ func (l *TodoList) MoveItem(title string, targetIndex uint) {
 		return
 	}
 
-	targetIndex = util.ClampI(targetIndex, 0, uint(len(l.items)-1))
+	targetIndex = util.ClampI(targetIndex, 0, uint(len(l.Items)-1))
 
 	l.RemoveItem(title)
+	l.Items = append(l.Items[:targetIndex],
+		append([]TodoItem{*item}, l.Items[targetIndex:]...)...)
+}
 
-	newItems := append(l.items[:targetIndex], *item)
-	l.items = append(newItems, l.items[targetIndex+1:]...)
+func (l *TodoList) Done() bool {
+	if len(l.Items) == 0 {
+		return false
+	}
+
+	for _, item := range l.Items {
+		if !item.Checked {
+			return false
+		}
+	}
+	return true
 }
