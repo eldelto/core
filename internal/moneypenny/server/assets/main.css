@@ -1,12 +1,19 @@
 @font-face {
     font-family: Playwrite;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 300;
     src: url(/assets/Playwrite.ttf);
+}
+
+@font-face {
+    font-family: Grundschrift;
+    font-style: normal;
+    font-weight: 200;
+    src: url(/assets/Grundschrift.ttf);
 }
 body{
 	background-color:#e57b8e;
-	font-family: Playwrite;
+	font-family: Grundschrift;
 }
 button {background-color:#f3e88a; border: dotted 5px #54cfc4; 
         border-radius: 20px; padding: 22px 50px}
@@ -14,4 +21,13 @@ button {background-color:#f3e88a; border: dotted 5px #54cfc4;
 button:hover {background-color:lightseagreen;
 			  cursor:pointer;
 			  transform: translate(34px)}
-h1 {color: #f3e88a; border-bottom: dotted 5px #54cfc4;}
+h1 {font-family: Playwrite; color: #f3e88a; border-bottom: dotted 5px #54cfc4;}
+
+td {border: dotted 2.5px #fffdfd; 
+}
+tbody > tr:nth-child(odd) {
+    background-color: #f3e88a;
+}
+table {border-collapse: collapse;
+}
+thead {background-color: lightseagreen}
