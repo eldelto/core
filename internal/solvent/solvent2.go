@@ -1,10 +1,13 @@
 package solvent
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/util"
+	"github.com/google/uuid"
 )
 
 func currentTimestamp() int64 {
@@ -77,18 +80,25 @@ func (t *TodoItem) String() string {
 type TodoList struct {
 	CreatedAt int64
 	UpdatedAt int64
+	ID        uuid.UUID
 	Title     string
 	Items     []TodoItem
 }
 
-func NewTodoList(title string) *TodoList {
+func NewTodoList(title string) (*TodoList, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate ID for todo list: %w", err)
+	}
+
 	now := currentTimestamp()
 	return &TodoList{
 		CreatedAt: now,
 		UpdatedAt: now,
+		ID:        id,
 		Title:     title,
 		Items:     []TodoItem{},
-	}
+	}, nil
 }
 
 func (l *TodoList) getItem(title string) (*TodoItem, uint) {
@@ -157,4 +167,38 @@ func (l *TodoList) Done() bool {
 		}
 	}
 	return true
+}
+
+type Notebook2 struct {
+	Lists map[string]TodoList
+}
+
+func NewNotebook2() *Notebook2 {
+	return &Notebook2{
+		Lists: map[string]TodoList{},
+	}
+}
+
+func (n *Notebook2) ActiveLists() []TodoList {
+	lists := make([]TodoList, 0, len(n.Lists))
+
+	for _, l := range n.Lists {
+		lists = append(lists, l)
+	}
+
+	slices.SortFunc(lists, func(a, b TodoList) int {
+		return int(a.CreatedAt - b.CreatedAt)
+	})
+
+	return lists
+}
+
+func (n *Notebook2) NewList(title string) (*TodoList, error) {
+	l, err := NewTodoList(title)
+	if err != nil {
+		return nil, err
+	}
+
+	n.Lists[l.Title] = *l
+	return l, nil
 }

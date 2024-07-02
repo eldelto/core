@@ -1,14 +1,12 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -24,14 +22,16 @@ func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:                       getLists(service),
-			{Method: http.MethodPost, Path: ""}:                      createList(service),
-			{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
-			{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
-			{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
-			{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
-			{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
-			{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
+			{Method: http.MethodGet, Path: ""}:  getLists(service),
+			{Method: http.MethodPost, Path: ""}: createList(service),
+			/*
+				{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
+				{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
+				{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
+				{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
+				{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
+				{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
+			*/
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -39,6 +39,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) web.Handler {
 
 			return func(w http.ResponseWriter, r *http.Request) error {
+				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Header().Set(web.ContentTypeHeader, web.ContentTypeHTML)
 				return errorTemplate.ExecuteTemplate(w, "error", err.Error())
@@ -48,21 +49,21 @@ func NewListController(service *solvent.Service) *web.Controller {
 }
 
 type listsData struct {
-	Open      []*solvent.ToDoList
-	Completed []*solvent.ToDoList
+	Open      []solvent.TodoList
+	Completed []solvent.TodoList
 }
 
 func getLists(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// TODO: Use actual user ID.
-		notebook, err := service.Fetch(uuid.UUID{})
+		notebook, err := service.FetchNotebook(uuid.UUID{})
 		if err != nil {
 			return err
 		}
 
 		data := listsData{
-			Open:      notebook.GetOpenLists(),
-			Completed: notebook.GetCompletedLists(),
+			Open:      notebook.ActiveLists(),
+			Completed: []solvent.TodoList{},
 		}
 
 		return listsTemplate.Execute(w, data)
@@ -72,12 +73,18 @@ func getLists(service *solvent.Service) web.Handler {
 func createList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// TODO: User actual user ID.
-		list, err := service.CreateList(uuid.UUID{})
+		var list solvent.TodoList
+		_, err := service.UpdateNotebook(uuid.UUID{},
+			func(n *solvent.Notebook2) error {
+				l, err := n.NewList("")
+				list = *l
+				return err
+			})
 		if err != nil {
 			return err
 		}
 
-		redirectURL, err := url.JoinPath("/lists", list.Identifier(), "edit")
+		redirectURL, err := url.JoinPath("/lists", list.ID.String(), "edit")
 		if err != nil {
 			return err
 		}
@@ -87,6 +94,7 @@ func createList(service *solvent.Service) web.Handler {
 	}
 }
 
+/*
 func getList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		rawID := chi.URLParam(r, "id")
@@ -286,3 +294,4 @@ func urlParamUUID(r *http.Request, key string) (uuid.UUID, error) {
 //func fromHTMX(r *http.Request) bool {
 //	return r.Header.Get("Hx-Request") == "true"
 //}
+*/
