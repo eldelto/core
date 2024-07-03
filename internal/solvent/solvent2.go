@@ -101,6 +101,16 @@ func NewTodoList(title string) (*TodoList, error) {
 	}, nil
 }
 
+
+func (l *TodoList) updateUpdatedAt() {
+	l.UpdatedAt = currentTimestamp()
+}
+
+func (l *TodoList) Rename(title string) {
+	l.Title = title
+	l.updateUpdatedAt()
+}
+
 func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 	for i, item := range l.Items {
 		if item.Title == title {
@@ -114,6 +124,7 @@ func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 func (l *TodoList) AddItem(title string) {
 	item := NewTodoItem(title)
 	l.Items = append(l.Items, item)
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) CheckItem(title string) {
@@ -123,6 +134,7 @@ func (l *TodoList) CheckItem(title string) {
 	}
 
 	l.Items[index].Check()
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) UncheckItem(title string) {
@@ -132,6 +144,7 @@ func (l *TodoList) UncheckItem(title string) {
 	}
 
 	l.Items[index].Uncheck()
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) RemoveItem(title string) {
@@ -141,6 +154,7 @@ func (l *TodoList) RemoveItem(title string) {
 	}
 
 	l.Items = append(l.Items[:index], l.Items[index+1:]...)
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) MoveItem(title string, targetIndex uint) {
@@ -154,6 +168,7 @@ func (l *TodoList) MoveItem(title string, targetIndex uint) {
 	l.RemoveItem(title)
 	l.Items = append(l.Items[:targetIndex],
 		append([]TodoItem{*item}, l.Items[targetIndex:]...)...)
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) Done() bool {
@@ -169,13 +184,27 @@ func (l *TodoList) Done() bool {
 	return true
 }
 
+func (l *TodoList) String() string {
+	b := strings.Builder{}
+	b.WriteString(l.Title)
+	b.WriteByte('\n')
+	b.WriteByte('\n')
+
+	for _, item := range l.Items {
+		b.WriteString(item.String())
+		b.WriteByte('\n')
+	}
+
+	return b.String()
+}
+
 type Notebook2 struct {
-	Lists map[string]TodoList
+	Lists map[uuid.UUID]TodoList
 }
 
 func NewNotebook2() *Notebook2 {
 	return &Notebook2{
-		Lists: map[string]TodoList{},
+		Lists: map[uuid.UUID]TodoList{},
 	}
 }
 
@@ -199,6 +228,6 @@ func (n *Notebook2) NewList(title string) (*TodoList, error) {
 		return nil, err
 	}
 
-	n.Lists[l.Title] = *l
+	n.Lists[l.ID] = *l
 	return l, nil
 }

@@ -1,25 +1,25 @@
 {{define "content"}}
 
 <div class="ToDoList">
-  <form method="POST" action="/lists/{{.Identifier}}/quick-edit"
+  <form method="POST" action="/lists/{{.ID}}/quick-edit"
 		id="ToDoItemForm"
-		hx-post="/lists/{{.Identifier}}/quick-edit"
+		hx-post="/lists/{{.ID}}/quick-edit"
 		hx-trigger="end, change target:.ToDoItem>input">
 
 	{{block "toDoListOnly" .}}
 	<div>
-	  <a href="/lists/{{.Identifier}}/edit" id="edit-link" class="edit">Edit</a>
-	  <h1 class="ToDoListTitle {{if .IsCompleted}}checked{{end}}">
-		{{.Title.Value}}
+	  <a href="/lists/{{.ID}}/edit" id="edit-link" class="edit">Edit</a>
+	  <h1 class="ToDoListTitle {{if .Done}}checked{{end}}">
+		{{.Title}}
 	  </h1>
 
 	  <div class="ToDoItems sortable">
-		{{range .GetItems}}
+		{{range .Items}}
 		<div class="ToDoItem">
-		  <input type="hidden" name="{{.Identifier}}" value="" />
-		  <input type="checkbox" name="{{.Identifier}}" id="{{.Identifier}}"
+		  <input type="hidden" name="{{.ID}}" value="" />
+		  <input type="checkbox" name="{{.ID}}" id="{{.ID}}"
 				 {{if .Checked}}checked{{end}} />
-		  <label for="{{.Identifier}}"
+		  <label for="{{.ID}}"
 				 class="ToDoItemCheckbox action"></label>
 		  <span class="ToDoItemTitle">{{.Title}}</span>
 		  <span class="ToDoItemDragHandle sortHandle" tabindex="0" role="button">
@@ -28,7 +28,7 @@
 			</svg>
 		  </span>
 		  <button class="ToDoItemDeleteButton" hidden
-				  hx-delete="/lists/{{$.Identifier}}/items/{{.Identifier}}"
+				  hx-delete="/lists/{{$.ID}}/items/{{.ID}}"
 				  hx-trigger="delete-item from:closest .ToDoItem"
 				  hx-confirm="Delete the selected to-do item?"
 				  hx-target="#ToDoItemForm"
@@ -41,9 +41,9 @@
 	{{end}}
   </form>
 
-  <form method="POST" action="/lists/{{$.Identifier}}/items"
+  <form method="POST" action="/lists/{{$.ID}}/items"
 		class="AddItemBar"
-		hx-post="/lists/{{$.Identifier}}/items"
+		hx-post="/lists/{{$.ID}}/items"
 		hx-target="#ToDoItemForm">
 	<button id="AddItemBarButton"
 			type="submit"

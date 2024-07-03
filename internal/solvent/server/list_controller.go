@@ -1,12 +1,14 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -24,10 +26,10 @@ func NewListController(service *solvent.Service) *web.Controller {
 		Handlers: map[web.Endpoint]web.Handler{
 			{Method: http.MethodGet, Path: ""}:  getLists(service),
 			{Method: http.MethodPost, Path: ""}: createList(service),
-			/*
 				{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
 				{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
 				{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
+			/*
 				{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
 				{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
 				{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
@@ -94,7 +96,6 @@ func createList(service *solvent.Service) web.Handler {
 	}
 }
 
-/*
 func getList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		rawID := chi.URLParam(r, "id")
@@ -103,17 +104,12 @@ func getList(service *solvent.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		notebook, err := service.Fetch(uuid.UUID{})
+		list, err := service.FetchTodoList(uuid.UUID{}, id)
 		if err != nil {
 			return err
 		}
 
-		list, err := notebook.GetList(id)
-		if err != nil {
-			return err
-		}
-
-		return listTemplate.Execute(w, list)
+		return listTemplate.Execute(w, &list)
 	}
 }
 
@@ -125,17 +121,12 @@ func editList(service *solvent.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		notebook, err := service.Fetch(uuid.UUID{})
+		list, err := service.FetchTodoList(uuid.UUID{}, id)
 		if err != nil {
 			return err
 		}
 
-		list, err := notebook.GetList(id)
-		if err != nil {
-			return err
-		}
-
-		return editListTemplate.Execute(w, list)
+		return editListTemplate.Execute(w, &list)
 	}
 }
 
@@ -166,6 +157,7 @@ func updateList(service *solvent.Service) web.Handler {
 	}
 }
 
+/*
 func quickEditList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		rawID := chi.URLParam(r, "id")
