@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/eldelto/core/internal/testutils"
 	"github.com/google/uuid"
@@ -12,7 +13,10 @@ import (
 
 const dbPath = "solvent-test.db"
 
-var userID = uuid.Nil
+var (
+	userID          = uuid.Nil
+	plus1hTimestamp = time.Now().Add(1 * time.Hour).UnixMicro()
+)
 
 func TestApplyListPatch(t *testing.T) {
 	db, err := bbolt.Open(dbPath, 0660, nil)
@@ -100,10 +104,10 @@ func TestApplyListPatch(t *testing.T) {
 				})
 			AssertNoError(t, err, "create a new list")
 
-			err = service.ApplyListPatch(userID, list.ID, tt.createPatch)
+			err = service.ApplyListPatch(userID, list.ID, tt.createPatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply create list patch")
 
-			err = service.ApplyListPatch(userID, list.ID, tt.updatePatch)
+			err = service.ApplyListPatch(userID, list.ID, tt.updatePatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply update list patch")
 
 			list, err = service.FetchTodoList(userID, list.ID)

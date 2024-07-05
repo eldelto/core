@@ -120,35 +120,39 @@ func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 	return nil, 0
 }
 
-func (l *TodoList) AddItem(title string) {
-	existing, _ := l.getItem(title)
-	if existing != nil {
-		return
+func (l *TodoList) getOrAddItem(title string) (TodoItem, uint) {
+	item, index := l.getItem(title)
+	if item != nil {
+		return *item, index
 	}
 
-	item := NewTodoItem(title)
-	l.Items = append(l.Items, item)
+	newItem := NewTodoItem(title)
+	l.Items = append(l.Items, newItem)
 	l.updateUpdatedAt()
+	index = uint(len(l.Items) - 1)
+
+	return newItem, index
 }
 
-func (l *TodoList) CheckItem(title string) {
-	item, index := l.getItem(title)
-	if item == nil {
-		return
-	}
+func (l *TodoList) AddItem(title string) TodoItem {
+	item, _ := l.getOrAddItem(title)
+	return item
+}
 
+func (l *TodoList) CheckItem(title string) TodoItem {
+	_, index := l.getOrAddItem(title)
 	l.Items[index].Check()
 	l.updateUpdatedAt()
+
+	return l.Items[index]
 }
 
-func (l *TodoList) UncheckItem(title string) {
-	item, index := l.getItem(title)
-	if item == nil {
-		return
-	}
-
+func (l *TodoList) UncheckItem(title string) TodoItem {
+	_, index := l.getOrAddItem(title)
 	l.Items[index].Uncheck()
 	l.updateUpdatedAt()
+
+	return l.Items[index]
 }
 
 func (l *TodoList) RemoveItem(title string) {
@@ -161,18 +165,17 @@ func (l *TodoList) RemoveItem(title string) {
 	l.updateUpdatedAt()
 }
 
-func (l *TodoList) MoveItem(title string, targetIndex uint) {
-	item, _ := l.getItem(title)
-	if item == nil {
-		return
-	}
+func (l *TodoList) MoveItem(title string, targetIndex uint) TodoItem {
+	item, _ := l.getOrAddItem(title)
 
 	targetIndex = util.ClampI(targetIndex, 0, uint(len(l.Items)-1))
 
 	l.RemoveItem(title)
 	l.Items = append(l.Items[:targetIndex],
-		append([]TodoItem{*item}, l.Items[targetIndex:]...)...)
+		append([]TodoItem{item}, l.Items[targetIndex:]...)...)
 	l.updateUpdatedAt()
+
+	return l.Items[targetIndex]
 }
 
 func (l *TodoList) Done() bool {

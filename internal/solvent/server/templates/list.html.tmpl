@@ -1,45 +1,57 @@
 {{define "content"}}
 
 <div class="ToDoList">
-  <form method="POST" action="/lists/{{.ID}}/quick-edit"
-		id="ToDoItemForm"
-		hx-post="/lists/{{.ID}}/quick-edit"
-		hx-trigger="end, change target:.ToDoItem>input">
+  {{block "toDoListOnly" .}}
+  <div>
+	<a href="/lists/{{.ID}}/edit" id="edit-link" class="edit">Edit</a>
+	<h1 class="ToDoListTitle {{if .Done}}checked{{end}}">
+	  {{.Title}}
+	</h1>
 
-	{{block "toDoListOnly" .}}
-	<div>
-	  <a href="/lists/{{.ID}}/edit" id="edit-link" class="edit">Edit</a>
-	  <h1 class="ToDoListTitle {{if .Done}}checked{{end}}">
-		{{.Title}}
-	  </h1>
+	<div class="ToDoItems sortable">
+	  {{block "singleItem" .}}
+	  {{range .Items}}
+	  <div class="ToDoItem"
+		 hx-post="/lists/{{$.ID}}/move"
+		   hx-swap="outerHTML"
+		   hx-trigger="item-moved"
+		   hx-include="this">
+		  <input type="hidden" name="index" value="" />
 
-	  <div class="ToDoItems sortable">
-		{{range .Items}}
-		<div class="ToDoItem">
-		  <input type="hidden" name="{{.Title}}" value="" />
-		  <input type="checkbox" name="{{.Title}}" id="{{.Title}}"
-				 {{if .Checked}}checked{{end}} />
-		  <label for="{{.Title}}"
-				 class="ToDoItemCheckbox action"></label>
-		  <span class="ToDoItemTitle">{{.Title}}</span>
-		  <span class="ToDoItemDragHandle sortHandle" tabindex="0" role="button">
-			<svg width="24" height="24" viewBox="0 0 24 24">
-			  <path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"></path>
-			</svg>
-		  </span>
-		  <button class="ToDoItemDeleteButton" hidden
-				  hx-delete="/lists/{{$.ID}}/items/{{.Title}}"
-				  hx-trigger="delete-item from:closest .ToDoItem"
-				  hx-confirm="Delete the selected to-do item?"
-				  hx-target="#ToDoItemForm"
-				  aria-label="delete item">
+		<form hx-post="/lists/{{$.ID}}/{{if .Checked}}un{{end}}check"
+			  hx-target="closest .ToDoItem"
+			  hx-swap="outerHTML">
+		  <input type="hidden" name="title" value="{{.Title}}" />
+		  <button name="submit" class="ToDoItemCheckbox">
+			{{if .Checked}}
+			<img src="/assets/icons/checked-brand.svg" alt="checked" />
+			{{else}}
+			<img src="/assets/icons/checkbox-blank-circle-outline.svg" alt="checked" />
+			{{end}}
 		  </button>
-		</div>
-		{{end}}
+		</form>
+
+		<span class="ToDoItemTitle">{{.Title}}</span>
+
+		<span class="ToDoItemDragHandle sortHandle" tabindex="0" role="button">
+		  <svg width="24" height="24" viewBox="0 0 24 24">
+			<path d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"></path>
+		  </svg>
+		</span>
+
+		<button class="ToDoItemDeleteButton" hidden
+				hx-delete="/lists/{{$.ID}}/items/{{.Title}}"
+				hx-trigger="delete-item from:closest .ToDoItem"
+				hx-confirm="Delete the selected to-do item?"
+				hx-target="#ToDoItemForm"
+				aria-label="delete item">
+		</button>
 	  </div>
+	  {{end}}
+	  {{end}}
 	</div>
-	{{end}}
-  </form>
+  </div>
+  {{end}}
 
   <form method="POST" action="/lists/{{$.ID}}/items"
 		class="AddItemBar"

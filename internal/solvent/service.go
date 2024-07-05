@@ -181,7 +181,7 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 	return title, items, nil
 }
 
-func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) error {
+func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string, timestamp int64) error {
 	_, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
 		newTitle, newItems, err := parseListPatch(patch)
 		if err != nil {
@@ -199,8 +199,7 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) error {
 
 		for _, currentItem := range list.Items {
 			newItem, ok := newItems[currentItem.Title]
-			// TODO: Only remove if item.Created < begin of patch render
-			if !ok {
+			if !ok && currentItem.CreatedAt < timestamp {
 				patchedList.RemoveItem(currentItem.Title)
 				continue
 			}

@@ -71,7 +71,7 @@ func TestTodoListChecking(t *testing.T) {
 
 	l.CheckItem(item1Name)
 	l.CheckItem("asdfs")
-	AssertEquals(t, len(l.Items), 2, "l.Items")
+	AssertEquals(t, len(l.Items), 3, "l.Items")
 
 	i1 := &l.Items[0]
 	AssertEquals(t, i1.Checked, true, "i1.Checked")
