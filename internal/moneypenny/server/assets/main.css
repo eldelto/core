@@ -30,4 +30,5 @@ tbody > tr:nth-child(odd) {
 }
 table {border-collapse: collapse;
 }
-thead {background-color: lightseagreen}
+thead {background-color: lightgray}
+
