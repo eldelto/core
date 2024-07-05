@@ -5,6 +5,7 @@
 
 <form method="POST" action="/lists/{{.ID}}"
 	  class="ToDoList" data-quick-submit>
+  <input type="hidden" name="timestamp" value="{{.UpdatedAt}}" />
   <textarea data-auto-grow name="text-patch" autofocus>{{.String}}</textarea>
   <div id="ToDoListFooter">
 	<a href="/lists/{{.ID}}" class="cancel">Cancel</a>

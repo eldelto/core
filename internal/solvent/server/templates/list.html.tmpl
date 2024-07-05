@@ -16,10 +16,10 @@
 	  <div class="ToDoItems sortable">
 		{{range .Items}}
 		<div class="ToDoItem">
-		  <input type="hidden" name="{{.ID}}" value="" />
-		  <input type="checkbox" name="{{.ID}}" id="{{.ID}}"
+		  <input type="hidden" name="{{.Title}}" value="" />
+		  <input type="checkbox" name="{{.Title}}" id="{{.Title}}"
 				 {{if .Checked}}checked{{end}} />
-		  <label for="{{.ID}}"
+		  <label for="{{.Title}}"
 				 class="ToDoItemCheckbox action"></label>
 		  <span class="ToDoItemTitle">{{.Title}}</span>
 		  <span class="ToDoItemDragHandle sortHandle" tabindex="0" role="button">
@@ -28,7 +28,7 @@
 			</svg>
 		  </span>
 		  <button class="ToDoItemDeleteButton" hidden
-				  hx-delete="/lists/{{$.ID}}/items/{{.ID}}"
+				  hx-delete="/lists/{{$.ID}}/items/{{.Title}}"
 				  hx-trigger="delete-item from:closest .ToDoItem"
 				  hx-confirm="Delete the selected to-do item?"
 				  hx-target="#ToDoItemForm"

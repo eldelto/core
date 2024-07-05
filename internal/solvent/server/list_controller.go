@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -17,18 +18,17 @@ var (
 	listsTemplate    = templater.GetP("lists.html")
 	listTemplate     = templater.GetP("list.html")
 	editListTemplate = templater.GetP("edit-list.html")
-	errorTemplate    = templater.GetP("error.html")
 )
 
 func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:  getLists(service),
-			{Method: http.MethodPost, Path: ""}: createList(service),
-				{Method: http.MethodGet, Path: "{id}"}:                   getList(service),
-				{Method: http.MethodGet, Path: "{id}/edit"}:              editList(service),
-				{Method: http.MethodPost, Path: "{id}"}:                  updateList(service),
+			{Method: http.MethodGet, Path: ""}:          getLists(service),
+			{Method: http.MethodPost, Path: ""}:         createList(service),
+			{Method: http.MethodGet, Path: "{id}"}:      getList(service),
+			{Method: http.MethodGet, Path: "{id}/edit"}: editList(service),
+			{Method: http.MethodPost, Path: "{id}"}:     updateList(service),
 			/*
 				{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
 				{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
@@ -38,13 +38,14 @@ func NewListController(service *solvent.Service) *web.Controller {
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
-		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) web.Handler {
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {
 
 			return func(w http.ResponseWriter, r *http.Request) error {
-				log.Println(err)
+				log.Println(outerErr)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Header().Set(web.ContentTypeHeader, web.ContentTypeHTML)
-				return errorTemplate.ExecuteTemplate(w, "error", err.Error())
+				_, err := io.WriteString(w, outerErr.Error())
+				return err
 			}
 		},
 	}
@@ -143,7 +144,7 @@ func updateList(service *solvent.Service) web.Handler {
 		}
 		patch := r.PostForm.Get("text-patch")
 
-		if _, err := service.ApplyListPatch(uuid.UUID{}, id, patch); err != nil {
+		if err := service.ApplyListPatch(uuid.UUID{}, id, patch); err != nil {
 			return err
 		}
 

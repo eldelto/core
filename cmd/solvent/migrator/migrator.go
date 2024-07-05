@@ -1,16 +1,8 @@
 package main
 
 import (
-	"encoding/csv"
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
-
-	"github.com/eldelto/core/cmd/solvent/migrator/dto"
-	"github.com/eldelto/core/internal/solvent"
-	"github.com/google/uuid"
-	"go.etcd.io/bbolt"
 )
 
 func main() {
@@ -18,7 +10,7 @@ func main() {
 		fmt.Println("usage: migrator [CSV path] [bbolt DB path]")
 		os.Exit(-1)
 	}
-
+	/* TODO: Migrate from old notebook to new one.
 	file, err := os.Open(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
@@ -69,4 +61,5 @@ func main() {
 		}
 		log.Printf("Migrated notebook %q for user %q.\n", notebook.Identifier(), userID)
 	}
+	*/
 }

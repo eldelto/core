@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -19,7 +17,6 @@ const (
 )
 
 var (
-	errNotFound   = errors.New("not found")
 	todoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
 )
 
@@ -107,14 +104,14 @@ func (s *Service) UpdateNotebook(userID uuid.UUID, fn func(*Notebook2) error) (*
 	return notebook, err
 }
 
-func getList(n *Notebook2, userID, listID uuid.UUID) (*TodoList, error) {
+func getList(n *Notebook2, userID, listID uuid.UUID) (TodoList, error) {
 	list, ok := n.Lists[listID]
 	if !ok {
-		return nil,
+		return TodoList{},
 			fmt.Errorf("failed to find list %q in notebook of user %q", listID, userID)
 	}
 
-	return &list, nil
+	return list, nil
 }
 
 func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
@@ -123,8 +120,7 @@ func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
 		return TodoList{}, err
 	}
 
-	list, err := getList(notebook, userID, listID)
-	return *list, err
+	return getList(notebook, userID, listID)
 }
 
 func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, error) {
@@ -135,8 +131,10 @@ func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) er
 			return err
 		}
 
-		err = fn(list)
-		result = *list
+		err = fn(&list)
+		result = list
+		n.Lists[list.ID] = list
+
 		return err
 	})
 	return result, err
@@ -170,7 +168,7 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 			checkboxContent := matches[2]
 			item := todoItem{
 				checked:  checkboxContent == "X" || checkboxContent == "x",
-				position: uint(i-1),
+				position: uint(i - 1),
 				title:    matches[3],
 			}
 			items[item.title] = item
@@ -185,57 +183,42 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 
 func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) error {
 	_, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
-	newTitle, newItems, err := parseListPatch(patch)
-	if err != nil {
-		return err
-	}
-	list.Rename(newTitle)
+		newTitle, newItems, err := parseListPatch(patch)
+		if err != nil {
+			return err
+		}
+		list.Rename(newTitle)
 
-
-	for _, currentItem := range list.Items {
-		newItem, ok := newItems[currentItem.Title]
-		// TODO: Only remove if item.Created < begin of patch render
-		if !ok {
-			list.RemoveItem(currentItem.Title)
-			continue
+		for _, newItem := range newItems {
+			list.AddItem(newItem.title)
 		}
 
-		list.MoveItem(currentItem.Title, newItem.position)
+		patchedList := *list
+		patchedList.Items = make([]TodoItem, len(list.Items))
+		copy(patchedList.Items, list.Items)
 
-		if newItem.checked {
-			currentItem.Check()
-		} else {
-			currentItem.Uncheck()
+		for _, currentItem := range list.Items {
+			newItem, ok := newItems[currentItem.Title]
+			// TODO: Only remove if item.Created < begin of patch render
+			if !ok {
+				patchedList.RemoveItem(currentItem.Title)
+				continue
+			}
+
+			patchedList.MoveItem(currentItem.Title, newItem.position)
+
+			if newItem.checked {
+				patchedList.CheckItem(currentItem.Title)
+			} else {
+				patchedList.UncheckItem(currentItem.Title)
+			}
 		}
-	}
+
+		list.UpdatedAt = patchedList.UpdatedAt
+		list.Items = make([]TodoItem, len(patchedList.Items))
+		copy(list.Items, patchedList.Items)
 
 		return nil
 	})
-		return err
-
-	sortedNewItems := make([]toDoItem, 0, len(newItems))
-	for _, item := range newItems {
-		sortedNewItems = append(sortedNewItems, item)
-	}
-	slices.SortFunc(sortedNewItems, func(a, b toDoItem) int {
-		return a.position - b.position
-	})
-
-	for _, newItem := range sortedNewItems {
-		if !slices.ContainsFunc(currentItems,
-			func(i ToDoItem) bool { return i.Title == newItem.title }) {
-			itemID, err := list.AddItem(newItem.title)
-			if err != nil {
-				return nil, err
-			}
-
-			if newItem.checked {
-				if _, err := list.CheckItem(itemID); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	return s.Update(userID, notebook)
+	return err
 }

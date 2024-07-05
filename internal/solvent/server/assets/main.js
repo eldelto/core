@@ -142,7 +142,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	htmx.on("htmx:responseError", function (evt) {
 		const dialog = document.querySelector("#error-dialog");
-		dialog.innerHTML = evt.detail.xhr.response;
+		const dialogContent = document.querySelector("#error-content");
+		dialogContent.innerHTML = evt.detail.xhr.response;
 		dialog.showModal();
     });
 });

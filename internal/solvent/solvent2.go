@@ -101,7 +101,6 @@ func NewTodoList(title string) (*TodoList, error) {
 	}, nil
 }
 
-
 func (l *TodoList) updateUpdatedAt() {
 	l.UpdatedAt = currentTimestamp()
 }
@@ -122,6 +121,11 @@ func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 }
 
 func (l *TodoList) AddItem(title string) {
+	existing, _ := l.getItem(title)
+	if existing != nil {
+		return
+	}
+
 	item := NewTodoItem(title)
 	l.Items = append(l.Items, item)
 	l.updateUpdatedAt()
@@ -216,7 +220,7 @@ func (n *Notebook2) ActiveLists() []TodoList {
 	}
 
 	slices.SortFunc(lists, func(a, b TodoList) int {
-		return int(a.CreatedAt - b.CreatedAt)
+		return int(b.CreatedAt - a.CreatedAt)
 	})
 
 	return lists
