@@ -33,6 +33,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{id}/check"}:   checkItem(service),
 			{Method: http.MethodPost, Path: "{id}/uncheck"}: uncheckItem(service),
 			{Method: http.MethodPost, Path: "{id}/move"}:    moveItem(service),
+			{Method: http.MethodPost, Path: "{id}/delete"}:  deleteItem(service),
 			/*
 				{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
 				{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
@@ -261,133 +262,29 @@ func moveItem(service *solvent.Service) web.Handler {
 	}
 }
 
-/*
-func quickEditList(service *solvent.Service) web.Handler {
+func deleteItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		userID := uuid.UUID{}
+
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		// TODO: Move into service.
-		notebook, err := service.Fetch(uuid.UUID{})
-		if err != nil {
-			return err
-		}
-
-		list, err := notebook.GetList(id)
-		if err != nil {
-			return err
-		}
-
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
+		itemTitle := r.PostForm.Get("title")
 
-		for rawItemID, values := range r.PostForm {
-			if len(values) < 1 {
-				continue
-			}
-
-			itemID, err := uuid.Parse(rawItemID)
-			if err != nil {
-				return err
-			}
-
-			checked := false
-			for _, value := range values {
-				if value == "" {
-					continue
-				} else if value == "on" {
-					checked = true
-				} else {
-					index, err := strconv.Atoi(value)
-					if err != nil {
-						return err
-					}
-
-					if err := list.MoveItem(itemID, index); err != nil {
-						return err
-					}
-				}
-			}
-
-			if checked {
-				if _, err := list.CheckItem(itemID); err != nil {
-					return err
-				}
-			} else {
-				if _, err := list.UncheckItem(itemID); err != nil {
-					return err
-				}
-			}
-		}
-
-		if _, err := service.Update(uuid.UUID{}, notebook); err != nil {
+		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
+			list.RemoveItem(itemTitle)
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
+		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
 	}
 }
-
-func addItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		if err := r.ParseForm(); err != nil {
-			return err
-		}
-		title := r.PostForm.Get("title")
-
-		list, err := service.AddItem(uuid.UUID{}, listID, title)
-		if err != nil {
-			return err
-		}
-
-		// TODO: Conditionally render subset everywhere.
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func removeItem(service *solvent.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		listID, err := urlParamUUID(r, "id")
-		if err != nil {
-			return err
-		}
-
-		itemID, err := urlParamUUID(r, "itemID")
-		if err != nil {
-			return err
-		}
-
-		list, err := service.RemoveItem(uuid.UUID{}, listID, itemID)
-		if err != nil {
-			return err
-		}
-
-		// TODO: Conditionally render subset everywhere.
-		return listTemplate.ExecuteTemplate(w, "toDoListOnly", list)
-	}
-}
-
-func urlParamUUID(r *http.Request, key string) (uuid.UUID, error) {
-	rawID := chi.URLParam(r, key)
-	id, err := uuid.Parse(rawID)
-	if err != nil {
-		return uuid.UUID{}, fmt.Errorf("failed to parse %q as UUID: %w",
-			rawID, err)
-	}
-
-	return id, nil
-}
-
-//func fromHTMX(r *http.Request) bool {
-//	return r.Header.Get("Hx-Request") == "true"
-//}
-*/
