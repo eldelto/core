@@ -82,6 +82,7 @@ svg {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	justify-content: center;
 }
 
 .footer {
@@ -319,6 +320,10 @@ button:disabled:hover {
 	align-items: center;
 	border-radius: var(--border-radius);
 	background-color: var(--light-background-color);
+}
+
+.checkboxForm {
+	display: flex;
 }
 
 .ToDoItemCheckbox {

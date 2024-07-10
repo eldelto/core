@@ -215,18 +215,27 @@ func NewNotebook2() *Notebook2 {
 	}
 }
 
-func (n *Notebook2) ActiveLists() []TodoList {
-	lists := make([]TodoList, 0, len(n.Lists))
+// GetLists returns all open and completed lists of the notebook.
+func (n *Notebook2) GetLists() ([]TodoList, []TodoList) {
+	open := make([]TodoList, 0, len(n.Lists))
+	completed := make([]TodoList, 0, len(n.Lists))
 
 	for _, l := range n.Lists {
-		lists = append(lists, l)
+		if l.Done() {
+			completed = append(completed, l)
+		} else {
+			open = append(open, l)
+		}
 	}
 
-	slices.SortFunc(lists, func(a, b TodoList) int {
+	slices.SortFunc(open, func(a, b TodoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
+	slices.SortFunc(completed, func(a, b TodoList) int {
 		return int(b.CreatedAt - a.CreatedAt)
 	})
 
-	return lists
+	return open, completed
 }
 
 func (n *Notebook2) NewList(title string) (*TodoList, error) {

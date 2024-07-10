@@ -33,12 +33,8 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{id}/check"}:   checkItem(service),
 			{Method: http.MethodPost, Path: "{id}/uncheck"}: uncheckItem(service),
 			{Method: http.MethodPost, Path: "{id}/move"}:    moveItem(service),
+			{Method: http.MethodPost, Path: "{id}/add"}:     addItem(service),
 			{Method: http.MethodPost, Path: "{id}/delete"}:  deleteItem(service),
-			/*
-				{Method: http.MethodPost, Path: "{id}/quick-edit"}:       quickEditList(service),
-				{Method: http.MethodPost, Path: "{id}/items"}:            addItem(service),
-				{Method: http.MethodDelete, Path: "{id}/items/{itemID}"}: removeItem(service),
-			*/
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -69,9 +65,10 @@ func getLists(service *solvent.Service) web.Handler {
 			return err
 		}
 
+		open, completed := notebook.GetLists()
 		data := listsData{
-			Open:      notebook.ActiveLists(),
-			Completed: []solvent.TodoList{},
+			Open:      open,
+			Completed: completed,
 		}
 
 		return listsTemplate.Execute(w, data)
@@ -259,6 +256,33 @@ func moveItem(service *solvent.Service) web.Handler {
 		list.Items = []solvent.TodoItem{item}
 
 		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+	}
+}
+
+func addItem(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		userID := uuid.UUID{}
+
+		rawID := chi.URLParam(r, "id")
+		id, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+		itemTitle := r.PostForm.Get("title")
+
+		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
+			list.AddItem(itemTitle)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
 	}
 }
 

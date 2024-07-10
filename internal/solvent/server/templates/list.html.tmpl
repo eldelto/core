@@ -18,7 +18,8 @@
 		   hx-include="this">
 		<input type="hidden" name="index" value="" />
 
-		<form hx-post="/lists/{{$.ID}}/{{if .Checked}}un{{end}}check"
+		<form class="checkboxForm"
+			  hx-post="/lists/{{$.ID}}/{{if .Checked}}un{{end}}check"
 			  hx-target="closest .ToDoItem"
 			  hx-swap="outerHTML">
 		  <input type="hidden" name="title" value="{{.Title}}" />
@@ -56,10 +57,10 @@
   </div>
   {{end}}
 
-  <form method="POST" action="/lists/{{$.ID}}/items"
+  <form method="POST" action="/lists/{{$.ID}}/add"
 		class="AddItemBar"
-		hx-post="/lists/{{$.ID}}/items"
-		hx-target="#ToDoItemForm">
+		hx-post="/lists/{{$.ID}}/add"
+		hx-target="#TodoListBody">
 	<button id="AddItemBarButton"
 			type="submit"
 			value=""
