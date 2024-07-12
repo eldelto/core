@@ -1,72 +1,127 @@
 package main
 
 import (
-	"encoding/csv"
-	"encoding/json"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/eldelto/core/cmd/solvent/migrator/dto"
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
+var (
+	notebookBucket = "notebooks"
+	userID         = uuid.Nil
+)
+
+func fetchNotebook(db *bbolt.DB) (*solvent.Notebook, error) {
+	var notebook *solvent.Notebook
+
+	err := db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(notebookBucket))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket with name %q", notebookBucket)
+		}
+
+		key := userID.String()
+		value := bucket.Get([]byte(key))
+		if value == nil {
+			return fmt.Errorf("original notebook could not be found")
+		}
+
+		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&notebook); err != nil {
+			return fmt.Errorf("failed to decode todo lists for user %q: %w",
+				key, err)
+		}
+
+		return nil
+	})
+
+	return notebook, err
+}
+
+func mapTodoItem(old solvent.ToDoItem) solvent.TodoItem {
+	return solvent.TodoItem{
+		Checked:   old.Checked,
+		CreatedAt: old.OrderValue.UpdatedAt / 1000,
+		Title:     old.Title,
+	}
+}
+
+func mapTodoList(old solvent.ToDoList) (solvent.TodoList, error) {
+	new, err := solvent.NewTodoList(old.Title.Value)
+	if err != nil {
+		return solvent.TodoList{}, err
+	}
+
+	new.ID = old.ID
+	new.CreatedAt = old.CreatedAt / 1000
+	new.UpdatedAt = old.Title.UpdatedAt / 1000
+
+	for _, oldItem := range old.GetItems() {
+		newItem := mapTodoItem(oldItem)
+		new.Items = append(new.Items, newItem)
+	}
+
+	return *new, nil
+}
+
+func mapNotebook(old *solvent.Notebook) (*solvent.Notebook2, error) {
+	new := solvent.NewNotebook2()
+	for _, oldList := range old.GetLists() {
+		newList, err := mapTodoList(*oldList)
+		if err != nil {
+			return nil, err
+		}
+
+		new.Lists[oldList.ID] = newList
+	}
+
+	return new, nil
+}
+
 func main() {
-	if len(os.Args) > 3 {
-		fmt.Println("usage: migrator [CSV path] [bbolt DB path]")
+	if len(os.Args) < 3 {
+		fmt.Println("usage: migrator [bbolt DB path] [output path]")
 		os.Exit(-1)
 	}
 
-	file, err := os.Open(os.Args[1])
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	db, err := bbolt.Open(os.Args[2], 0600, nil)
+	db, err := bbolt.Open(os.Args[1], 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	service, err := solvent.NewService(db)
+	newDB, err := bbolt.Open(os.Args[2], 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer newDB.Close()
+
+	originalNotebook, err := fetchNotebook(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1 // Allow variable number of fields
-
-	data, err := reader.ReadAll()
+	newNotebook, err := mapNotebook(originalNotebook)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, row := range data {
-		var userID uuid.UUID
-		var notebook *solvent.Notebook
-		for i, col := range row {
-			switch i {
-			case 0:
-				id, err := uuid.Parse(col)
-				if err != nil {
-					log.Fatal(err)
-				}
-				userID = id
-			case 1:
-				var notebookDto dto.NotebookDto
-				if err := json.Unmarshal([]byte(col), &notebookDto); err != nil {
-					log.Fatal(err)
-				}
-				notebook = dto.NotebookFromDto(&notebookDto)
-			}
-		}
+	service, err := solvent.NewService(newDB)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		if _, err := service.Update(userID, notebook); err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("Migrated notebook %q for user %q.\n", notebook.Identifier(), userID)
+	_, err = service.UpdateNotebook(uuid.UUID{},
+		func(n *solvent.Notebook2) error {
+			*n = *newNotebook
+			return nil
+		})
+	if err != nil {
+		log.Fatal(err)
 	}
 }

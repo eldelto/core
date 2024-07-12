@@ -12,9 +12,9 @@
   </form>
 
   {{range .Open }}
-  <a href="/lists/{{.Identifier}}">
+  <a href="/lists/{{.ID}}">
 	<button class="ListViewToDoList">
-	  <span class="ListViewToDoListTitle">{{.Title.Value}}</span>
+	  <span class="ListViewToDoListTitle">{{.Title}}</span>
 	</button>
   </a>
   {{end}}
@@ -24,9 +24,9 @@
   <span class="ListViewToDoListsTitle">Done</span>
 
   {{range .Completed }}
-  <a href="/lists/{{.Identifier}}">
+  <a href="/lists/{{.ID}}">
 	<button class="ListViewToDoList checked">
-	  <span class="ListViewToDoListTitle">{{.Title.Value}}</span>
+	  <span class="ListViewToDoListTitle">{{.Title}}</span>
 	</button>
   </a>
   {{end}}

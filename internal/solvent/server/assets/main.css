@@ -82,6 +82,7 @@ svg {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	justify-content: center;
 }
 
 .footer {
@@ -321,6 +322,10 @@ button:disabled:hover {
 	background-color: var(--light-background-color);
 }
 
+.checkboxForm {
+	display: flex;
+}
+
 .ToDoItemCheckbox {
 	height: 2em;
 	width: 2em;
@@ -329,7 +334,16 @@ button:disabled:hover {
 	border: none;
 	background: none;
 	opacity: var(--inactive-opacity-light-bg);
-	cursor: pointer;
+}
+
+.ToDoItemCheckbox > img {
+	height: 100%;
+	width: 100%;
+}
+
+.ToDoItem.checked .ToDoItemCheckbox,
+.ToDoItemCheckbox:hover {
+	opacity: 1;
 }
 
 .ToDoItemTitle {
@@ -344,24 +358,9 @@ button:disabled:hover {
 	background: none;
 }
 
-.ToDoItem > input[checked] ~ .ToDoItemTitle {
+.ToDoItem.checked > .ToDoItemTitle {
 	text-decoration: line-through;
 	opacity: var(--inactive-opacity-light-bg);
-}
-
-.ToDoItem > input + label{
-	background-image: url("/assets/icons/checkbox-blank-circle-outline.svg");
-	background-size: 30px 30px;
-	background-repeat: no-repeat;
-}
-
-.ToDoItem > input[checked]+label{
-	opacity: 1;
-	background-image: url("/assets/icons/checked-brand.svg");
-}
-
-.ToDoItem > input {
-	display: none;
 }
 
 .ToDoItemDelete {

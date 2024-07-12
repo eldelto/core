@@ -2,6 +2,7 @@ const deletingClass = "deleting";
 
 function keydownEvent() { return new Event("keydown") };
 function deleteItemEvent() { return new Event("delete-item") };
+function itemMovedEvent() { return new Event("item-moved") };
 
 function autosize(){
 	const el = this;
@@ -76,8 +77,9 @@ htmx.onLoad(function(content) {
 			},
 
 			onUpdate: function (evt) {
-				const input = evt.item.querySelector("input");
+				const input = evt.item.querySelector("input[name='index']");
 				input.value = evt.newIndex;
+				evt.item.dispatchEvent(itemMovedEvent());
 			},
 
 			// Disable sorting on the `end` event
@@ -142,7 +144,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	htmx.on("htmx:responseError", function (evt) {
 		const dialog = document.querySelector("#error-dialog");
-		dialog.innerHTML = evt.detail.xhr.response;
+		const dialogContent = document.querySelector("#error-content");
+		dialogContent.innerHTML = evt.detail.xhr.response;
 		dialog.showModal();
     });
 });

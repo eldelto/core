@@ -46,7 +46,8 @@ func TestTodoItem(t *testing.T) {
 }
 
 func TestTodoListAddItem(t *testing.T) {
-	l := NewTodoList("list 1")
+	l, err := NewTodoList("list 1")
+	AssertNoError(t, err, "NewTodoList")
 	AssertEquals(t, l.Title, "list 1", "l.Title")
 	AssertEquals(t, len(l.Items), 0, "l.Items")
 	AssertEquals(t, l.CreatedAt > 0, true, "l.CreatedAt")
@@ -63,13 +64,14 @@ func TestTodoListAddItem(t *testing.T) {
 }
 
 func TestTodoListChecking(t *testing.T) {
-	l := NewTodoList("list 1")
+	l, err := NewTodoList("list 1")
+	AssertNoError(t, err, "NewTodoList")
 	l.AddItem(item1Name)
 	l.AddItem(item2Name)
 
 	l.CheckItem(item1Name)
 	l.CheckItem("asdfs")
-	AssertEquals(t, len(l.Items), 2, "l.Items")
+	AssertEquals(t, len(l.Items), 3, "l.Items")
 
 	i1 := &l.Items[0]
 	AssertEquals(t, i1.Checked, true, "i1.Checked")
@@ -87,7 +89,8 @@ func TestTodoListChecking(t *testing.T) {
 }
 
 func TestTodoListRemoveItem(t *testing.T) {
-	l := NewTodoList("list 1")
+	l, err := NewTodoList("list 1")
+	AssertNoError(t, err, "NewTodoList")
 	l.AddItem(item1Name)
 	l.AddItem(item2Name)
 
@@ -100,7 +103,8 @@ func TestTodoListRemoveItem(t *testing.T) {
 }
 
 func TestTodoListMoveItem(t *testing.T) {
-	l := NewTodoList("list 1")
+	l, err := NewTodoList("list 1")
+	AssertNoError(t, err, "NewTodoList")
 	l.AddItem(item1Name)
 	l.AddItem(item2Name)
 	l.AddItem(item3Name)

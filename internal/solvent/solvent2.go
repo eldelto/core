@@ -1,10 +1,13 @@
 package solvent
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/util"
+	"github.com/google/uuid"
 )
 
 func currentTimestamp() int64 {
@@ -77,18 +80,34 @@ func (t *TodoItem) String() string {
 type TodoList struct {
 	CreatedAt int64
 	UpdatedAt int64
+	ID        uuid.UUID
 	Title     string
 	Items     []TodoItem
 }
 
-func NewTodoList(title string) *TodoList {
+func NewTodoList(title string) (*TodoList, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate ID for todo list: %w", err)
+	}
+
 	now := currentTimestamp()
 	return &TodoList{
 		CreatedAt: now,
 		UpdatedAt: now,
+		ID:        id,
 		Title:     title,
 		Items:     []TodoItem{},
-	}
+	}, nil
+}
+
+func (l *TodoList) updateUpdatedAt() {
+	l.UpdatedAt = currentTimestamp()
+}
+
+func (l *TodoList) Rename(title string) {
+	l.Title = title
+	l.updateUpdatedAt()
 }
 
 func (l *TodoList) getItem(title string) (*TodoItem, uint) {
@@ -101,27 +120,39 @@ func (l *TodoList) getItem(title string) (*TodoItem, uint) {
 	return nil, 0
 }
 
-func (l *TodoList) AddItem(title string) {
-	item := NewTodoItem(title)
-	l.Items = append(l.Items, item)
-}
-
-func (l *TodoList) CheckItem(title string) {
+func (l *TodoList) getOrAddItem(title string) (TodoItem, uint) {
 	item, index := l.getItem(title)
-	if item == nil {
-		return
+	if item != nil {
+		return *item, index
 	}
 
+	newItem := NewTodoItem(title)
+	l.Items = append(l.Items, newItem)
+	l.updateUpdatedAt()
+	index = uint(len(l.Items) - 1)
+
+	return newItem, index
+}
+
+func (l *TodoList) AddItem(title string) TodoItem {
+	item, _ := l.getOrAddItem(title)
+	return item
+}
+
+func (l *TodoList) CheckItem(title string) TodoItem {
+	_, index := l.getOrAddItem(title)
 	l.Items[index].Check()
+	l.updateUpdatedAt()
+
+	return l.Items[index]
 }
 
-func (l *TodoList) UncheckItem(title string) {
-	item, index := l.getItem(title)
-	if item == nil {
-		return
-	}
-
+func (l *TodoList) UncheckItem(title string) TodoItem {
+	_, index := l.getOrAddItem(title)
 	l.Items[index].Uncheck()
+	l.updateUpdatedAt()
+
+	return l.Items[index]
 }
 
 func (l *TodoList) RemoveItem(title string) {
@@ -131,19 +162,20 @@ func (l *TodoList) RemoveItem(title string) {
 	}
 
 	l.Items = append(l.Items[:index], l.Items[index+1:]...)
+	l.updateUpdatedAt()
 }
 
-func (l *TodoList) MoveItem(title string, targetIndex uint) {
-	item, _ := l.getItem(title)
-	if item == nil {
-		return
-	}
+func (l *TodoList) MoveItem(title string, targetIndex uint) TodoItem {
+	item, _ := l.getOrAddItem(title)
 
 	targetIndex = util.ClampI(targetIndex, 0, uint(len(l.Items)-1))
 
 	l.RemoveItem(title)
 	l.Items = append(l.Items[:targetIndex],
-		append([]TodoItem{*item}, l.Items[targetIndex:]...)...)
+		append([]TodoItem{item}, l.Items[targetIndex:]...)...)
+	l.updateUpdatedAt()
+
+	return l.Items[targetIndex]
 }
 
 func (l *TodoList) Done() bool {
@@ -157,4 +189,61 @@ func (l *TodoList) Done() bool {
 		}
 	}
 	return true
+}
+
+func (l *TodoList) String() string {
+	b := strings.Builder{}
+	b.WriteString(l.Title)
+	b.WriteByte('\n')
+	b.WriteByte('\n')
+
+	for _, item := range l.Items {
+		b.WriteString(item.String())
+		b.WriteByte('\n')
+	}
+
+	return b.String()
+}
+
+type Notebook2 struct {
+	Lists map[uuid.UUID]TodoList
+}
+
+func NewNotebook2() *Notebook2 {
+	return &Notebook2{
+		Lists: map[uuid.UUID]TodoList{},
+	}
+}
+
+// GetLists returns all open and completed lists of the notebook.
+func (n *Notebook2) GetLists() ([]TodoList, []TodoList) {
+	open := make([]TodoList, 0, len(n.Lists))
+	completed := make([]TodoList, 0, len(n.Lists))
+
+	for _, l := range n.Lists {
+		if l.Done() {
+			completed = append(completed, l)
+		} else {
+			open = append(open, l)
+		}
+	}
+
+	slices.SortFunc(open, func(a, b TodoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
+	slices.SortFunc(completed, func(a, b TodoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
+
+	return open, completed
+}
+
+func (n *Notebook2) NewList(title string) (*TodoList, error) {
+	l, err := NewTodoList(title)
+	if err != nil {
+		return nil, err
+	}
+
+	n.Lists[l.ID] = *l
+	return l, nil
 }

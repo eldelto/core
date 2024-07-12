@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -19,8 +17,7 @@ const (
 )
 
 var (
-	errNotFound   = errors.New("not found")
-	toDoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
+	todoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
 )
 
 type Service struct {
@@ -41,50 +38,8 @@ func NewService(db *bbolt.DB) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) store(userID uuid.UUID, notebook *Notebook) (*Notebook, error) {
-	var mergedNotebook *Notebook
-
-	err := s.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(notebookBucket))
-		if bucket == nil {
-			return fmt.Errorf("failed to get bucket with name %q", notebookBucket)
-		}
-
-		key := userID.String()
-		value := bucket.Get([]byte(key))
-		if value == nil {
-			mergedNotebook = notebook
-		} else {
-
-			oldNotebook := Notebook{}
-			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&oldNotebook); err != nil {
-				return fmt.Errorf("failed to decode notebook for key %q: %w", key, err)
-			}
-
-			merged, err := oldNotebook.Merge(notebook)
-			if err != nil {
-				return err
-			}
-			mergedNotebook = merged.(*Notebook)
-		}
-
-		buffer := bytes.Buffer{}
-		if err := gob.NewEncoder(&buffer).Encode(mergedNotebook); err != nil {
-			return fmt.Errorf("failed to encode noteboook %q: %w", notebook.Identifier(), err)
-		}
-
-		if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
-			return fmt.Errorf("failed to persist notebook %q: %w", notebook.Identifier(), err)
-		}
-
-		return nil
-	})
-
-	return mergedNotebook, err
-}
-
-func (s *Service) fetch(userID uuid.UUID) (*Notebook, error) {
-	notebook := Notebook{}
+func (s *Service) FetchNotebook(userID uuid.UUID) (*Notebook2, error) {
+	var notebook *Notebook2
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(notebookBucket))
@@ -95,96 +50,105 @@ func (s *Service) fetch(userID uuid.UUID) (*Notebook, error) {
 		key := userID.String()
 		value := bucket.Get([]byte(key))
 		if value == nil {
-			return fmt.Errorf("failed to find notebook for key %q: %w", key, errNotFound)
+			notebook = NewNotebook2()
+			return nil
 		}
 
 		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&notebook); err != nil {
-			return fmt.Errorf("failed to decode notebook for key %q: %w", key, err)
+			return fmt.Errorf("failed to decode todo lists for user %q: %w",
+				key, err)
 		}
 
 		return nil
 	})
 
-	return &notebook, err
+	return notebook, err
 }
 
-func (s *Service) Create(userID uuid.UUID) (*Notebook, error) {
-	notebook, err := NewNotebook()
-	if err != nil {
-		return nil, err
-	}
+func (s *Service) UpdateNotebook(userID uuid.UUID, fn func(*Notebook2) error) (*Notebook2, error) {
+	var notebook *Notebook2
 
-	notebook, err = s.store(userID, notebook)
-	if err != nil {
-		return nil, err
-	}
-
-	return notebook, nil
-}
-
-func (s *Service) Fetch(userID uuid.UUID) (*Notebook, error) {
-	notebook, err := s.fetch(userID)
-	if err != nil {
-		if errors.Is(err, errNotFound) {
-			return s.Create(userID)
+	err := s.db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(notebookBucket))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket with name %q", notebookBucket)
 		}
-		return nil, err
-	}
 
-	return notebook, nil
+		key := userID.String()
+		value := bucket.Get([]byte(key))
+		if value == nil {
+			notebook = NewNotebook2()
+		} else {
+			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&notebook); err != nil {
+				return fmt.Errorf("failed to decode notebook for user %q: %w",
+					key, err)
+			}
+		}
+
+		if err := fn(notebook); err != nil {
+			return err
+		}
+
+		buffer := bytes.Buffer{}
+		if err := gob.NewEncoder(&buffer).Encode(notebook); err != nil {
+			return fmt.Errorf("failed to encode notebook for user %q: %w", key, err)
+		}
+
+		if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
+			return fmt.Errorf("failed to persist notebook for user %q: %w", key, err)
+		}
+
+		return nil
+	})
+
+	return notebook, err
 }
 
-func (s *Service) CreateList(userID uuid.UUID) (*ToDoList, error) {
-	notebook, err := s.Fetch(userID)
-	if err != nil {
-		return nil, err
+func getList(n *Notebook2, userID, listID uuid.UUID) (TodoList, error) {
+	list, ok := n.Lists[listID]
+	if !ok {
+		return TodoList{},
+			fmt.Errorf("failed to find list %q in notebook of user %q", listID, userID)
 	}
 
-	list, err := notebook.AddList("")
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = s.store(userID, notebook)
-	return list, err
+	return list, nil
 }
 
-func (s *Service) Update(userID uuid.UUID, notebook *Notebook) (*Notebook, error) {
-	return s.store(userID, notebook)
+func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
+	notebook, err := s.FetchNotebook(userID)
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	return getList(notebook, userID, listID)
 }
 
-func (s *Service) updateList(userID, listID uuid.UUID, f func(l *ToDoList) error) (*ToDoList, error) {
-	notebook, err := s.Fetch(userID)
-	if err != nil {
-		return nil, err
-	}
+func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, error) {
+	var result TodoList
+	_, err := s.UpdateNotebook(userID, func(n *Notebook2) error {
+		list, err := getList(n, userID, listID)
+		if err != nil {
+			return err
+		}
 
-	list, err := notebook.GetList(listID)
-	if err != nil {
-		return nil, err
-	}
+		err = fn(&list)
+		result = list
+		n.Lists[list.ID] = list
 
-	if err := f(list); err != nil {
-		return nil, err
-	}
-
-	notebook, err = s.Update(userID, notebook)
-	if err != nil {
-		return nil, err
-	}
-
-	return notebook.GetList(listID)
+		return err
+	})
+	return result, err
 }
 
-type toDoItem struct {
+type todoItem struct {
 	checked  bool
-	position int
+	position uint
 	title    string
 }
 
-func parseListPatch(patch string) (string, map[string]toDoItem, error) {
+func parseListPatch(patch string) (string, map[string]todoItem, error) {
 	title := ""
-	items := map[string]toDoItem{}
+	items := map[string]todoItem{}
 
 	r := bytes.NewBufferString(patch)
 	scanner := bufio.NewScanner(r)
@@ -200,11 +164,11 @@ func parseListPatch(patch string) (string, map[string]toDoItem, error) {
 		if i == 0 {
 			title = line
 		} else {
-			matches := toDoItemRegex.FindStringSubmatch(line)
+			matches := todoItemRegex.FindStringSubmatch(line)
 			checkboxContent := matches[2]
-			item := toDoItem{
+			item := todoItem{
 				checked:  checkboxContent == "X" || checkboxContent == "x",
-				position: i - 1,
+				position: uint(i - 1),
 				title:    matches[3],
 			}
 			items[item.title] = item
@@ -217,103 +181,43 @@ func parseListPatch(patch string) (string, map[string]toDoItem, error) {
 	return title, items, nil
 }
 
-func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string) (*Notebook, error) {
-	notebook, err := s.Fetch(userID)
-	if err != nil {
-		return nil, err
-	}
+func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string, timestamp int64) error {
+	_, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
+		newTitle, newItems, err := parseListPatch(patch)
+		if err != nil {
+			return err
+		}
+		list.Rename(newTitle)
 
-	list, err := notebook.GetList(listID)
-	if err != nil {
-		return nil, err
-	}
-
-	newTitle, newItems, err := parseListPatch(patch)
-	if err != nil {
-		return nil, err
-	}
-	list.Rename(newTitle)
-
-	// TODO: Return them as map here as well?
-	currentItems := list.GetItems()
-	for _, currentItem := range currentItems {
-		newItem, ok := newItems[currentItem.Title]
-		if !ok {
-			list.RemoveItem(currentItem.ID)
-			continue
+		for _, newItem := range newItems {
+			list.AddItem(newItem.title)
 		}
 
-		if err := list.MoveItem(currentItem.ID, newItem.position); err != nil {
-			return nil, err
-		}
+		patchedList := *list
+		patchedList.Items = make([]TodoItem, len(list.Items))
+		copy(patchedList.Items, list.Items)
 
-		if newItem.checked {
-			if _, err := list.CheckItem(currentItem.ID); err != nil {
-				return nil, err
+		for _, currentItem := range list.Items {
+			newItem, ok := newItems[currentItem.Title]
+			if !ok && currentItem.CreatedAt < timestamp {
+				patchedList.RemoveItem(currentItem.Title)
+				continue
 			}
-		} else {
-			if _, err := list.UncheckItem(currentItem.ID); err != nil {
-				return nil, err
-			}
-		}
-	}
 
-	sortedNewItems := make([]toDoItem, 0, len(newItems))
-	for _, item := range newItems {
-		sortedNewItems = append(sortedNewItems, item)
-	}
-	slices.SortFunc(sortedNewItems, func(a, b toDoItem) int {
-		return a.position - b.position
-	})
-
-	for _, newItem := range sortedNewItems {
-		if !slices.ContainsFunc(currentItems,
-			func(i ToDoItem) bool { return i.Title == newItem.title }) {
-			itemID, err := list.AddItem(newItem.title)
-			if err != nil {
-				return nil, err
-			}
+			patchedList.MoveItem(currentItem.Title, newItem.position)
 
 			if newItem.checked {
-				if _, err := list.CheckItem(itemID); err != nil {
-					return nil, err
-				}
+				patchedList.CheckItem(currentItem.Title)
+			} else {
+				patchedList.UncheckItem(currentItem.Title)
 			}
 		}
-	}
 
-	return s.Update(userID, notebook)
-}
+		list.UpdatedAt = patchedList.UpdatedAt
+		list.Items = make([]TodoItem, len(patchedList.Items))
+		copy(list.Items, patchedList.Items)
 
-func (s *Service) AddItem(userID, listID uuid.UUID, title string) (*ToDoList, error) {
-	return s.updateList(userID, listID, func(l *ToDoList) error {
-		_, err := l.AddItem(title)
-		return err
-	})
-}
-
-func (s *Service) RemoveItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
-	return s.updateList(userID, listID, func(l *ToDoList) error {
-		l.RemoveItem(itemID)
 		return nil
-
 	})
-}
-
-func (s *Service) CheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
-	return s.updateList(userID, listID, func(l *ToDoList) error {
-		_, err := l.CheckItem(itemID)
-		return err
-	})
-}
-
-func (s *Service) UncheckItem(userID, listID, itemID uuid.UUID) (*ToDoList, error) {
-	return s.updateList(userID, listID, func(l *ToDoList) error {
-		_, err := l.UncheckItem(itemID)
-		return err
-	})
-}
-
-func (s *Service) Remove(id uuid.UUID) error {
-	panic("not implemented")
+	return err
 }
