@@ -6,9 +6,10 @@ function itemMovedEvent() { return new Event("item-moved") };
 
 function autosize(){
 	const el = this;
+	const offset = el.offsetHeight - el.clientHeight;
 	setTimeout(() => {
-		// Subtract 10px so the element doesn't keep growing.
-		el.style = "height:" + (el.scrollHeight - 10) + "px;overflow-y:hidden;";
+		el.style.height = 'auto';
+		el.style.height = el.scrollHeight + offset + 'px';
 	}, 10);
 }
 
