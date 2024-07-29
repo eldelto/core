@@ -84,7 +84,9 @@ htmx.onLoad(function(content) {
 
 			// Disable sorting on the `end` event
 			onEnd: function (evt) {
-				this.option("disabled", true);
+				if (evt.newIndex !== evt.oldIndex) {
+					this.option("disabled", true);
+				}
 			}
 		});
 

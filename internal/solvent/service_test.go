@@ -76,12 +76,38 @@ func TestApplyListPatch(t *testing.T) {
 			want:        "list 1",
 		},
 		{
+			name: "removing and adding items",
+			createPatch: `list 1
+
+- [ ] another thing
+- [X] thing1
+- [X] thing2
+- [ ] thing3
+- [ ] thing4
+- [X] thing5
+- [X] thing6
+- [X] thing7
+- [X] thing9
+- [X] thing20
+- [ ] bla bla
+- [ ] bla bla 2 `,
+			updatePatch: `list 1
+
+this
+and
+that`,
+			want: `list 1
+
+- [ ] this
+- [ ] and
+- [ ] that`,
+		},
+		{
 			name:        "moving items",
 			createPatch: "list 1\nitem 1\nitem 2",
 			updatePatch: "list 2\nitem 2\nitem 1",
 			want:        "list 2\n\n- [ ] item 2\n- [ ] item 1",
 		},
-
 		{
 			name:        "moving items",
 			createPatch: "list 1\nitem 1\nitem 2",
