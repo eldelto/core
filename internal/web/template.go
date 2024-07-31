@@ -1,19 +1,59 @@
 package web
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
+	"log"
 	"path"
+	"path/filepath"
+	"time"
 )
 
-type Templater struct {
-	fileSystem fs.FS
+var (
+	fileHashes = map[string]int{} 
+	fallbackHash = fmt.Sprintf("%x", time.Now().Unix())
+)
+
+func getFileHash(fs fs.FS, path string)string  {
+	// TODO: Cache hashes
+
+	file, err := fs.Open(path)
+	if err != nil {
+		log.Printf("failed open file %q for hashing: %v", path, err) 
+		return fallbackHash
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		log.Printf("failed read file %q for hashing: %v", path, err) 
+		return fallbackHash
+	}
+
+	return fmt.Sprintf("%x", sha256.Sum256(content))
 }
 
-func NewTemplater(fileSystem fs.FS) *Templater {
-	return &Templater{fileSystem: fileSystem}
+type Templater struct {
+	templateFS fs.FS
+	assetsFS fs.FS
+	funcs template.FuncMap
+}
+
+func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
+	return &Templater{
+		templateFS: templateFS,
+		assetsFS: assetsFS,
+			funcs: template.FuncMap{
+				"asset": func(path string) string {
+					path = filepath.Join("assets", path)
+					hash := getFileHash(assetsFS, path)
+					return filepath.Join("/", path + "?h=" + hash)
+				},
+			},
+	}
 }
 
 func (t *Templater) Get(patterns ...string) (*template.Template, error) {
@@ -23,7 +63,9 @@ func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 		templatePaths[i+1] = path.Join("templates", patterns[i]+".tmpl")
 	}
 
-	tmpl, err := template.ParseFS(t.fileSystem, templatePaths...)
+	tmpl, err := template.New("base.html.tmpl").
+		Funcs(t.funcs).
+		ParseFS(t.templateFS, templatePaths...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template %v: %w", templatePaths, err)
 	}

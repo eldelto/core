@@ -112,8 +112,8 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 
 const templatePathUrlParam = "templatePath"
 
-func NewTemplateController(fileSystem fs.FS, data any) *Controller {
-	var templater = NewTemplater(fileSystem)
+func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
+	var templater = NewTemplater(templateFS, assetsFS)
 
 	return &Controller{
 		BasePath: "/",
