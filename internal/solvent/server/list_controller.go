@@ -166,6 +166,28 @@ func updateList(service *solvent.Service) web.Handler {
 	}
 }
 
+func editSingleItem(service *solvent.Service,
+	w http.ResponseWriter,
+	userID,
+	listID uuid.UUID,
+	f func(*solvent.TodoList) solvent.TodoItem) error {
+	var item solvent.TodoItem
+	list, reloadRequired, err := service.UpdateTodoList(userID, listID, func(list *solvent.TodoList) error {
+		item = f(list)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if reloadRequired {
+		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
+	} else {
+		list.Items = []solvent.TodoItem{item}
+		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+	}
+}
+
 func checkItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		userID := uuid.UUID{}
@@ -181,17 +203,10 @@ func checkItem(service *solvent.Service) web.Handler {
 		}
 		itemTitle := r.PostForm.Get("title")
 
-		var item solvent.TodoItem
-		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
-			item = list.CheckItem(itemTitle)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		list.Items = []solvent.TodoItem{item}
-
-		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+		return editSingleItem(service, w, userID, id,
+			func(list *solvent.TodoList) solvent.TodoItem {
+				return list.CheckItem(itemTitle)
+			})
 	}
 }
 
@@ -210,17 +225,10 @@ func uncheckItem(service *solvent.Service) web.Handler {
 		}
 		itemTitle := r.PostForm.Get("title")
 
-		var item solvent.TodoItem
-		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
-			item = list.UncheckItem(itemTitle)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		list.Items = []solvent.TodoItem{item}
-
-		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+		return editSingleItem(service, w, userID, id,
+			func(list *solvent.TodoList) solvent.TodoItem {
+				return list.UncheckItem(itemTitle)
+			})
 	}
 }
 
@@ -245,17 +253,10 @@ func moveItem(service *solvent.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as valid index", rawIndex)
 		}
 
-		var item solvent.TodoItem
-		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
-			item = list.MoveItem(itemTitle, uint(index))
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		list.Items = []solvent.TodoItem{item}
-
-		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+		return editSingleItem(service, w, userID, id,
+			func(list *solvent.TodoList) solvent.TodoItem {
+				return list.MoveItem(itemTitle, uint(index))
+			})
 	}
 }
 
@@ -274,7 +275,7 @@ func addItem(service *solvent.Service) web.Handler {
 		}
 		itemTitle := r.PostForm.Get("title")
 
-		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
+		list, _, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
 			list.AddItem(itemTitle)
 			return nil
 		})
@@ -301,7 +302,7 @@ func deleteItem(service *solvent.Service) web.Handler {
 		}
 		itemTitle := r.PostForm.Get("title")
 
-		list, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
+		list, _, err := service.UpdateTodoList(userID, id, func(list *solvent.TodoList) error {
 			list.RemoveItem(itemTitle)
 			return nil
 		})

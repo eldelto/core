@@ -2,7 +2,7 @@
 
 <div class="ToDoList">
   {{block "todoListOnly" .}}
-  <div id="TodoListBody">
+  <div id="TodoListBody" hx-swap-oob="true">
 	<a href="/lists/{{.ID}}/edit" id="edit-link" class="edit">Edit</a>
 	<h1 class="ToDoListTitle {{if .Done}}checked{{end}}">
 	  {{.Title}}

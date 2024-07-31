@@ -123,21 +123,25 @@ func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
 	return getList(notebook, userID, listID)
 }
 
-func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, error) {
+func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
 	var result TodoList
+	var listStateChanged bool
 	_, err := s.UpdateNotebook(userID, func(n *Notebook2) error {
 		list, err := getList(n, userID, listID)
 		if err != nil {
 			return err
 		}
 
+		oldDone := list.Done()
 		err = fn(&list)
+		listStateChanged = list.Done() != oldDone
+
 		result = list
 		n.Lists[list.ID] = list
 
 		return err
 	})
-	return result, err
+	return result, listStateChanged, err
 }
 
 type todoItem struct {
@@ -182,7 +186,7 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 }
 
 func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string, timestamp int64) error {
-	_, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
+	_, _, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
 		newTitle, newItems, err := parseListPatch(patch)
 		if err != nil {
 			return err
