@@ -13,46 +13,51 @@ import (
 )
 
 var (
-	fileHashes = map[string]int{} 
+	fileHashes   = map[string]string{}
 	fallbackHash = fmt.Sprintf("%x", time.Now().Unix())
 )
 
-func getFileHash(fs fs.FS, path string)string  {
-	// TODO: Cache hashes
+func getFileHash(fs fs.FS, path string) string {
+	if hash, ok := fileHashes[path]; ok {
+		return hash
+	}
 
 	file, err := fs.Open(path)
 	if err != nil {
-		log.Printf("failed open file %q for hashing: %v", path, err) 
+		log.Printf("failed to open file %q for hashing: %v", path, err)
 		return fallbackHash
 	}
 	defer file.Close()
 
-	content, err := io.ReadAll(file)
-	if err != nil {
-		log.Printf("failed read file %q for hashing: %v", path, err) 
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		log.Printf("failed to read file %q for hashing: %v", path, err)
 		return fallbackHash
 	}
 
-	return fmt.Sprintf("%x", sha256.Sum256(content))
+	hash := fmt.Sprintf("%x", hasher.Sum([]byte{}))
+	fileHashes[path] = hash
+
+	return hash
 }
 
 type Templater struct {
 	templateFS fs.FS
-	assetsFS fs.FS
-	funcs template.FuncMap
+	assetsFS   fs.FS
+	funcs      template.FuncMap
 }
 
 func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 	return &Templater{
 		templateFS: templateFS,
-		assetsFS: assetsFS,
-			funcs: template.FuncMap{
-				"asset": func(path string) string {
-					path = filepath.Join("assets", path)
-					hash := getFileHash(assetsFS, path)
-					return filepath.Join("/", path + "?h=" + hash)
-				},
+		assetsFS:   assetsFS,
+		funcs: template.FuncMap{
+			"asset": func(path string) string {
+				path = filepath.Join("assets", path)
+				hash := getFileHash(assetsFS, path)
+				return filepath.Join("/", path+"?h="+hash)
 			},
+		},
 	}
 }
 

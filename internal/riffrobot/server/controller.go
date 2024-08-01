@@ -12,6 +12,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var (
+	templater    = web.NewTemplater(TemplatesFS, AssetsFS)
+	riffTemplate = templater.GetP("riff.html")
+)
+
 func NewRiffController() *web.Controller {
 	return &web.Controller{
 		BasePath: "/",
@@ -22,11 +27,6 @@ func NewRiffController() *web.Controller {
 		},
 	}
 }
-
-var (
-	templater    = web.NewTemplater(TemplatesFS)
-	riffTemplate = templater.GetP("riff.html")
-)
 
 func currentRiff() web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {

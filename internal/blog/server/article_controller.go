@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	templater        = web.NewTemplater(TemplatesFS)
+	templater        = web.NewTemplater(TemplatesFS, AssetsFS)
 	articlesTemplate = templater.GetP("articles.html")
 	articleTemplate  = templater.GetP("article.html")
 )
