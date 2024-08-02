@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	templater      = web.NewTemplater(TemplatesFS)
+	templater      = web.NewTemplater(TemplatesFS, AssetsFS)
 	resultTemplate = templater.GetP("expense-result.html")
 )
 

@@ -34,7 +34,7 @@ func main() {
 	sitemapContoller := web.NewSitemapController()
 	sitemapContoller.Register(r)
 	web.NewAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, nil).Register(r)
+	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
 	server.NewExpensesController().Register(r)
 	http.Handle("/", r)
 

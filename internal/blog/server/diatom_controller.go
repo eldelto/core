@@ -16,7 +16,7 @@ func NewDiatomController() *web.Controller {
 			{Method: http.MethodGet, Path: "/diatom.js"}: getDiatomJs(),
 		},
 		Middleware: []web.HandlerProvider{
-			web.CachingMiddleware,
+			web.CachingMiddleware(3600),
 		},
 	}
 }

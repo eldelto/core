@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	templater        = web.NewTemplater(TemplatesFS)
+	templater        = web.NewTemplater(TemplatesFS, AssetsFS)
 	listsTemplate    = templater.GetP("lists.html")
 	listTemplate     = templater.GetP("list.html")
 	editListTemplate = templater.GetP("edit-list.html")

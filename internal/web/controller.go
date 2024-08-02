@@ -67,7 +67,24 @@ func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
 		Handlers: map[Endpoint]Handler{
 			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
 		},
-		Middleware: []HandlerProvider{CachingMiddleware},
+		Middleware: []HandlerProvider{CachingMiddleware(3600)},
+	}
+
+	if basePath != "" {
+		c.Handlers[Endpoint{Method: "GET", Path: "/robots.txt"}] = getFile(fileSystem, "robots.txt")
+		c.Handlers[Endpoint{Method: "GET", Path: "/favicon.ico"}] = getFile(fileSystem, "favicon.ico")
+	}
+
+	return &c
+}
+
+func NewCacheBustingAssetController(basePath string, fileSystem fs.FS) *Controller {
+	c := Controller{
+		BasePath: basePath,
+		Handlers: map[Endpoint]Handler{
+			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
+		},
+		Middleware: []HandlerProvider{StaticContentMiddleware},
 	}
 
 	if basePath != "" {
@@ -112,8 +129,8 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 
 const templatePathUrlParam = "templatePath"
 
-func NewTemplateController(fileSystem fs.FS, data any) *Controller {
-	var templater = NewTemplater(fileSystem)
+func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
+	var templater = NewTemplater(templateFS, assetsFS)
 
 	return &Controller{
 		BasePath: "/",
