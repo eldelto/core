@@ -22,6 +22,6 @@ func TestParseJson(t *testing.T) {
 	AssertEquals(t, "INTERSPAR", tx.PartnerName, "PartnerName")
 	AssertEquals(t, "SPAR FIL. 2345", tx.Details, "Details")
 	AssertEquals(t, "2024-06-27 00:00:00 +0200 CEST", tx.Date.String(), "Date")
-	AssertEquals(t, -3456, tx.Amount, "Amount")
+	AssertEquals(t, moneypenny.Amount(-3456), tx.Amount, "Amount")
 	AssertEquals(t, "EUR", tx.Currency, "Currency")
 }
