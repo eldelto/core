@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/eldelto/core/internal/ofx"
+	"github.com/eldelto/core/internal/moneypenny"
 	"github.com/eldelto/core/internal/web"
 )
 
@@ -31,7 +31,7 @@ func calculateExpenses() web.Handler {
 
 		// TODO: Check file type
 
-		transactions, err := ofx.Parse(file)
+		transactions, err := moneypenny.ParseJSON(file)
 		if err != nil {
 			return err
 		}

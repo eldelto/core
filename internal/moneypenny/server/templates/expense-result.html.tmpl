@@ -1,14 +1,18 @@
 {{define "content"}}
 <table>
   <thead>
+	<td>Date</td>
 	<td>Name</td>
 	<td>Amount</td>
+	<td>Details</td>
   </thead>
   <tbody>
 	{{range .}}
 	<tr>
-	  <td>{{.Name}}</td>
-	  <td>{{.Amount.String}}</td>
+	  <td>{{.Date}}</td>
+	  <td>{{.PartnerName}}</td>
+	  <td>{{.Amount}}</td>
+	  <td>{{.Details}}</td>
 	</tr>
 	{{end}}
   </tbody>
