@@ -25,7 +25,7 @@
 	font-style: normal;
 	font-weight: 400;
 	font-display: swap;
-	src: url(/assets/Pattaya-Regular.ttf);
+	src: url(/assets/Pattaya-Regular.ttf?h=1);
 }
 
 body {
@@ -196,7 +196,7 @@ button,
 }
 
 .confirm::before {
-	background-image: url("/assets/icons/checked-white.svg");
+	background-image: url("/assets/icons/checked-white.svg?h=1");
 }
 
 .confirm:hover {
@@ -212,7 +212,7 @@ button,
 }
 
 .edit::before {
-	background-image: url("/assets/icons/edit.svg");
+	background-image: url("/assets/icons/edit.svg?h=1");
 	background-size: 1.3em 1.3em;
 	width: 1.7em;
 }
@@ -411,13 +411,13 @@ button:disabled:hover {
 	border: none;
 	background: none;
 	cursor: pointer;
-	background-image: url("/assets/icons/plus-circle.svg");
+	background-image: url("/assets/icons/plus-circle.svg?h=1");
 	background-size: 30px 30px;
 	background-repeat: no-repeat;
 }
 
 #AddItemBarButton:disabled {
-	background-image: url("/assets/icons/plus.svg");
+	background-image: url("/assets/icons/plus.svg?h=1");
 	opacity: var(--disabled-opacity);
 	cursor: default;
 }

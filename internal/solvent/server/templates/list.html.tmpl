@@ -27,9 +27,9 @@
 				  aria-label="check/uncheck item"
 				  class="ToDoItemCheckbox">
 			{{if .Checked}}
-			<img src="/assets/icons/checked-brand.svg" alt="checked" />
+			<img src='{{asset "icons/checked-brand.svg"}}' alt="checked" />
 			{{else}}
-			<img src="/assets/icons/checkbox-blank-circle-outline.svg" alt="checked" />
+			<img src='{{asset "icons/checkbox-blank-circle-outline.svg"}}' alt="checked" />
 			{{end}}
 		  </button>
 		</form>

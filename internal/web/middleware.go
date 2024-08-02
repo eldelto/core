@@ -56,7 +56,7 @@ func CachingMiddleware(maxAge int) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet {
-				if r.URL.Query().Get("h") == "" {
+				if maxAge == CacheDurationImmutable && r.URL.Query().Get("h") == "" {
 					log.Printf("warning - no cache-busting hash found for %q", r.URL.Path)
 				} else {
 					w.Header().Set(CacheControlHeader, value)
