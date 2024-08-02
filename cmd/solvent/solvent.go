@@ -45,7 +45,7 @@ func main() {
 	r := chi.NewRouter()
 
 	// Controllers
-	web.NewAssetController("", server.AssetsFS).Register(r)
+	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
 	server.NewListController(service).Register(r)
 

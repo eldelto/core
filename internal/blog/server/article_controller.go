@@ -26,7 +26,7 @@ func NewArticleController(service *blog.Service) *web.Controller {
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
-			web.CachingMiddleware,
+			web.CachingMiddleware(3600),
 		},
 	}
 }
