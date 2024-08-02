@@ -2,12 +2,14 @@ const deletingClass = "deleting";
 
 function keydownEvent() { return new Event("keydown") };
 function deleteItemEvent() { return new Event("delete-item") };
+function itemMovedEvent() { return new Event("item-moved") };
 
 function autosize(){
 	const el = this;
+	const offset = el.offsetHeight - el.clientHeight;
 	setTimeout(() => {
-		// Subtract 10px so the element doesn't keep growing.
-		el.style = "height:" + (el.scrollHeight - 10) + "px;overflow-y:hidden;";
+		el.style.height = 'auto';
+		el.style.height = el.scrollHeight + offset + 'px';
 	}, 10);
 }
 
@@ -76,13 +78,16 @@ htmx.onLoad(function(content) {
 			},
 
 			onUpdate: function (evt) {
-				const input = evt.item.querySelector("input");
+				const input = evt.item.querySelector("input[name='index']");
 				input.value = evt.newIndex;
+				evt.item.dispatchEvent(itemMovedEvent());
 			},
 
 			// Disable sorting on the `end` event
 			onEnd: function (evt) {
-				this.option("disabled", true);
+				if (evt.newIndex !== evt.oldIndex) {
+					this.option("disabled", true);
+				}
 			}
 		});
 
@@ -142,7 +147,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	htmx.on("htmx:responseError", function (evt) {
 		const dialog = document.querySelector("#error-dialog");
-		dialog.innerHTML = evt.detail.xhr.response;
+		const dialogContent = document.querySelector("#error-content");
+		dialogContent.innerHTML = evt.detail.xhr.response;
 		dialog.showModal();
     });
 });

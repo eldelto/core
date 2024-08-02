@@ -1,10 +1,10 @@
 package solvent
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/eldelto/core/internal/testutils"
 	"github.com/google/uuid"
@@ -13,7 +13,10 @@ import (
 
 const dbPath = "solvent-test.db"
 
-var userID = uuid.Nil
+var (
+	userID          = uuid.Nil
+	plus1hTimestamp = time.Now().Add(1 * time.Hour).UnixMicro()
+)
 
 func TestApplyListPatch(t *testing.T) {
 	db, err := bbolt.Open(dbPath, 0660, nil)
@@ -67,12 +70,44 @@ func TestApplyListPatch(t *testing.T) {
 			want:        "list 2\n\n- [ ] item 2",
 		},
 		{
+			name:        "removing all items",
+			createPatch: "list 1\nitem 1\nitem 2\nitem 3",
+			updatePatch: "list 1",
+			want:        "list 1",
+		},
+		{
+			name: "removing and adding items",
+			createPatch: `list 1
+
+- [ ] another thing
+- [X] thing1
+- [X] thing2
+- [ ] thing3
+- [ ] thing4
+- [X] thing5
+- [X] thing6
+- [X] thing7
+- [X] thing9
+- [X] thing20
+- [ ] bla bla
+- [ ] bla bla 2 `,
+			updatePatch: `list 1
+
+this
+and
+that`,
+			want: `list 1
+
+- [ ] this
+- [ ] and
+- [ ] that`,
+		},
+		{
 			name:        "moving items",
 			createPatch: "list 1\nitem 1\nitem 2",
 			updatePatch: "list 2\nitem 2\nitem 1",
 			want:        "list 2\n\n- [ ] item 2\n- [ ] item 1",
 		},
-
 		{
 			name:        "moving items",
 			createPatch: "list 1\nitem 1\nitem 2",
@@ -83,19 +118,25 @@ func TestApplyListPatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			list, err := service.CreateList(userID)
+			_, err := service.FetchNotebook(userID)
+			AssertNoError(t, err, "create a new notebook")
+
+			var list TodoList
+			_, err = service.UpdateNotebook(userID,
+				func(n *Notebook2) error {
+					l, err := n.NewList("List 1")
+					list = *l
+					return err
+				})
 			AssertNoError(t, err, "create a new list")
 
-			_, err = service.ApplyListPatch(userID, list.ID, tt.createPatch)
+			err = service.ApplyListPatch(userID, list.ID, tt.createPatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply create list patch")
 
-			_, err = service.ApplyListPatch(userID, list.ID, tt.updatePatch)
+			err = service.ApplyListPatch(userID, list.ID, tt.updatePatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply update list patch")
 
-			notebook, err := service.Fetch(userID)
-			AssertNoError(t, err, "fetch notebook")
-
-			list, err = notebook.GetList(list.ID)
+			list, err = service.FetchTodoList(userID, list.ID)
 			AssertNoError(t, err, "get list")
 
 			got := strings.TrimSpace(list.String())
@@ -104,7 +145,7 @@ func TestApplyListPatch(t *testing.T) {
 	}
 }
 
-func BenchApplyListPatch(b *testing.B) {
+/*func BenchApplyListPatch(b *testing.B) {
 	db, err := bbolt.Open(dbPath, 0660, nil)
 	AssertNoError(b, err, "bboltOpent")
 	defer db.Close()
@@ -140,4 +181,4 @@ func BenchApplyListPatch(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 
 	}
-}
+}*/

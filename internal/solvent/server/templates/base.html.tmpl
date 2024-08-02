@@ -16,7 +16,15 @@
   </head>
 
   <body>
-	<dialog id="error-dialog" class="ToDoList"></dialog>
+	<dialog id="error-dialog" class="ToDoList">
+	  <form method="dialog">
+		<p id="error-content">
+		  {{.}}
+		</p>
+		<button class="confirm">OK</button>
+	  </form>
+	</dialog>
+
 	<div id="content">
       <header>
         <div class="ListViewHeader header">
