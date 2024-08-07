@@ -2,6 +2,9 @@ package web
 
 import (
 	"context"
+	"fmt"
+	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -20,8 +23,43 @@ type AuthRepository interface {
 	Find(SessionID) (UserID, error)
 }
 
+type InMemoryAuthRepository struct {
+	data map[SessionID]UserID
+}
+
+func NewInMemoryAuthRepository() *InMemoryAuthRepository {
+	return &InMemoryAuthRepository{
+		data: map[SessionID]UserID{},
+	}
+}
+
+func (r *InMemoryAuthRepository) Store(sid SessionID, uid UserID) error {
+	r.data[sid] = uid
+	return nil
+}
+
+func (r *InMemoryAuthRepository) Find(sid SessionID) (UserID, error) {
+	uid, ok := r.data[sid]
+	if !ok {
+		return UserID{}, fmt.Errorf("failed to find session %q", sid)
+	}
+
+	return uid, nil
+}
+
 type Authenticator struct {
-	repo AuthRepository
+	repo          AuthRepository
+	loginTemplate *template.Template
+}
+
+func NewAuthenticator(repo AuthRepository, templateFS, assetsFS fs.FS) *Authenticator {
+	templater := NewTemplater(templateFS, assetsFS)
+	loginTemplate := templater.GetP("login.html")
+
+	return &Authenticator{
+		repo:          repo,
+		loginTemplate: loginTemplate,
+	}
 }
 
 func (a *Authenticator) Middleware(next http.Handler) http.Handler {
@@ -51,21 +89,21 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-func NewLoginController() *Controller {
+func (a *Authenticator) Controller() *Controller {
 	return &Controller{
-		BasePath: "login",
+		BasePath: "/login",
 		Handlers: map[Endpoint]Handler{
-			{Method: http.MethodGet, Path: ""}:    getLoginPage(),
+			{Method: http.MethodGet, Path: ""}:    a.getLoginPage(),
 			{Method: http.MethodPost, Path: ""}:   login(),
 			{Method: http.MethodDelete, Path: ""}: logout(),
 		},
 	}
 }
 
-func getLoginPage() Handler {
+func (a *Authenticator) getLoginPage() Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// TODO: Implement
-		return nil
+		return a.loginTemplate.Execute(w, nil)
 	}
 }
 
