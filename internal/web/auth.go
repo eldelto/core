@@ -57,65 +57,6 @@ type AuthRepository interface {
 	FindSession(SessionID) (Session, error)
 }
 
-type InMemoryAuthRepository struct {
-	tokenMap   map[TokenID]Token
-	emailMap   map[mail.Address]UserID
-	sessionMap map[SessionID]Session
-}
-
-func NewInMemoryAuthRepository() *InMemoryAuthRepository {
-	return &InMemoryAuthRepository{
-		tokenMap:   map[TokenID]Token{},
-		emailMap:   map[mail.Address]UserID{},
-		sessionMap: map[SessionID]Session{},
-	}
-}
-
-func (r *InMemoryAuthRepository) StoreToken(t Token) error {
-	r.tokenMap[t.ID] = t
-	fmt.Printf("stored token: %v\n", t)
-	fmt.Printf("go to: /auth/session?token=%s\n", t.ID.string)
-	return nil
-}
-
-func (r *InMemoryAuthRepository) FindToken(id TokenID) (Token, error) {
-	token, ok := r.tokenMap[id]
-	if !ok {
-		return Token{}, fmt.Errorf("failed to find token %q", id)
-	}
-	delete(r.tokenMap, id)
-
-	return token, nil
-}
-
-func (r *InMemoryAuthRepository) ResolveUserID(email mail.Address) (UserID, error) {
-	userID, ok := r.emailMap[email]
-	if !ok {
-		rawUserID, err := uuid.NewRandom()
-		if err != nil {
-			return UserID{}, fmt.Errorf("failed to generate new user ID: %w", err)
-		}
-		userID = UserID{rawUserID}
-		r.emailMap[email] = userID
-	}
-
-	return userID, nil
-}
-
-func (r *InMemoryAuthRepository) StoreSession(s Session) error {
-	r.sessionMap[s.ID] = s
-	return nil
-}
-
-func (r *InMemoryAuthRepository) FindSession(id SessionID) (Session, error) {
-	s, ok := r.sessionMap[id]
-	if !ok {
-		return Session{}, fmt.Errorf("failed to find session %q", id)
-	}
-
-	return s, nil
-}
-
 type Authenticator struct {
 	repo                 AuthRepository
 	loginTemplate        *template.Template
@@ -259,4 +200,63 @@ func logout() Handler {
 		// TODO: Implement
 		return nil
 	}
+}
+
+type InMemoryAuthRepository struct {
+	tokenMap   map[TokenID]Token
+	emailMap   map[mail.Address]UserID
+	sessionMap map[SessionID]Session
+}
+
+func NewInMemoryAuthRepository() *InMemoryAuthRepository {
+	return &InMemoryAuthRepository{
+		tokenMap:   map[TokenID]Token{},
+		emailMap:   map[mail.Address]UserID{},
+		sessionMap: map[SessionID]Session{},
+	}
+}
+
+func (r *InMemoryAuthRepository) StoreToken(t Token) error {
+	r.tokenMap[t.ID] = t
+	fmt.Printf("stored token: %v\n", t)
+	fmt.Printf("go to: /auth/session?token=%s\n", t.ID.string)
+	return nil
+}
+
+func (r *InMemoryAuthRepository) FindToken(id TokenID) (Token, error) {
+	token, ok := r.tokenMap[id]
+	if !ok {
+		return Token{}, fmt.Errorf("failed to find token %q", id)
+	}
+	delete(r.tokenMap, id)
+
+	return token, nil
+}
+
+func (r *InMemoryAuthRepository) ResolveUserID(email mail.Address) (UserID, error) {
+	userID, ok := r.emailMap[email]
+	if !ok {
+		rawUserID, err := uuid.NewRandom()
+		if err != nil {
+			return UserID{}, fmt.Errorf("failed to generate new user ID: %w", err)
+		}
+		userID = UserID{rawUserID}
+		r.emailMap[email] = userID
+	}
+
+	return userID, nil
+}
+
+func (r *InMemoryAuthRepository) StoreSession(s Session) error {
+	r.sessionMap[s.ID] = s
+	return nil
+}
+
+func (r *InMemoryAuthRepository) FindSession(id SessionID) (Session, error) {
+	s, ok := r.sessionMap[id]
+	if !ok {
+		return Session{}, fmt.Errorf("failed to find session %q", id)
+	}
+
+	return s, nil
 }
