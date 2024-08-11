@@ -1,8 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/gob"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -13,6 +16,7 @@ import (
 	"net/mail"
 
 	"github.com/google/uuid"
+	"go.etcd.io/bbolt"
 )
 
 type ctxKey string
@@ -23,8 +27,8 @@ const (
 	cookieName = "session"
 )
 
-type SessionID struct{ string }
-type TokenID struct{ string }
+type SessionID string
+type TokenID string
 type UserID struct{ uuid.UUID }
 
 type Token struct {
@@ -87,7 +91,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		session, err := a.repo.FindSession(SessionID{cookie.Value})
+		session, err := a.repo.FindSession(SessionID(cookie.Value))
 		if err != nil {
 			log.Printf("failed to fetch session: %v", err)
 			http.Redirect(w, r, loginPath, http.StatusSeeOther)
@@ -137,7 +141,7 @@ func (a *Authenticator) createToken() Handler {
 				rawEmail, err)
 		}
 
-		id := TokenID{rawToken.String()}
+		id := TokenID(rawToken.String())
 		token := Token{
 			ID:    id,
 			Email: *email,
@@ -158,7 +162,7 @@ func (a *Authenticator) authenticate() Handler {
 			return ErrUnauthenticated
 		}
 
-		token, err := a.repo.FindToken(TokenID{rawTokenID})
+		token, err := a.repo.FindToken(TokenID(rawTokenID))
 		if err != nil {
 			return fmt.Errorf("failed to find token %q: %w %w",
 				rawTokenID, err, ErrUnauthenticated)
@@ -170,7 +174,12 @@ func (a *Authenticator) authenticate() Handler {
 				err, ErrUnauthenticated)
 		}
 
+		sessionID, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+		if err != nil {
+			return fmt.Errorf("failed to generate random session ID: %w", err)
+		}
 		session := Session{
+			ID:   SessionID(sessionID.String()),
 			User: userID,
 		}
 
@@ -181,7 +190,7 @@ func (a *Authenticator) authenticate() Handler {
 
 		cookie := http.Cookie{
 			Name:  cookieName,
-			Value: session.ID.string,
+			Value: string(session.ID),
 			Path:  "/",
 			// TODO: Switch off when domain == localhost?
 			//Secure: true,
@@ -219,7 +228,7 @@ func NewInMemoryAuthRepository() *InMemoryAuthRepository {
 func (r *InMemoryAuthRepository) StoreToken(t Token) error {
 	r.tokenMap[t.ID] = t
 	fmt.Printf("stored token: %v\n", t)
-	fmt.Printf("go to: /auth/session?token=%s\n", t.ID.string)
+	fmt.Printf("go to: /auth/session?token=%s\n", t.ID)
 	return nil
 }
 
@@ -259,4 +268,174 @@ func (r *InMemoryAuthRepository) FindSession(id SessionID) (Session, error) {
 	}
 
 	return s, nil
+}
+
+const (
+	tokenBucket        = "auth.tokens"
+	emailMappingBucket = "auth.emailMapping"
+	sessionBucket      = "auth.sessions"
+)
+
+var ErrNotFound = errors.New("element not found")
+
+func find[T any](db *bbolt.DB, bucketName, key string) (T, error) {
+	var result T
+
+	err := db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket - bucket=%q", bucketName)
+		}
+
+		value := bucket.Get([]byte(key))
+		if value == nil {
+			return fmt.Errorf("failed to get value - bucket=%q, key=%q: %w",
+				bucketName, key, ErrNotFound)
+		}
+
+		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&result); err != nil {
+			return fmt.Errorf("failed to decode value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return result, fmt.Errorf("failed to find value - bucket=%q, key=%q: %w",
+			bucketName, key, err)
+	}
+
+	return result, nil
+}
+
+func store[T any](db *bbolt.DB, bucketName, key string, value T) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket - bucket=%q", bucketName)
+		}
+
+		buffer := bytes.Buffer{}
+		if err := gob.NewEncoder(&buffer).Encode(value); err != nil {
+			return fmt.Errorf("failed to encode value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
+			return fmt.Errorf("failed to persist value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to store - bucket=%q, key=%q: %w", bucketName, key, err)
+	}
+
+	return nil
+}
+
+func remove(db *bbolt.DB, bucketName, key string) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("failed to get bucket - bucket=%q", bucketName)
+		}
+
+		if err := bucket.Delete([]byte(key)); err != nil {
+			return fmt.Errorf("failed to delete value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to remove - bucket=%q, key=%q: %w",
+			bucketName, key, err)
+	}
+
+	return nil
+}
+
+type BBoltAuthRepository struct {
+	db *bbolt.DB
+}
+
+// TODO: Rather return the errors here?
+func NewBBoltAuthRepository(db *bbolt.DB) *BBoltAuthRepository {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte(tokenBucket)); err != nil {
+			panic(err)
+		}
+		if _, err := tx.CreateBucketIfNotExists([]byte(emailMappingBucket)); err != nil {
+			panic(err)
+		}
+		if _, err := tx.CreateBucketIfNotExists([]byte(sessionBucket)); err != nil {
+			panic(err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return &BBoltAuthRepository{db: db}
+}
+
+func (r *BBoltAuthRepository) StoreToken(t Token) error {
+	fmt.Printf("stored token: %v\n", t)
+	fmt.Printf("go to: /auth/session?token=%s\n", t.ID)
+	return store(r.db, tokenBucket, string(t.ID), t)
+}
+
+func (r *BBoltAuthRepository) FindToken(id TokenID) (Token, error) {
+	token, err := find[Token](r.db, tokenBucket, string(id))
+	if err != nil {
+		return Token{}, fmt.Errorf("failed to find token %q: %w", id, err)
+	}
+
+	if err := remove(r.db, tokenBucket, string(id)); err != nil {
+		return Token{}, fmt.Errorf("failed to remove token %q: %w", id, err)
+	}
+
+	return token, nil
+}
+
+func (r *BBoltAuthRepository) ResolveUserID(email mail.Address) (UserID, error) {
+	userID, err := find[UserID](r.db, emailMappingBucket, email.String())
+	switch {
+	case errors.Is(err, ErrNotFound):
+		rawUserID, err := uuid.NewRandom()
+		if err != nil {
+			return UserID{}, fmt.Errorf("failed to generate new user ID: %w", err)
+		}
+		userID = UserID{rawUserID}
+
+		if err := store(r.db, emailMappingBucket, email.String(), userID); err != nil {
+			return UserID{}, fmt.Errorf("failed to store new user ID: %w", err)
+		}
+	case err != nil:
+		return UserID{}, fmt.Errorf("failed to map E-mail to user ID: %w", err)
+	}
+
+	return userID, nil
+}
+
+func (r *BBoltAuthRepository) StoreSession(s Session) error {
+	if err := store(r.db, sessionBucket, string(s.ID), s); err != nil {
+		return fmt.Errorf("failed to store session %q: %w",
+			s.ID, err)
+	}
+
+	return nil
+}
+
+func (r *BBoltAuthRepository) FindSession(id SessionID) (Session, error) {
+	session, err := find[Session](r.db, sessionBucket, string(id))
+	if err != nil {
+		return Session{}, fmt.Errorf("failed to find session %q: %w", id, err)
+	}
+
+	return session, nil
 }
