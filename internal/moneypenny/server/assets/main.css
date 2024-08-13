@@ -11,24 +11,43 @@
     font-weight: 200;
     src: url(/assets/Grundschrift.ttf);
 }
-body{
-	background-color:#e57b8e;
-	font-family: Grundschrift;
-}
-button {background-color:#f3e88a; border: dotted 5px #54cfc4; 
-        border-radius: 20px; padding: 22px 50px}
 
-button:hover {background-color:lightseagreen;
-			  cursor:pointer;
-			  transform: translate(34px)}
-h1 {font-family: Playwrite; color: #f3e88a; border-bottom: dotted 5px #54cfc4;}
-
-td {border: dotted 2.5px #fffdfd; 
+body {
+    background-color: #e57b8e;
+    font-family: Grundschrift;
 }
-tbody > tr:nth-child(odd) {
+
+button {
+    background-color: #f3e88a;
+    border: dotted 5px #54cfc4;
+    border-radius: 20px;
+    padding: 22px 50px
+}
+
+button:hover {
+    background-color: lightseagreen;
+    cursor: pointer;
+    transform: translate(34px)
+}
+
+h1 {
+    font-family: Playwrite;
+    color: #f3e88a;
+    border-bottom: dotted 5px #54cfc4;
+}
+
+td {
+    border: dotted 2.5px #fffdfd;
+}
+
+tbody>tr:nth-child(odd) {
     background-color: #f3e88a;
 }
-table {border-collapse: collapse;
-}
-thead {background-color: lightgray}
 
+table {
+    border-collapse: collapse;
+}
+
+thead {
+    background-color: lightgray
+}

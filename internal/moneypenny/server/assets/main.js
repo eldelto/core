@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
 	console.log("<3");
 	let copybutton = document.querySelector("#copy-button");
 	console.log(copybutton);
@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function() {
 function copyAll() {
 	let table = document.querySelector("#expenses");
 	navigator.clipboard.writeText(table.textContent);
-	window.alert("Es hat FUNKTIONIERT");
-	
-	
+	window.alert("Erfolgreich!");
+
+
 }
