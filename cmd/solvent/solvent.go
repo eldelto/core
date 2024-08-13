@@ -45,9 +45,13 @@ func main() {
 	r := chi.NewRouter()
 
 	// Controllers
+	auth := web.NewAuthenticator(web.NewInMemoryAuthRepository(),
+		server.TemplatesFS, server.AssetsFS)
+
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
 	server.NewListController(service).Register(r)
+	auth.Controller().Register(r)
 
 	http.Handle("/", r)
 
