@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"net/smtp"
 	"regexp"
 	"strings"
 
@@ -24,7 +25,9 @@ type Service struct {
 	db *bbolt.DB
 }
 
-func NewService(db *bbolt.DB) (*Service, error) {
+func NewService(db *bbolt.DB,
+	smtpHost string,
+	smtpAuth smtp.Auth) (*Service, error) {
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(notebookBucket))
 		return err
