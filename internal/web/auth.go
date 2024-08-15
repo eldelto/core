@@ -41,6 +41,20 @@ type Session struct {
 	User UserID
 }
 
+func GetUserID(r *http.Request) (UserID, error) {
+	value := r.Context().Value(userIDKey)
+	if value == nil {
+		return UserID{}, ErrUnauthenticated
+	}
+
+	userID, ok := value.(UserID)
+	if !ok {
+		return UserID{}, fmt.Errorf("failed to cast %v to type UserID", value)
+	}
+
+	return userID, nil
+}
+
 /*
    Auth flow:
 

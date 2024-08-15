@@ -59,8 +59,12 @@ type listsData struct {
 
 func getLists(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		// TODO: Use actual user ID.
-		notebook, err := service.FetchNotebook(uuid.UUID{})
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
+		notebook, err := service.FetchNotebook(userID)
 		if err != nil {
 			return err
 		}
@@ -77,10 +81,14 @@ func getLists(service *solvent.Service) web.Handler {
 
 func createList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		// TODO: User actual user ID.
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
 		var list solvent.TodoList
-		_, err := service.UpdateNotebook(uuid.UUID{},
-			func(n *solvent.Notebook2) error {
+		_, err = service.UpdateNotebook(userID,
+			func(n *solvent.Notebook) error {
 				l, err := n.NewList("")
 				list = *l
 				return err
@@ -101,13 +109,18 @@ func createList(service *solvent.Service) web.Handler {
 
 func getList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		list, err := service.FetchTodoList(uuid.UUID{}, id)
+		list, err := service.FetchTodoList(userID, id)
 		if err != nil {
 			return err
 		}
@@ -118,13 +131,18 @@ func getList(service *solvent.Service) web.Handler {
 
 func editList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		list, err := service.FetchTodoList(uuid.UUID{}, id)
+		list, err := service.FetchTodoList(userID, id)
 		if err != nil {
 			return err
 		}
@@ -135,6 +153,11 @@ func editList(service *solvent.Service) web.Handler {
 
 func updateList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
 		if err != nil {
@@ -152,7 +175,7 @@ func updateList(service *solvent.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as valid timestamp", rawTimestamp)
 		}
 
-		if err := service.ApplyListPatch(uuid.UUID{}, id, patch, timestamp); err != nil {
+		if err := service.ApplyListPatch(userID, id, patch, timestamp); err != nil {
 			return err
 		}
 
@@ -168,7 +191,7 @@ func updateList(service *solvent.Service) web.Handler {
 
 func editSingleItem(service *solvent.Service,
 	w http.ResponseWriter,
-	userID,
+	userID web.UserID,
 	listID uuid.UUID,
 	f func(*solvent.TodoList) solvent.TodoItem) error {
 	var item solvent.TodoItem
@@ -190,7 +213,10 @@ func editSingleItem(service *solvent.Service,
 
 func checkItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := uuid.UUID{}
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
 
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
@@ -212,7 +238,10 @@ func checkItem(service *solvent.Service) web.Handler {
 
 func uncheckItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := uuid.UUID{}
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
 
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
@@ -234,7 +263,10 @@ func uncheckItem(service *solvent.Service) web.Handler {
 
 func moveItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := uuid.UUID{}
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
 
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
@@ -262,7 +294,10 @@ func moveItem(service *solvent.Service) web.Handler {
 
 func addItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := uuid.UUID{}
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
 
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)
@@ -289,7 +324,10 @@ func addItem(service *solvent.Service) web.Handler {
 
 func deleteItem(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID := uuid.UUID{}
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
 
 		rawID := chi.URLParam(r, "id")
 		id, err := uuid.Parse(rawID)

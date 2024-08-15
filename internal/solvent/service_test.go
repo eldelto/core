@@ -7,6 +7,7 @@ import (
 	"time"
 
 	. "github.com/eldelto/core/internal/testutils"
+	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
@@ -14,7 +15,7 @@ import (
 const dbPath = "solvent-test.db"
 
 var (
-	userID          = uuid.Nil
+	userID          = web.UserID{UUID: uuid.Nil}
 	plus1hTimestamp = time.Now().Add(1 * time.Hour).UnixMicro()
 )
 
@@ -123,7 +124,7 @@ that`,
 
 			var list TodoList
 			_, err = service.UpdateNotebook(userID,
-				func(n *Notebook2) error {
+				func(n *Notebook) error {
 					l, err := n.NewList("List 1")
 					list = *l
 					return err

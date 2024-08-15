@@ -50,8 +50,8 @@ func NewService(db *bbolt.DB,
 	}, nil
 }
 
-func (s *Service) FetchNotebook(userID uuid.UUID) (*Notebook2, error) {
-	var notebook *Notebook2
+func (s *Service) FetchNotebook(userID web.UserID) (*Notebook, error) {
+	var notebook *Notebook
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(notebookBucket))
@@ -62,7 +62,7 @@ func (s *Service) FetchNotebook(userID uuid.UUID) (*Notebook2, error) {
 		key := userID.String()
 		value := bucket.Get([]byte(key))
 		if value == nil {
-			notebook = NewNotebook2()
+			notebook = NewNotebook()
 			return nil
 		}
 
@@ -77,8 +77,8 @@ func (s *Service) FetchNotebook(userID uuid.UUID) (*Notebook2, error) {
 	return notebook, err
 }
 
-func (s *Service) UpdateNotebook(userID uuid.UUID, fn func(*Notebook2) error) (*Notebook2, error) {
-	var notebook *Notebook2
+func (s *Service) UpdateNotebook(userID web.UserID, fn func(*Notebook) error) (*Notebook, error) {
+	var notebook *Notebook
 
 	err := s.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(notebookBucket))
@@ -89,7 +89,7 @@ func (s *Service) UpdateNotebook(userID uuid.UUID, fn func(*Notebook2) error) (*
 		key := userID.String()
 		value := bucket.Get([]byte(key))
 		if value == nil {
-			notebook = NewNotebook2()
+			notebook = NewNotebook()
 		} else {
 			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&notebook); err != nil {
 				return fmt.Errorf("failed to decode notebook for user %q: %w",
@@ -116,7 +116,7 @@ func (s *Service) UpdateNotebook(userID uuid.UUID, fn func(*Notebook2) error) (*
 	return notebook, err
 }
 
-func getList(n *Notebook2, userID, listID uuid.UUID) (TodoList, error) {
+func getList(n *Notebook, userID web.UserID, listID uuid.UUID) (TodoList, error) {
 	list, ok := n.Lists[listID]
 	if !ok {
 		return TodoList{},
@@ -126,7 +126,7 @@ func getList(n *Notebook2, userID, listID uuid.UUID) (TodoList, error) {
 	return list, nil
 }
 
-func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
+func (s *Service) FetchTodoList(userID web.UserID, listID uuid.UUID) (TodoList, error) {
 	notebook, err := s.FetchNotebook(userID)
 	if err != nil {
 		return TodoList{}, err
@@ -135,10 +135,10 @@ func (s *Service) FetchTodoList(userID, listID uuid.UUID) (TodoList, error) {
 	return getList(notebook, userID, listID)
 }
 
-func (s *Service) UpdateTodoList(userID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
+func (s *Service) UpdateTodoList(userID web.UserID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
 	var result TodoList
 	var listStateChanged bool
-	_, err := s.UpdateNotebook(userID, func(n *Notebook2) error {
+	_, err := s.UpdateNotebook(userID, func(n *Notebook) error {
 		list, err := getList(n, userID, listID)
 		if err != nil {
 			return err
@@ -197,7 +197,7 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 	return title, items, nil
 }
 
-func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string, timestamp int64) error {
+func (s *Service) ApplyListPatch(userID web.UserID, listID uuid.UUID, patch string, timestamp int64) error {
 	_, _, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
 		newTitle, newItems, err := parseListPatch(patch)
 		if err != nil {
