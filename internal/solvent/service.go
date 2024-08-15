@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"net/mail"
 	"net/smtp"
 	"regexp"
 	"strings"
 
+	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
@@ -22,10 +24,14 @@ var (
 )
 
 type Service struct {
-	db *bbolt.DB
+	db       *bbolt.DB
+	host     string
+	smtpHost string
+	smtpAuth smtp.Auth
 }
 
 func NewService(db *bbolt.DB,
+	host string,
 	smtpHost string,
 	smtpAuth smtp.Auth) (*Service, error) {
 	err := db.Update(func(tx *bbolt.Tx) error {
@@ -37,7 +43,10 @@ func NewService(db *bbolt.DB,
 	}
 
 	return &Service{
-		db: db,
+		db:       db,
+		host:     host,
+		smtpHost: smtpHost,
+		smtpAuth: smtpAuth,
 	}, nil
 }
 
@@ -227,4 +236,20 @@ func (s *Service) ApplyListPatch(userID, listID uuid.UUID, patch string, timesta
 		return nil
 	})
 	return err
+}
+
+func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
+	link := fmt.Sprintf("<a href='%s/auth/session?token=%s'>login</a>",
+		s.host, token)
+	return smtp.SendMail(s.smtpHost, s.smtpAuth,
+		"no-reply@eldelto.net",
+		[]string{email.Address},
+		[]byte(`Subject: Solvent Login
+From: eldelto.net <no-reply@eldelto.net>
+Content-Type: text/html; charset="UTF-8"
+
+<!DOCTYPE html>
+<html>
+<body>
+<p>Click the following link to complete the login:</p><br>`+link+"</body></html>"))
 }

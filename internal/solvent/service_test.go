@@ -23,7 +23,7 @@ func TestApplyListPatch(t *testing.T) {
 	AssertNoError(t, err, "bboltOpent")
 	defer db.Close()
 
-	service, err := NewService(db)
+	service, err := NewService(db, "", "", nil)
 	AssertNoError(t, err, "NewService")
 	defer os.Remove(dbPath)
 

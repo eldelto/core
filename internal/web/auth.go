@@ -65,7 +65,7 @@ type Authenticator struct {
 	repo                 AuthRepository
 	loginTemplate        *template.Template
 	tokenCreatedTemplate *template.Template
-	TokenCallback func(TokenID) error
+	TokenCallback        func(mail.Address, TokenID) error
 }
 
 func NewAuthenticator(repo AuthRepository, templateFS, assetsFS fs.FS) *Authenticator {
@@ -153,7 +153,7 @@ func (a *Authenticator) createToken() Handler {
 		}
 
 		if a.TokenCallback != nil {
-			if err := a.TokenCallback(id); err != nil {
+			if err := a.TokenCallback(*email, id); err != nil {
 				return fmt.Errorf("failed to execute token callback: %w", err)
 			}
 		}
