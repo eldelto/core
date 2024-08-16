@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -52,9 +53,10 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 		assetsFS:   assetsFS,
 		funcs: template.FuncMap{
 			"asset": func(path string) string {
-				path = "/assets/" + path
+				// TODO: This breaks on Windows
+				path = filepath.Join("assets", path)
 				hash := getFileHash(assetsFS, path)
-				return path + "?h=" + hash
+				return filepath.Join("/", path+"?h="+hash)
 			},
 		},
 	}
