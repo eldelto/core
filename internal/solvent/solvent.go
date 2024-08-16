@@ -205,18 +205,18 @@ func (l *TodoList) String() string {
 	return b.String()
 }
 
-type Notebook2 struct {
+type Notebook struct {
 	Lists map[uuid.UUID]TodoList
 }
 
-func NewNotebook2() *Notebook2 {
-	return &Notebook2{
+func NewNotebook() *Notebook {
+	return &Notebook{
 		Lists: map[uuid.UUID]TodoList{},
 	}
 }
 
 // GetLists returns all open and completed lists of the notebook.
-func (n *Notebook2) GetLists() ([]TodoList, []TodoList) {
+func (n *Notebook) GetLists() ([]TodoList, []TodoList) {
 	open := make([]TodoList, 0, len(n.Lists))
 	completed := make([]TodoList, 0, len(n.Lists))
 
@@ -238,7 +238,7 @@ func (n *Notebook2) GetLists() ([]TodoList, []TodoList) {
 	return open, completed
 }
 
-func (n *Notebook2) NewList(title string) (*TodoList, error) {
+func (n *Notebook) NewList(title string) (*TodoList, error) {
 	l, err := NewTodoList(title)
 	if err != nil {
 		return nil, err

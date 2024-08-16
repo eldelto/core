@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"net/smtp"
 	"strconv"
 
+	"github.com/eldelto/core/internal/conf"
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/solvent/server"
 	"github.com/eldelto/core/internal/web"
@@ -15,20 +16,25 @@ import (
 )
 
 const (
-	portEnv = "PORT"
-	dbPath  = "solvent.db"
+	portEnv         = "PORT"
+	hostEnv         = "HOST"
+	smtpUserEnv     = "SMTP_USER"
+	smtpPasswordEnv = "SMTP_PASSWORD"
+	smtpHostEnv     = "SMTP_HOST"
+	smtpPortEnv     = "SMTP_PORT"
+
+	dbPath = "solvent.db"
 )
 
 func main() {
-	rawPort, ok := os.LookupEnv(portEnv)
-	if !ok {
-		rawPort = "8080"
-	}
+	port := conf.IntEnvVarWithDefault(portEnv, 8080)
+	host := conf.EnvVarWithDefault(hostEnv,
+		"http://localhost:"+strconv.Itoa(int(port)))
 
-	port, err := strconv.ParseInt(rawPort, 10, 64)
-	if err != nil {
-		log.Fatalf("%q is not a valid port: %v", rawPort, err)
-	}
+	smtpUser := conf.RequireEnvVar(smtpUserEnv)
+	smtpPassword := conf.RequireEnvVar(smtpPasswordEnv)
+	smtpHost := conf.RequireEnvVar(smtpHostEnv)
+	smtpPort := conf.RequireIntEnvVar(smtpPortEnv)
 
 	// Services
 	db, err := bbolt.Open(dbPath, 0600, nil)
@@ -37,7 +43,10 @@ func main() {
 	}
 	defer db.Close()
 
-	service, err := solvent.NewService(db)
+	smtpAuth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
+
+	service, err := solvent.NewService(db, host, smtpHost, smtpAuth)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,16 +54,19 @@ func main() {
 	r := chi.NewRouter()
 
 	// Controllers
-	auth := web.NewAuthenticator(web.NewInMemoryAuthRepository(),
+	auth := web.NewAuthenticator(
+		host,
+		web.NewBBoltAuthRepository(db),
 		server.TemplatesFS, server.AssetsFS)
+	auth.TokenCallback = service.SendLoginEmail
 
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
-	server.NewListController(service).Register(r)
+	server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)
 
 	http.Handle("/", r)
 
-	log.Printf("Solvent listening on localhost:%d", port)
+	log.Printf("Solvent listening on localhost:%d with host %q", port, host)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
