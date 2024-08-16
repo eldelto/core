@@ -53,6 +53,11 @@ func (c *Controller) middleware(handler Handler) http.Handler {
 	return next
 }
 
+func (c *Controller) AddMiddleware(m HandlerProvider) *Controller {
+	c.Middleware = append(c.Middleware, m)
+	return c
+}
+
 func (c *Controller) Register(router chi.Router) {
 	for endpoint, handler := range c.Handlers {
 		path := path.Join(c.BasePath, endpoint.Path)

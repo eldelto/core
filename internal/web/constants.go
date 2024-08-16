@@ -1,5 +1,7 @@
 package web
 
+import "errors"
+
 const (
 	CacheControlHeader = "Cache-Control"
 	ContentTypeHeader  = "Content-Type"
@@ -12,4 +14,8 @@ const (
 	ContentTypeText        = "text/plain; charset=UTF-8"
 	ContentTypeOctetStream = "application/octet-stream"
 	ContentTypeJavascript  = "text/javascript"
+)
+
+var (
+	ErrUnauthenticated = errors.New("no authentication found")
 )
