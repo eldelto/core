@@ -35,6 +35,9 @@ h1 {
     color: #f3e88a;
     border-bottom: dotted 5px #54cfc4;
 }
+#header {
+    text-decoration: none;
+}
 
 td {
     border: dotted 2.5px #fffdfd;
