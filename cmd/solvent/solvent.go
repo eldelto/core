@@ -54,7 +54,9 @@ func main() {
 	r := chi.NewRouter()
 
 	// Controllers
-	auth := web.NewAuthenticator(web.NewBBoltAuthRepository(db),
+	auth := web.NewAuthenticator(
+		host,
+		web.NewBBoltAuthRepository(db),
 		server.TemplatesFS, server.AssetsFS)
 	auth.TokenCallback = service.SendLoginEmail
 
