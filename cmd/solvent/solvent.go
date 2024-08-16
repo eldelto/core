@@ -65,6 +65,6 @@ func main() {
 
 	http.Handle("/", r)
 
-	log.Printf("Solvent listening on localhost:%d", port)
+	log.Printf("Solvent listening on localhost:%d with host %q", port, host)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
