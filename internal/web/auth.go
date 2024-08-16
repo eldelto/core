@@ -14,6 +14,8 @@ import (
 	"math/big"
 	"net/http"
 	"net/mail"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -76,18 +78,23 @@ type AuthRepository interface {
 }
 
 type Authenticator struct {
+	domain               string
 	repo                 AuthRepository
 	loginTemplate        *template.Template
 	tokenCreatedTemplate *template.Template
 	TokenCallback        func(mail.Address, TokenID) error
 }
 
-func NewAuthenticator(repo AuthRepository, templateFS, assetsFS fs.FS) *Authenticator {
+func NewAuthenticator(domain string,
+	repo AuthRepository,
+	templateFS,
+	assetsFS fs.FS) *Authenticator {
 	templater := NewTemplater(templateFS, assetsFS)
 	loginTemplate := templater.GetP("login.html")
 	tokenCreatedtemplate := templater.GetP("token-created.html")
 
 	return &Authenticator{
+		domain:               domain,
 		repo:                 repo,
 		loginTemplate:        loginTemplate,
 		tokenCreatedTemplate: tokenCreatedtemplate,
@@ -210,13 +217,13 @@ func (a *Authenticator) authenticate() Handler {
 		}
 
 		cookie := http.Cookie{
-			Name:  cookieName,
-			Value: string(session.ID),
-			Path:  "/",
-			// TODO: Switch off when domain == localhost?
-			//Secure: true,
+			Name:     cookieName,
+			Value:    string(session.ID),
+			Path:     "/",
+			Secure:   !strings.Contains(a.domain, "localhost"),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
+			Expires:  time.Now().Add(14 * 24 * time.Hour),
 		}
 		http.SetCookie(w, &cookie)
 
@@ -248,8 +255,6 @@ func NewInMemoryAuthRepository() *InMemoryAuthRepository {
 
 func (r *InMemoryAuthRepository) StoreToken(t Token) error {
 	r.tokenMap[t.ID] = t
-	fmt.Printf("stored token: %v\n", t)
-	fmt.Printf("go to: /auth/session?token=%s\n", t.ID)
 	return nil
 }
 
@@ -405,8 +410,6 @@ func NewBBoltAuthRepository(db *bbolt.DB) *BBoltAuthRepository {
 }
 
 func (r *BBoltAuthRepository) StoreToken(t Token) error {
-	fmt.Printf("stored token: %v\n", t)
-	fmt.Printf("go to: /auth/session?token=%s\n", t.ID)
 	return store(r.db, tokenBucket, string(t.ID), t)
 }
 
