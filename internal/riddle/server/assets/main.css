@@ -1,21 +1,31 @@
-td {
+.tile:nth-child(odd) {
+    background-color: plum;
+}
+
+.tile:nth-child(even) {
+    background-color: powderblue;
+}
+
+.tile:hover {
+    border: dotted 6px #a1de4d;
+}
+
+.tile {
+    border: dotted 6px rgba(0, 0, 0, 0);
+    transition: border ease 1s;
+}
+
+
+.grid-5x5 {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
+    width: 80vw;
+    height: 80vw;
+    max-width: 80vh;
+    max-height: 80vh;
+    gap: 3px;
+    background-color: #c7c2c2;
     border: solid 3px #c7c2c2;
-    width: 5.5em;
-    height: 5.5em;
-}
 
-tbody>tr:nth-child(odd) >td:nth-child(odd) {
-    background-color: #f3e88a;
-}
-
-tbody>tr:nth-child(even) >td:nth-child(even) {
-    background-color: #f3e88a;
-}
-
-table {
-    border-collapse: collapse;
-}
-
-thead {
-    background-color: lightgray
 }
