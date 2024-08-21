@@ -61,7 +61,8 @@ func main() {
 	auth.TokenCallback = service.SendLoginEmail
 
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
+	web.NewTemplateController(server.TemplatesFS, server.AssetsFS,
+		web.TemplateData{}).Register(r)
 	server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)
 

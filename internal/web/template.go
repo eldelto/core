@@ -41,6 +41,18 @@ func getFileHash(fs fs.FS, path string) string {
 	return hash
 }
 
+type Template struct {
+	t template.Template
+}
+
+func (t *Template) Execute(w io.Writer, data any) error {
+	return t.t.Execute(w, TemplateData{Data: data})
+}
+
+func (t *Template) ExecuteFragment(w io.Writer, name string, data any) error {
+	return t.t.ExecuteTemplate(w, name, TemplateData{Data: data})
+}
+
 type Templater struct {
 	templateFS fs.FS
 	assetsFS   fs.FS
@@ -62,7 +74,7 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 	}
 }
 
-func (t *Templater) Get(patterns ...string) (*template.Template, error) {
+func (t *Templater) Get(patterns ...string) (*Template, error) {
 	templatePaths := make([]string, len(patterns)+1)
 	templatePaths[0] = "templates/base.html.tmpl"
 	for i := range patterns {
@@ -76,10 +88,10 @@ func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 		return nil, fmt.Errorf("failed to parse template %v: %w", templatePaths, err)
 	}
 
-	return tmpl, nil
+	return &Template{t: *tmpl}, nil
 }
 
-func (t *Templater) GetP(patterns ...string) *template.Template {
+func (t *Templater) GetP(patterns ...string) *Template {
 	template, err := t.Get(patterns...)
 	if err != nil {
 		panic(err)

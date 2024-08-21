@@ -134,7 +134,12 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 
 const templatePathUrlParam = "templatePath"
 
-func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
+type TemplateData struct {
+	Msg  string
+	Data any
+}
+
+func NewTemplateController(templateFS, assetsFS fs.FS, data TemplateData) *Controller {
 	var templater = NewTemplater(templateFS, assetsFS)
 
 	return &Controller{
@@ -147,11 +152,16 @@ func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
 	}
 }
 
-func getTemplate(templater *Templater, data any) Handler {
+func getTemplate(templater *Templater, data TemplateData) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		templatePath := chi.URLParam(r, templatePathUrlParam)
 		if templatePath == "" {
 			templatePath = "index.html"
+		}
+
+		msg := r.URL.Query().Get("msg")
+		if msg != "" {
+			data.Msg = msg
 		}
 
 		w.Header().Add(ContentTypeHeader, ContentTypeHTML)

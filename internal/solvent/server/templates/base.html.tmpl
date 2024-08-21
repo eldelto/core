@@ -33,8 +33,14 @@
 			<h1 class="HeaderTitle">Solvent</h1>
 		  </a>
 		  {{block "right-action" .}}{{end}}
-        </div>
-      </header>
+		</div>
+	  </header>
+
+	  {{with .Msg}}
+	  <div class="error-msg">
+		{{.}}
+	  </div>
+	  {{end}}
 
 	  {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
 	</div>

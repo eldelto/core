@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ import (
 type ctxKey string
 
 const (
-	loginPath  = "/auth/login"
+	loginPath  = "/login.html"
 	userIDKey  = ctxKey("userID")
 	cookieName = "session"
 )
@@ -131,17 +132,25 @@ func (a *Authenticator) Controller() *Controller {
 	return &Controller{
 		BasePath: "/auth",
 		Handlers: map[Endpoint]Handler{
-			{Method: http.MethodGet, Path: "login"}:      a.getLoginPage(),
 			{Method: http.MethodPost, Path: "token"}:     a.createToken(),
 			{Method: http.MethodGet, Path: "session"}:    a.authenticate(),
 			{Method: http.MethodDelete, Path: "session"}: logout(),
 		},
-	}
-}
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) Handler {
+			return func(w http.ResponseWriter, r *http.Request) error {
+				log.Println(outerErr)
 
-func (a *Authenticator) getLoginPage() Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return a.loginTemplate.Execute(w, nil)
+				msgParam := "?msg=" + url.QueryEscape(outerErr.Error())
+
+				if errors.Is(outerErr, ErrUnauthenticated) {
+					http.Redirect(w, r, loginPath+msgParam, http.StatusSeeOther)
+					return nil
+				}
+
+				http.Redirect(w, r, "/error.html"+msgParam, http.StatusSeeOther)
+				return nil
+			}
+		},
 	}
 }
 

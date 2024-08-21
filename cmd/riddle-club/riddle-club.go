@@ -23,11 +23,12 @@ func main() {
 	sitemapContoller.Register(r)
 
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
+	web.NewTemplateController(server.TemplatesFS, server.AssetsFS,
+		web.TemplateData{}).Register(r)
 
 	server.NewTilesController().Register(r)
 	http.Handle("/", r)
 
-	log.Printf("Money-Penny listening on localhost:%d", port)
+	log.Printf("Riddle-Club listening on localhost:%d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
