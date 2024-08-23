@@ -134,6 +134,11 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 
 const templatePathUrlParam = "templatePath"
 
+type TemplateData struct {
+	Msg  string
+	Data any
+}
+
 func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
 	var templater = NewTemplater(templateFS, assetsFS)
 
@@ -154,12 +159,13 @@ func getTemplate(templater *Templater, data any) Handler {
 			templatePath = "index.html"
 		}
 
+		msg := r.URL.Query().Get("msg")
 		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
 
-		if err := templater.Write(w, data, templatePath); err != nil {
-			log.Printf("did not find template at path %q", templatePath)
+		if err := templater.Write(w, msg, data, templatePath); err != nil {
+			log.Printf("failed to execute template at path %q: %v", templatePath, err)
 			w.WriteHeader(http.StatusNotFound)
-			return templater.Write(w, data, "not-found.html")
+			return templater.Write(w, "", data, "not-found.html")
 		}
 
 		return nil

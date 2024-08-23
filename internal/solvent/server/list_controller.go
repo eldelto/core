@@ -204,10 +204,10 @@ func editSingleItem(service *solvent.Service,
 	}
 
 	if reloadRequired {
-		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
+		return listTemplate.ExecuteFragment(w, "todoListOnly", &list)
 	} else {
 		list.Items = []solvent.TodoItem{item}
-		return listTemplate.ExecuteTemplate(w, "singleItem", &list)
+		return listTemplate.ExecuteFragment(w, "singleItem", &list)
 	}
 }
 
@@ -318,7 +318,7 @@ func addItem(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
+		return listTemplate.ExecuteFragment(w, "todoListOnly", &list)
 	}
 }
 
@@ -348,6 +348,6 @@ func deleteItem(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		return listTemplate.ExecuteTemplate(w, "todoListOnly", &list)
+		return listTemplate.ExecuteFragment(w, "todoListOnly", &list)
 	}
 }

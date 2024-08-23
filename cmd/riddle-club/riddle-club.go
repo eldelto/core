@@ -28,6 +28,6 @@ func main() {
 	server.NewTilesController().Register(r)
 	http.Handle("/", r)
 
-	log.Printf("Money-Penny listening on localhost:%d", port)
+	log.Printf("Riddle-Club listening on localhost:%d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }

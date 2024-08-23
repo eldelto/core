@@ -1,32 +1,34 @@
 {{define "content"}}
-  <div class="info-area padded">
-    <div class="info-container">
-      <a id="about-button" class="button" href="/about.html">?</a>
-      <button id="copy-button" class="button" style="display:none;" onclick="copyToClipboard()">Copy</button>
-    </div>
+
+<div class="info-area padded">
+  <div class="info-container">
+	<a id="about-button" class="button" href="/about.html">?</a>
+	<button id="copy-button" class="button" style="display:none;" onclick="copyToClipboard()">Copy</button>
   </div>
+</div>
 
-  <div class="selected-area padded">
-    <ul id="selected-plants"></ul>
-  </div>
+<div class="selected-area padded">
+  <ul id="selected-plants"></ul>
+</div>
 
-  <form class="selection-form padded" onsubmit="return selectFirstPlant()">
-    <input type="text" id="plant-search" class="text-input"
-           placeholder="Plant name..."
-           autofocus
-           oninput="search()">
-    <input type="submit" class="button" value="Select">
-  </form>
+<form class="selection-form padded" onsubmit="return selectFirstPlant()">
+  <input type="text" id="plant-search" class="text-input"
+         placeholder="Plant name..."
+         autofocus
+         oninput="search()">
+  <input type="submit" class="button" value="Select">
+</form>
 
-  <div class="suggestion-area padded">
-    <ul id="suggestions"></ul>
-  </div>
+<div class="suggestion-area padded">
+  <ul id="suggestions"></ul>
+</div>
 
-  <script>
-    const plantGuilds = new Map(
-      Object.entries(JSON.parse({{ .PlantLexiconJSON }})));
+<script>
+  const plantGuilds = new Map(
+      Object.entries(JSON.parse({{ .Data.PlantLexiconJSON }})));
 
-    populateSuggestions("");
-    updateSuggestions("");
-  </script>
+  populateSuggestions("");
+  updateSuggestions("");
+</script>
+
 {{end}}

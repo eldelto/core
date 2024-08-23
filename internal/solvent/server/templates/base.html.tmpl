@@ -19,11 +19,17 @@
 	<dialog id="error-dialog" class="ToDoList">
 	  <form method="dialog">
 		<p id="error-content">
-		  {{.}}
+		  {{.Msg}}
 		</p>
 		<button class="confirm">OK</button>
 	  </form>
 	</dialog>
+
+	{{if .Msg}}
+	<script>
+	  document.querySelector("#error-dialog").showModal();
+	</script>
+	{{end}}
 
 	<div id="content">
       <header>
@@ -33,8 +39,8 @@
 			<h1 class="HeaderTitle">Solvent</h1>
 		  </a>
 		  {{block "right-action" .}}{{end}}
-        </div>
-      </header>
+		</div>
+	  </header>
 
 	  {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
 	</div>
