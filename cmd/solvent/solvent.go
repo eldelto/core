@@ -31,10 +31,10 @@ func main() {
 	host := conf.EnvVarWithDefault(hostEnv,
 		"http://localhost:"+strconv.Itoa(int(port)))
 
-	smtpUser := conf.RequireEnvVar(smtpUserEnv)
-	smtpPassword := conf.RequireEnvVar(smtpPasswordEnv)
-	smtpHost := conf.RequireEnvVar(smtpHostEnv)
-	smtpPort := conf.RequireIntEnvVar(smtpPortEnv)
+	smtpUser := conf.EnvVarWithDefault(smtpUserEnv, "")
+	smtpPassword := conf.EnvVarWithDefault(smtpPasswordEnv, "")
+	smtpHost := conf.EnvVarWithDefault(smtpHostEnv, "localhost")
+	smtpPort := conf.IntEnvVarWithDefault(smtpPortEnv, 587)
 
 	// Services
 	db, err := bbolt.Open(dbPath, 0600, nil)
@@ -43,7 +43,12 @@ func main() {
 	}
 	defer db.Close()
 
-	smtpAuth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+	var smtpAuth smtp.Auth
+	if smtpUser != "" && smtpPassword != "" {
+		smtpAuth = smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+	} else {
+		log.Println("No SMTP config found - running without E-mailing")
+	}
 	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
 	service, err := solvent.NewService(db, host, smtpHost, smtpAuth)

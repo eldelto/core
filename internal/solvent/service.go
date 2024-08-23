@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"net/mail"
 	"net/smtp"
 	"regexp"
@@ -238,18 +239,26 @@ func (s *Service) ApplyListPatch(userID web.UserID, listID uuid.UUID, patch stri
 	return err
 }
 
-func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
-	link := fmt.Sprintf("<a href='%s/auth/session?token=%s'>login</a>",
-		s.host, token)
-	return smtp.SendMail(s.smtpHost, s.smtpAuth,
-		"no-reply@eldelto.net",
-		[]string{email.Address},
-		[]byte(`Subject: Solvent Login
+const loginTemplate = `Subject: Solvent Login
 From: eldelto.net <no-reply@eldelto.net>
 Content-Type: text/html; charset="UTF-8"
 
 <!DOCTYPE html>
 <html>
 <body>
-<p>Click the following link to complete the login:</p><br>`+link+"</body></html>"))
+<p>Click the following link to complete the login:</p>
+<a href='%s/auth/session?token=%s'>login</a>
+</body>
+</html>`
+
+func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
+	template := fmt.Sprintf(loginTemplate, s.host, token)
+
+	if s.smtpAuth == nil {
+		log.Println(template)
+		return nil
+	}
+
+	return smtp.SendMail(s.smtpHost, s.smtpAuth, "no-reply@eldelto.net",
+		[]string{email.Address}, []byte(template))
 }
