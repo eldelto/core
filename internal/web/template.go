@@ -42,15 +42,18 @@ func getFileHash(fs fs.FS, path string) string {
 }
 
 type Template struct {
-	t template.Template
+	t    template.Template
+	data TemplateData
 }
 
 func (t *Template) Execute(w io.Writer, data any) error {
-	return t.t.Execute(w, TemplateData{Data: data})
+	t.data.Data = data
+	return t.t.Execute(w, t.data)
 }
 
 func (t *Template) ExecuteFragment(w io.Writer, name string, data any) error {
-	return t.t.ExecuteTemplate(w, name, TemplateData{Data: data})
+	t.data.Data = data
+	return t.t.ExecuteTemplate(w, name, t.data)
 }
 
 type Templater struct {
@@ -100,11 +103,12 @@ func (t *Templater) GetP(patterns ...string) *Template {
 	return template
 }
 
-func (t *Templater) Write(writer io.Writer, data any, patterns ...string) error {
+func (t *Templater) Write(writer io.Writer, msg string, data any, patterns ...string) error {
 	tmpl, err := t.Get(patterns...)
 	if err != nil {
 		return err
 	}
+	tmpl.data.Msg = msg
 
 	if err := tmpl.Execute(writer, data); err != nil {
 		return fmt.Errorf("failed to execute template %v: %w", patterns, err)

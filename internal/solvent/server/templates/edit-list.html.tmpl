@@ -3,12 +3,12 @@
 
 {{define "content"}}
 
-<form method="POST" action="/lists/{{.ID}}"
+<form method="POST" action="/lists/{{.Data.ID}}"
 	  class="ToDoList" data-quick-submit>
-  <input type="hidden" name="timestamp" value="{{.UpdatedAt}}" />
-  <textarea data-auto-grow name="text-patch" autofocus>{{.String}}</textarea>
+  <input type="hidden" name="timestamp" value="{{.Data.UpdatedAt}}" />
+  <textarea data-auto-grow name="text-patch" autofocus>{{.Data.String}}</textarea>
   <div id="ToDoListFooter">
-	<a href="/lists/{{.ID}}" class="cancel">Cancel</a>
+	<a href="/lists/{{.Data.ID}}" class="cancel">Cancel</a>
 	<button class="confirm">Save</button>
   </div>
 </form>

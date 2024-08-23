@@ -139,7 +139,7 @@ type TemplateData struct {
 	Data any
 }
 
-func NewTemplateController(templateFS, assetsFS fs.FS, data TemplateData) *Controller {
+func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
 	var templater = NewTemplater(templateFS, assetsFS)
 
 	return &Controller{
@@ -152,7 +152,7 @@ func NewTemplateController(templateFS, assetsFS fs.FS, data TemplateData) *Contr
 	}
 }
 
-func getTemplate(templater *Templater, data TemplateData) Handler {
+func getTemplate(templater *Templater, data any) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		templatePath := chi.URLParam(r, templatePathUrlParam)
 		if templatePath == "" {
@@ -160,16 +160,12 @@ func getTemplate(templater *Templater, data TemplateData) Handler {
 		}
 
 		msg := r.URL.Query().Get("msg")
-		if msg != "" {
-			data.Msg = msg
-		}
-
 		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
 
-		if err := templater.Write(w, data, templatePath); err != nil {
-			log.Printf("did not find template at path %q", templatePath)
+		if err := templater.Write(w, msg, data, templatePath); err != nil {
+			log.Printf("failed to execute template at path %q: %v", templatePath, err)
 			w.WriteHeader(http.StatusNotFound)
-			return templater.Write(w, data, "not-found.html")
+			return templater.Write(w, "", data, "not-found.html")
 		}
 
 		return nil

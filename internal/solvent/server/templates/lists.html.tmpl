@@ -11,7 +11,7 @@
 	</button>
   </form>
 
-  {{range .Open }}
+  {{range .Data.Open }}
   <a href="/lists/{{.ID}}">
 	<button class="ListViewToDoList">
 	  <span class="ListViewToDoListTitle">{{.Title}}</span>
@@ -23,7 +23,7 @@
 <div>
   <span class="ListViewToDoListsTitle">Done</span>
 
-  {{range .Completed }}
+  {{range .Data.Completed }}
   <a href="/lists/{{.ID}}">
 	<button class="ListViewToDoList checked">
 	  <span class="ListViewToDoListTitle">{{.Title}}</span>

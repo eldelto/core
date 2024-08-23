@@ -7,7 +7,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"log"
 	"math"
@@ -81,8 +80,8 @@ type AuthRepository interface {
 type Authenticator struct {
 	domain               string
 	repo                 AuthRepository
-	loginTemplate        *template.Template
-	tokenCreatedTemplate *template.Template
+	loginTemplate        *Template
+	tokenCreatedTemplate *Template
 	TokenCallback        func(mail.Address, TokenID) error
 }
 

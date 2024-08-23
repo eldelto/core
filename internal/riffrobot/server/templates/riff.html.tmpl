@@ -4,12 +4,12 @@
 
 <h1>Daily Riff</h1>
 
-<h2>{{.Scale.Name}}</h2>
-<p>{{.Scale.String}}</p>
+<h2>{{.Data.Scale.Name}}</h2>
+<p>{{.Data.Scale.String}}</p>
 
 <h2>Chords</h2>
 <ul>
-{{range .Scale.Chords}}
+{{range .Data.Scale.Chords}}
     {{$sep := ""}}
     <li>{{.Name}} - {{range .Notes}} {{$sep}} {{.ShortName}} {{$sep = "-"}} {{end}}</li>
 {{end}}
@@ -17,6 +17,6 @@
 
 <h2>On the fretboard</h2>
 <div class="code-block">
-    <pre>{{.Fretboard.String}}</pre>
+    <pre>{{.Data.Fretboard.String}}</pre>
 </div>
 {{end}}
