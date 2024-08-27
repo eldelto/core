@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/eldelto/core/internal/util"
+	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 )
 
@@ -78,11 +79,12 @@ func (t *TodoItem) String() string {
 }
 
 type TodoList struct {
-	CreatedAt int64
-	UpdatedAt int64
-	ID        uuid.UUID
-	Title     string
-	Items     []TodoItem
+	CreatedAt  int64
+	UpdatedAt  int64
+	ID         uuid.UUID
+	Title      string
+	Items      []TodoItem
+	ShareToken web.TokenID
 }
 
 func NewTodoList(title string) (*TodoList, error) {

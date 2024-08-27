@@ -29,12 +29,14 @@ type Service struct {
 	host     string
 	smtpHost string
 	smtpAuth smtp.Auth
+	auth     *web.Authenticator
 }
 
 func NewService(db *bbolt.DB,
 	host string,
 	smtpHost string,
-	smtpAuth smtp.Auth) (*Service, error) {
+	smtpAuth smtp.Auth,
+	auth *web.Authenticator) (*Service, error) {
 	err := db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(notebookBucket))
 		return err
@@ -48,6 +50,7 @@ func NewService(db *bbolt.DB,
 		host:     host,
 		smtpHost: smtpHost,
 		smtpAuth: smtpAuth,
+		auth:     auth,
 	}, nil
 }
 
@@ -134,6 +137,25 @@ func (s *Service) FetchTodoList(userID web.UserID, listID uuid.UUID) (TodoList, 
 	}
 
 	return getList(notebook, userID, listID)
+}
+
+func (s *Service) FetchSharedTodoList(userID web.UserID, listID uuid.UUID, token web.TokenID) (TodoList, error) {
+	notebook, err := s.FetchNotebook(userID)
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	list, err := getList(notebook, userID, listID)
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	if list.ShareToken != token {
+		return TodoList{}, fmt.Errorf("invalid share token for list %q: %w",
+			list.ID.String(), web.ErrUnauthenticated)
+	}
+
+	return list, nil
 }
 
 func (s *Service) UpdateTodoList(userID web.UserID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
@@ -261,4 +283,32 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 
 	return smtp.SendMail(s.smtpHost, s.smtpAuth, "no-reply@eldelto.net",
 		[]string{email.Address}, []byte(template))
+}
+
+func (s Service) ShareList(userID web.UserID, listID uuid.UUID) (string, error) {
+	var token web.TokenID
+	_, _, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
+		if list.ShareToken != "" {
+			token = list.ShareToken
+			return nil
+		}
+
+		t, err := s.auth.GenerateToken()
+		if err != nil {
+			return err
+		}
+		token = t
+		list.ShareToken = token
+
+		return nil
+
+	})
+	if err != nil {
+		return "", err
+	}
+
+	shareURL := fmt.Sprintf("%s/shared/user/%s/list/%s?t=%s",
+		s.host, userID.String(), listID.String(), token)
+
+	return shareURL, nil
 }

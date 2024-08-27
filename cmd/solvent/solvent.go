@@ -51,23 +51,25 @@ func main() {
 	}
 	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
-	service, err := solvent.NewService(db, host, smtpHost, smtpAuth)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	r := chi.NewRouter()
-
-	// Controllers
 	auth := web.NewAuthenticator(
 		host,
 		web.NewBBoltAuthRepository(db),
 		server.TemplatesFS, server.AssetsFS)
+
+	service, err := solvent.NewService(db, host, smtpHost, smtpAuth, auth)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	auth.TokenCallback = service.SendLoginEmail
 
+	r := chi.NewRouter()
+
+	// Controllers
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
-	server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
+	server.NewListController(service).Register(r)
+	server.NewShareController().Register(r)
 	auth.Controller().Register(r)
 
 	http.Handle("/", r)

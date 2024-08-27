@@ -3,6 +3,7 @@
 <div class="ToDoList">
   {{block "todoListOnly" .}}
   <div id="TodoListBody" hx-swap-oob="true">
+	<a href="/lists/{{.Data.ID}}/share" id="share-link" class="share">Share</a>
 	<a href="/lists/{{.Data.ID}}/edit" id="edit-link" class="edit">Edit</a>
 	<h1 class="ToDoListTitle {{if .Data.Done}}checked{{end}}">
 	  {{.Data.Title}}

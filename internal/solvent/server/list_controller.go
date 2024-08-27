@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
@@ -19,6 +20,7 @@ var (
 	listsTemplate    = templater.GetP("lists.html")
 	listTemplate     = templater.GetP("list.html")
 	editListTemplate = templater.GetP("edit-list.html")
+	shareTemplate    = templater.GetP("share-list.html")
 )
 
 func NewListController(service *solvent.Service) *web.Controller {
@@ -35,6 +37,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{id}/move"}:    moveItem(service),
 			{Method: http.MethodPost, Path: "{id}/add"}:     addItem(service),
 			{Method: http.MethodPost, Path: "{id}/delete"}:  deleteItem(service),
+			{Method: http.MethodGet, Path: "{id}/share"}:    shareList(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -109,23 +112,48 @@ func createList(service *solvent.Service) web.Handler {
 
 func getList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		userID, err := web.GetUserID(r)
-		if err != nil {
-			return err
-		}
+		// TODO: Get user & list ID from share cookie if available?
 
 		rawID := chi.URLParam(r, "id")
-		id, err := uuid.Parse(rawID)
+		listID, err := uuid.Parse(rawID)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
-		list, err := service.FetchTodoList(userID, id)
-		if err != nil {
-			return err
-		}
+		cookie, err := r.Cookie("share-" + listID.String())
+		fmt.Printf("%v\n", r.Cookies())
+		fmt.Println(err)
+		if err == nil {
+			fmt.Println("found cookie!")
+			parts := strings.Split(cookie.Value, ":")
 
-		return listTemplate.Execute(w, &list)
+			rawID = parts[0]
+			userID, err := uuid.Parse(rawID)
+			if err != nil {
+				return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+			}
+
+			token := web.TokenID(parts[1])
+
+			list, err := service.FetchSharedTodoList(web.UserID{UUID: userID}, listID, token)
+			if err != nil {
+				return err
+			}
+
+			return listTemplate.Execute(w, &list)
+		} else {
+			userID, err := web.GetUserID(r)
+			if err != nil {
+				return err
+			}
+
+			list, err := service.FetchTodoList(userID, listID)
+			if err != nil {
+				return err
+			}
+
+			return listTemplate.Execute(w, &list)
+		}
 	}
 }
 
@@ -349,5 +377,27 @@ func deleteItem(service *solvent.Service) web.Handler {
 		}
 
 		return listTemplate.ExecuteFragment(w, "todoListOnly", &list)
+	}
+}
+
+func shareList(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		userID, err := web.GetUserID(r)
+		if err != nil {
+			return err
+		}
+
+		rawID := chi.URLParam(r, "id")
+		id, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		shareLink, err := service.ShareList(userID, id)
+		if err != nil {
+			return err
+		}
+
+		return shareTemplate.Execute(w, shareLink)
 	}
 }
