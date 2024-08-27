@@ -24,7 +24,7 @@ import (
 type ctxKey string
 
 const (
-	loginPath  = "/login.html"
+	LoginPath  = "/login.html"
 	userIDKey  = ctxKey("userID")
 	cookieName = "session"
 )
@@ -105,18 +105,22 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(cookieName)
 		if err != nil {
-			if err != http.ErrNoCookie {
+			// TODO: Let the controller decide how to handle that?
+			/*if err != http.ErrNoCookie {
 				log.Printf("failed to fetch session cookie: %v", err)
 			}
 
-			http.Redirect(w, r, loginPath, http.StatusSeeOther)
+			http.Redirect(w, r, LoginPath, http.StatusSeeOther)
+			*/
+
+			next.ServeHTTP(w, r)
 			return
 		}
 
 		session, err := a.repo.FindSession(SessionID(cookie.Value))
 		if err != nil {
 			log.Printf("failed to fetch session: %v", err)
-			http.Redirect(w, r, loginPath, http.StatusSeeOther)
+			http.Redirect(w, r, LoginPath, http.StatusSeeOther)
 			return
 		}
 
@@ -142,7 +146,7 @@ func (a *Authenticator) Controller() *Controller {
 				msgParam := "?msg=" + url.QueryEscape(outerErr.Error())
 
 				if errors.Is(outerErr, ErrUnauthenticated) {
-					http.Redirect(w, r, loginPath+msgParam, http.StatusSeeOther)
+					http.Redirect(w, r, LoginPath+msgParam, http.StatusSeeOther)
 					return nil
 				}
 

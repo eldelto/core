@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -45,7 +46,14 @@ func NewListController(service *solvent.Service) *web.Controller {
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {
 
 			return func(w http.ResponseWriter, r *http.Request) error {
+				// TODO: Share this across controllers
 				log.Println(outerErr)
+
+				if errors.Is(outerErr, web.ErrUnauthenticated) {
+					http.Redirect(w, r, web.LoginPath, http.StatusSeeOther)
+					return nil
+				}
+
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Header().Set(web.ContentTypeHeader, web.ContentTypeHTML)
 				_, err := io.WriteString(w, outerErr.Error())
@@ -121,10 +129,7 @@ func getList(service *solvent.Service) web.Handler {
 		}
 
 		cookie, err := r.Cookie("share-" + listID.String())
-		fmt.Printf("%v\n", r.Cookies())
-		fmt.Println(err)
 		if err == nil {
-			fmt.Println("found cookie!")
 			parts := strings.Split(cookie.Value, ":")
 
 			rawID = parts[0]
