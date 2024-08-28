@@ -25,7 +25,7 @@ type ctxKey string
 
 const (
 	LoginPath  = "/login.html"
-	userIDKey  = ctxKey("userID")
+	authCtxKey  = ctxKey("auth")
 	cookieName = "session"
 )
 
@@ -43,18 +43,26 @@ type Session struct {
 	User UserID
 }
 
-func GetUserID(r *http.Request) (UserID, error) {
-	value := r.Context().Value(userIDKey)
+type Auth interface {
+	UserID() UserID
+}
+
+func GetAuth(ctx context.Context) (Auth, error) {
+	value := ctx.Value(authCtxKey)
 	if value == nil {
-		return UserID{}, ErrUnauthenticated
+		return nil, ErrUnauthenticated
 	}
 
-	userID, ok := value.(UserID)
+	auth, ok := value.(Auth)
 	if !ok {
-		return UserID{}, fmt.Errorf("failed to cast %v to type UserID", value)
+		return nil, fmt.Errorf("failed to cast %v to type Auth", value)
 	}
 
-	return userID, nil
+	return auth, nil
+}
+
+func SetAuth(ctx context.Context, auth Auth) context.Context {
+		return context.WithValue(ctx, authCtxKey, auth)
 }
 
 /*
