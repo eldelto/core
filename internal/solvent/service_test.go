@@ -1,6 +1,7 @@
 package solvent
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -16,6 +17,8 @@ const dbPath = "solvent-test.db"
 
 var (
 	userID          = web.UserID{UUID: uuid.Nil}
+	auth            = &web.UserAuth{User: userID}
+	ctx             = web.SetAuth(context.Background(), auth)
 	plus1hTimestamp = time.Now().Add(1 * time.Hour).UnixMicro()
 )
 
@@ -119,11 +122,11 @@ that`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := service.FetchNotebook(userID)
+			_, err := service.FetchNotebook(ctx)
 			AssertNoError(t, err, "create a new notebook")
 
 			var list TodoList
-			_, err = service.UpdateNotebook(userID,
+			_, err = service.UpdateNotebook(ctx,
 				func(n *Notebook) error {
 					l, err := n.NewList("List 1")
 					list = *l
@@ -131,13 +134,13 @@ that`,
 				})
 			AssertNoError(t, err, "create a new list")
 
-			err = service.ApplyListPatch(userID, list.ID, tt.createPatch, plus1hTimestamp)
+			err = service.ApplyListPatch(ctx, list.ID, tt.createPatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply create list patch")
 
-			err = service.ApplyListPatch(userID, list.ID, tt.updatePatch, plus1hTimestamp)
+			err = service.ApplyListPatch(ctx, list.ID, tt.updatePatch, plus1hTimestamp)
 			AssertNoError(t, err, "apply update list patch")
 
-			list, err = service.FetchTodoList(userID, list.ID)
+			list, err = service.FetchTodoList(ctx, list.ID)
 			AssertNoError(t, err, "get list")
 
 			got := strings.TrimSpace(list.String())

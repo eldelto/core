@@ -3,6 +3,7 @@ package solvent
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"log"
@@ -23,6 +24,16 @@ const (
 var (
 	todoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
 )
+
+type ShareTokenAuth struct {
+	Token  web.TokenID
+	User   web.UserID
+	ListID uuid.UUID
+}
+
+func (a *ShareTokenAuth) UserID() web.UserID {
+	return a.User
+}
 
 type Service struct {
 	db       *bbolt.DB
@@ -54,7 +65,41 @@ func NewService(db *bbolt.DB,
 	}, nil
 }
 
-func (s *Service) FetchNotebook(userID web.UserID) (*Notebook, error) {
+func getUserAuth(ctx context.Context) (*web.UserAuth, error) {
+	auth, err := web.GetAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userAuth, ok := auth.(*web.UserAuth)
+	if !ok {
+		return nil, fmt.Errorf("only allowed for logged in users: %w", web.ErrUnauthenticated)
+	}
+
+	return userAuth, nil
+}
+
+func getListAuth(ctx context.Context, listID uuid.UUID) (web.Auth, error) {
+	auth, err := web.GetAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	switch auth := auth.(type) {
+	case *web.UserAuth:
+		return auth, nil
+	case *ShareTokenAuth:
+		if auth.ListID != listID {
+			return nil, fmt.Errorf("failed to get valid authentication for list %q: %w",
+				listID.String(), web.ErrUnauthenticated)
+		}
+		return auth, nil
+	default:
+		return nil, fmt.Errorf("unsupported authentication type %t", auth)
+	}
+}
+
+func (s *Service) fetchNotebook(userID web.UserID) (*Notebook, error) {
 	var notebook *Notebook
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
@@ -81,7 +126,16 @@ func (s *Service) FetchNotebook(userID web.UserID) (*Notebook, error) {
 	return notebook, err
 }
 
-func (s *Service) UpdateNotebook(userID web.UserID, fn func(*Notebook) error) (*Notebook, error) {
+func (s *Service) FetchNotebook(ctx context.Context) (*Notebook, error) {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.fetchNotebook(auth.UserID())
+}
+
+func (s *Service) updateNotebook(userID web.UserID, fn func(*Notebook) error) (*Notebook, error) {
 	var notebook *Notebook
 
 	err := s.db.Update(func(tx *bbolt.Tx) error {
@@ -120,6 +174,15 @@ func (s *Service) UpdateNotebook(userID web.UserID, fn func(*Notebook) error) (*
 	return notebook, err
 }
 
+func (s *Service) UpdateNotebook(ctx context.Context, fn func(*Notebook) error) (*Notebook, error) {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.updateNotebook(auth.UserID(), fn)
+}
+
 func getList(n *Notebook, userID web.UserID, listID uuid.UUID) (TodoList, error) {
 	list, ok := n.Lists[listID]
 	if !ok {
@@ -130,38 +193,30 @@ func getList(n *Notebook, userID web.UserID, listID uuid.UUID) (TodoList, error)
 	return list, nil
 }
 
-func (s *Service) FetchTodoList(userID web.UserID, listID uuid.UUID) (TodoList, error) {
-	notebook, err := s.FetchNotebook(userID)
+func (s *Service) FetchTodoList(ctx context.Context, listID uuid.UUID) (TodoList, error) {
+	auth, err := getListAuth(ctx, listID)
 	if err != nil {
 		return TodoList{}, err
 	}
 
-	return getList(notebook, userID, listID)
+	notebook, err := s.fetchNotebook(auth.UserID())
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	return getList(notebook, auth.UserID(), listID)
 }
 
-func (s *Service) FetchSharedTodoList(userID web.UserID, listID uuid.UUID, token web.TokenID) (TodoList, error) {
-	notebook, err := s.FetchNotebook(userID)
+func (s *Service) UpdateTodoList(ctx context.Context, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
+	auth, err := getListAuth(ctx, listID)
 	if err != nil {
-		return TodoList{}, err
+		return TodoList{}, false, err
 	}
+	userID := auth.UserID()
 
-	list, err := getList(notebook, userID, listID)
-	if err != nil {
-		return TodoList{}, err
-	}
-
-	if list.ShareToken != token {
-		return TodoList{}, fmt.Errorf("invalid share token for list %q: %w",
-			list.ID.String(), web.ErrUnauthenticated)
-	}
-
-	return list, nil
-}
-
-func (s *Service) UpdateTodoList(userID web.UserID, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
 	var result TodoList
 	var listStateChanged bool
-	_, err := s.UpdateNotebook(userID, func(n *Notebook) error {
+	_, err = s.updateNotebook(userID, func(n *Notebook) error {
 		list, err := getList(n, userID, listID)
 		if err != nil {
 			return err
@@ -220,8 +275,8 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 	return title, items, nil
 }
 
-func (s *Service) ApplyListPatch(userID web.UserID, listID uuid.UUID, patch string, timestamp int64) error {
-	_, _, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
+func (s *Service) ApplyListPatch(ctx context.Context, listID uuid.UUID, patch string, timestamp int64) error {
+	_, _, err := s.UpdateTodoList(ctx, listID, func(list *TodoList) error {
 		newTitle, newItems, err := parseListPatch(patch)
 		if err != nil {
 			return err
@@ -285,9 +340,14 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 		[]string{email.Address}, []byte(template))
 }
 
-func (s Service) ShareList(userID web.UserID, listID uuid.UUID) (string, error) {
+func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error) {
+	auth, err := web.GetAuth(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	var token web.TokenID
-	_, _, err := s.UpdateTodoList(userID, listID, func(list *TodoList) error {
+	_, _, err = s.UpdateTodoList(ctx, listID, func(list *TodoList) error {
 		if list.ShareToken != "" {
 			token = list.ShareToken
 			return nil
@@ -308,7 +368,7 @@ func (s Service) ShareList(userID web.UserID, listID uuid.UUID) (string, error) 
 	}
 
 	shareURL := fmt.Sprintf("%s/shared/user/%s/list/%s?t=%s",
-		s.host, userID.String(), listID.String(), token)
+		s.host, auth.UserID().String(), listID.String(), token)
 
 	return shareURL, nil
 }
