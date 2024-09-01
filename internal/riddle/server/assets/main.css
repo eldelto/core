@@ -19,11 +19,11 @@
 }
 
 .tile:nth-child(odd) {
-    background-color: plum;
+    background-color: #6d85a5;
 }
 
 .tile:nth-child(even) {
-    background-color: powderblue;
+    background-color: #6e5181;
 }
 
 .tile:hover {
@@ -45,6 +45,61 @@
     left: 0px;
 }
 
+.center-2 {
+    background-image: url("/assets/tiles/center-2.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.center-3 {
+    background-image: url("/assets/tiles/center-3.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.center-4 {
+    background-image: url("/assets/tiles/center-4.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.center-5 {
+    background-image: url("/assets/tiles/center-5.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.center-6 {
+    background-image: url("/assets/tiles/center-6.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
 .mid-1 {
     background-image: url("/assets/tiles/mid-1.svg");
     height: 100%;
@@ -56,8 +111,118 @@
     left: 0px;
 }
 
+.mid-2 {
+    background-image: url("/assets/tiles/mid-2.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.mid-3 {
+    background-image: url("/assets/tiles/mid-3.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.mid-4 {
+    background-image: url("/assets/tiles/mid-4.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.mid-5 {
+    background-image: url("/assets/tiles/mid-5.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.mid-6 {
+    background-image: url("/assets/tiles/mid-6.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
 .outer-1 {
     background-image: url("/assets/tiles/outer-1.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.outer-2 {
+    background-image: url("/assets/tiles/outer-2.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.outer-3 {
+    background-image: url("/assets/tiles/outer-3.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.outer-4 {
+    background-image: url("/assets/tiles/outer-4.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.outer-5 {
+    background-image: url("/assets/tiles/outer-5.svg");
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.outer-6 {
+    background-image: url("/assets/tiles/outer-6.svg");
     height: 100%;
     width: 100%;
     background-size: cover;
