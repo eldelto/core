@@ -57,11 +57,12 @@ func receiveShare() web.Handler {
 			Name:  "share-" + listID.String(),
 			Value: userID.String() + ":" + token,
 			Path:  "/",
+			// TODO: Read from service.
 			//Secure:   !strings.Contains(a.domain, "localhost"),
 			Secure:   false,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
-			Expires:  time.Now().Add(14 * 24 * time.Hour),
+			Expires:  time.Now().Add(30 * 24 * time.Hour),
 		}
 		http.SetCookie(w, &cookie)
 
