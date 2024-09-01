@@ -116,12 +116,61 @@ type listsData struct {
 
 func getLists(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		auth, err := web.GetAuth(r.Context())
+		if err != nil {
+			return err
+		}
+
+		// TODO: Return actual errors but recover them by removing the bad cookie.
+		sharedLists := []solvent.TodoList{}
+		for _, cookie := range r.Cookies() {
+			rawListID, found := strings.CutPrefix(cookie.Name, "share-")
+			if !found {
+				continue
+			}
+
+			parts := strings.Split(cookie.Value, ":")
+
+			rawUserID := parts[0]
+			userID, err := uuid.Parse(rawUserID)
+			if err != nil {
+				continue
+			}
+
+			// Skip our own lists
+			if auth.UserID().UUID == userID {
+				continue
+			}
+
+			listID, err := uuid.Parse(rawListID)
+			if err != nil {
+				continue
+			}
+
+			token := web.TokenID(parts[1])
+			auth := solvent.ShareTokenAuth{
+				Token:  token,
+				User:   web.UserID{UUID: userID},
+				ListID: listID,
+			}
+
+			ctx := web.SetAuth(r.Context(), &auth)
+			list, err := service.FetchTodoList(ctx, listID)
+			if err != nil {
+				continue
+			}
+
+			sharedLists = append(sharedLists, list)
+		}
+
 		notebook, err := service.FetchNotebook(r.Context())
 		if err != nil {
 			return err
 		}
 
 		open, completed := notebook.GetLists()
+		// TODO: Somehow distinguish them...
+		open = append(open, sharedLists...)
 		data := listsData{
 			Open:      open,
 			Completed: completed,
@@ -346,15 +395,11 @@ func deleteItem(service *solvent.Service) web.Handler {
 		}
 		itemTitle := r.PostForm.Get("title")
 
-		list, _, err := service.UpdateTodoList(r.Context(), listID, func(list *solvent.TodoList) error {
+		_, _, err = service.UpdateTodoList(r.Context(), listID, func(list *solvent.TodoList) error {
 			list.RemoveItem(itemTitle)
 			return nil
 		})
-		if err != nil {
-			return err
-		}
-
-		return listTemplate.ExecuteFragment(w, "todoListOnly", &list)
+		return err
 	}
 }
 

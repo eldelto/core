@@ -47,7 +47,7 @@
 				hx-post="/lists/{{$.Data.ID}}/delete"
 				hx-trigger="delete-item from:closest .ToDoItem"
 				hx-confirm="Delete the selected to-do item?"
-				hx-target="#TodoListBody"
+				hx-target="closest .ToDoItem"
 				hx-include="closest .ToDoItem"
 				aria-label="delete item">
 		</button>
