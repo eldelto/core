@@ -462,3 +462,9 @@ textarea[name="text-patch"] {
 #error-dialog::backdrop {
 	backdrop-filter: saturate(.4);
 }
+
+.ToDoList.NotFound {
+	box-shadow: none;
+	border: dashed 1px var(--text-color);
+	opacity: .9;
+}
