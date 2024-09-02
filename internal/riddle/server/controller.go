@@ -21,19 +21,16 @@ func NewTilesController() *web.Controller {
 	}
 }
 
-const tileCount = 5 * 6
+const (
+	tileCount = 5 * 6
+	patternPairCount = 6
+)
+
 
 func randomlyAssignTiles() [tileCount]uint {
 	numbers := [tileCount]uint{}
 	for i := range numbers {
-		numbers[i] = uint(i % (tileCount / 2))
-	}
-
-	for i := range numbers {
-		n := numbers[i]
-		j := rand.Intn(tileCount)
-		numbers[i] = numbers[j]
-		numbers[j] = n
+		numbers[i] = uint(rand.Intn(patternPairCount) + 1)
 	}
 
 	return numbers
