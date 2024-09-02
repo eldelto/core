@@ -8,7 +8,7 @@
 
 <div class="articles">
   <ul>
-  {{range .}}
+  {{range .Data}}
     <li>
       <span class="timestamp">{{.CreatedAtString}}</span><br>
       <a href="/articles/{{.UrlEncodedTitle}}">{{.Title}}</a>

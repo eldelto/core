@@ -31,17 +31,17 @@
 	</script>
 	{{end}}
 
-	<div id="content">
-      <header>
-        <div class="ListViewHeader header">
-		  {{block "left-action" .}}{{end}}
-		  <a href="/lists">
-			<h1 class="HeaderTitle">Solvent</h1>
-		  </a>
-		  {{block "right-action" .}}{{end}}
-		</div>
-	  </header>
+    <header>
+      <div class="ListViewHeader header">
+		{{block "left-action" .}}{{end}}
+		<a href="/lists">
+		  <h1 class="HeaderTitle">Solvent</h1>
+		</a>
+		{{block "right-action" .}}{{end}}
+	  </div>
+	</header>
 
+	<div id="content">
 	  {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
 	</div>
   </body>
