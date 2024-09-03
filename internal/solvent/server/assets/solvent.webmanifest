@@ -1,0 +1,16 @@
+{
+  "name": "Solvent",
+  "short_name": "Solvent",
+  "description": "Simple and efficient to-do list application.",
+  "icons": [
+    {
+      "src": "assets/favicon.ico",
+      "sizes": "16x16",
+      "type": "image/ico"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#14bca8",
+  "background_color": "#14bca8"
+}
