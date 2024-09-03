@@ -18,48 +18,46 @@ import (
 	"github.com/google/uuid"
 )
 
-func shareTokenAuthMiddleware() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rawID := chi.URLParam(r, "listID")
-			if rawID == "" {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			listID, err := uuid.Parse(rawID)
-			if err != nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			cookie, err := r.Cookie("share-" + listID.String())
-			if err != nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-			parts := strings.Split(cookie.Value, ":")
-
-			rawID = parts[0]
-			userID, err := uuid.Parse(rawID)
-			if err != nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			token := web.TokenID(parts[1])
-			auth := solvent.ShareTokenAuth{
-				Token:  token,
-				User:   web.UserID{UUID: userID},
-				ListID: listID,
-			}
-
-			ctx := web.SetAuth(r.Context(), &auth)
-			r = r.WithContext(ctx)
-
+func shareTokenAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawID := chi.URLParam(r, "listID")
+		if rawID == "" {
 			next.ServeHTTP(w, r)
-		})
-	}
+			return
+		}
+
+		listID, err := uuid.Parse(rawID)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		cookie, err := r.Cookie("share-" + listID.String())
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		parts := strings.Split(cookie.Value, ":")
+
+		rawID = parts[0]
+		userID, err := uuid.Parse(rawID)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		token := web.TokenID(parts[1])
+		auth := solvent.ShareTokenAuth{
+			Token:  token,
+			User:   web.UserID{UUID: userID},
+			ListID: listID,
+		}
+
+		ctx := web.SetAuth(r.Context(), &auth)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 var (
@@ -87,7 +85,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "{listID}/share"}:    shareList(service),
 		},
 		Middleware: []web.HandlerProvider{
-			shareTokenAuthMiddleware(),
+			shareTokenAuthMiddleware,
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {

@@ -147,13 +147,30 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 	})
 }
 
+func (a *Authenticator) forwardingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := GetAuth(r.Context())
+		if err == nil {
+			http.Redirect(w, r, "/lists", http.StatusSeeOther)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (a *Authenticator) Controller() *Controller {
 	return &Controller{
 		BasePath: "/auth",
 		Handlers: map[Endpoint]Handler{
+			{Method: http.MethodGet, Path: "login"}:      a.login(),
 			{Method: http.MethodPost, Path: "token"}:     a.createToken(),
 			{Method: http.MethodGet, Path: "session"}:    a.authenticate(),
 			{Method: http.MethodDelete, Path: "session"}: logout(),
+		},
+		Middleware: []HandlerProvider{
+			a.forwardingMiddleware,
+			a.Middleware,
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) Handler {
 			return func(w http.ResponseWriter, r *http.Request) error {
@@ -181,6 +198,12 @@ func (a *Authenticator) GenerateToken() (TokenID, error) {
 	}
 
 	return TokenID(base64.URLEncoding.EncodeToString(rawToken)), nil
+}
+
+func (a *Authenticator) login() Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return a.loginTemplate.Execute(w, nil)
+	}
 }
 
 func (a *Authenticator) createToken() Handler {

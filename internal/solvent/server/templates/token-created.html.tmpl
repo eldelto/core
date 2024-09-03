@@ -1,7 +1,18 @@
 {{define "content"}}
 
-<h1>Login</h1>
-<p>
-  A login link as been sent to {{.Data}}. Please also check your spam folder.
-</p>
+<div class="FakeTodoList">
+  <div id="TodoListBody">
+	<h1 class="ToDoListTitle">Login - Step 2</h1>
+
+	<p>
+	  A login link as been sent via E-mail to <cite>{{.Data}}</cite>.
+	  <strong>Please also check your spam folder.</strong>
+	</p>
+
+	<p>
+	  Click the received link to complete the login procedure.
+	</p>
+  </div>
+</div>
+
 {{end}}

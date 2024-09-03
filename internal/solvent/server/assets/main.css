@@ -66,6 +66,13 @@ textarea::placeholder {
 	opacity: var(--inactive-opacity-light-bg);
 }
 
+input {
+	font-size: 1em;
+	margin: 0 .3em;
+	padding: .5em;
+	border: dashed 1px var(--text-color);
+}
+
 textarea {
 	resize: none;
 	line-height: 1.5em;
@@ -467,4 +474,14 @@ textarea[name="text-patch"] {
 	box-shadow: none;
 	border: dashed 1px var(--text-color);
 	opacity: .9;
+}
+
+.FakeTodoList {
+	width: 100%;
+	padding: 1em;
+	box-sizing: border-box;
+	border: none;
+	border-radius: 10px;
+	background-color: var(--light-background-color);
+	border: dashed 1px var(--text-color);
 }
