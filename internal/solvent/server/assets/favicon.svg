@@ -2,14 +2,14 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="204.99998mm"
+   height="204.99998mm"
+   viewBox="0 0 204.99998 204.99998"
    version="1.1"
    id="svg5"
    xml:space="preserve"
    inkscape:version="1.2.2 (b0a8486, 2022-12-01)"
-   sodipodi:docname="icon.svg"
+   sodipodi:docname="favicon.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,18 +25,19 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.42221309"
-     inkscape:cx="448.82549"
-     inkscape:cy="624.09244"
+     inkscape:cx="350.5339"
+     inkscape:cy="455.93091"
      inkscape:window-width="1440"
      inkscape:window-height="847"
      inkscape:window-x="0"
      inkscape:window-y="25"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg5" /><defs
+     inkscape:current-layer="layer1" /><defs
      id="defs2" /><g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1"><circle
+     id="layer1"
+     transform="translate(-2.5002186,-44.337545)"><circle
        style="fill:#14bca8;fill-opacity:1;stroke:#14bca8;stroke-width:3.19515;stroke-miterlimit:36.9;stroke-opacity:1"
        id="path788"
        cx="105.00021"
