@@ -4,12 +4,12 @@
   "description": "Simple and efficient to-do list application.",
   "icons": [
     {
-      "src": "assets/favicon.ico",
-      "sizes": "16x16",
-      "type": "image/ico"
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ],
-  "start_url": "/",
+  "start_url": "/list",
   "display": "standalone",
   "theme_color": "#14bca8",
   "background_color": "#14bca8"
