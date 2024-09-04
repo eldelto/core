@@ -9,7 +9,7 @@
       "type": "image/svg+xml"
     }
   ],
-  "start_url": "/list",
+  "start_url": "/lists",
   "display": "standalone",
   "theme_color": "#14bca8",
   "background_color": "#14bca8"
