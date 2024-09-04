@@ -1,14 +1,30 @@
+function isTileEmpty(tile) {
+	return tile.classList.contains("empty");
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
 	let firstSelectedTile = null;
 	let grid = document.querySelector(".grid-5x6");
 	grid.addEventListener("click", function (event) {
+		let clickedTile = event.target.closest(".tile");
+
+		// Skip the remaining logic if the clicked tile is already
+		// empty.
+		if (isTileEmpty(clickedTile)) {
+			return;
+		}
+
 		if (firstSelectedTile == null) {
-			firstSelectedTile = event.target.closest(".tile");
+			// Select the first tile if none is yet selected.
+			firstSelectedTile = clickedTile;
 			firstSelectedTile.classList.add("selected");
 		} else {
-			let secondSelectedTile = event.target.closest(".tile");
+			// Otherwise select the second tile.
+			let secondSelectedTile = clickedTile;
 
+			// Match the children of the two tiles and remove all
+			// matches.
 			let matched = false;
 			let children1 = Array.from(firstSelectedTile.children);
 			let children2 = Array.from(secondSelectedTile.children);
@@ -22,11 +38,19 @@ document.addEventListener("DOMContentLoaded", function () {
 				}
 			}
 
-			// TODO: If there are no children make the tile unselectable.
-			//       Deselect the tile if there are no children left.
+			if (firstSelectedTile.childElementCount == 0) {
+				firstSelectedTile.classList.add("empty");
+			}
+			if (secondSelectedTile.childElementCount == 0) {
+				secondSelectedTile.classList.add("empty");
+			}
 
+			// TODO: Deselect the tile if there are no children left.
+
+			// Keep second tile selected if we've got a match and it
+			// is not empty.
 			firstSelectedTile.classList.remove("selected");
-			if (matched) {
+			if (matched && !isTileEmpty(secondSelectedTile)) {
 				firstSelectedTile = secondSelectedTile;
 				firstSelectedTile.classList.add("selected");
 			} else {

@@ -34,6 +34,10 @@
     border: solid 6px #a1de4d;
 }
 
+.tile.empty {
+	border: none;
+}
+
 .center-1 {
     background-image: url("/assets/tiles/center-1.svg");
     height: 100%;
