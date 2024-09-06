@@ -1,10 +1,24 @@
 {{define "content"}}
 
+<dialog id="editDialog" class="FakeTodoList dialog">
+  <form method="dialog">
+	<h2>Edit Actions</h2>
+	<ul>
+	  <li>
+		<a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">Bulk edit</a>
+	  </li>
+	  <li>
+		<a href="/lists/{{.Data.ID}}/share" class="secondary share">Share</a>
+	  </li>
+	</ul>
+	<button class="secondary cancel">Cancel</button>
+  </form>
+</dialog>
+
 <div class="ToDoList">
   {{block "todoListOnly" .}}
   <div id="TodoListBody" hx-swap-oob="true">
-	<a href="/lists/{{.Data.ID}}/share" id="share-link" class="share">Share</a>
-	<a href="/lists/{{.Data.ID}}/edit" id="edit-link" class="edit">Edit</a>
+	<a id="editLink" class="secondary edit">Edit</a>
 	<h1 class="ToDoListTitle {{if .Data.Done}}checked{{end}}">
 	  {{.Data.Title}}
 	</h1>

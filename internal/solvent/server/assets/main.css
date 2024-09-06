@@ -18,6 +18,7 @@
 	--light-background-color: #f6f7eb;
 	--border-radius: 6px;
 	--box-shadow: 0px 2px 3px rgba(0, 0, 0, .3);
+	--far-box-shadow: 0px 7px 5px rgba(0, 0, 0, .3);
 }
 
 @font-face {
@@ -166,27 +167,24 @@ svg {
 	fill: var(--light-background-color);
 }
 
-button,
-.confirm,
-.action,
-.cancel,
-.edit {
+button {
 	cursor: pointer;
-	transition: all ease .1s;
+	transition: transform ease .1s;
 }
 
-.confirm,
-.action,
-.cancel,
-.edit {
+.primary,
+.secondary {
+	text-decoration: none;
+	cursor: pointer;
+	transition: all ease .1s;
 	font-size: 1em;
 	padding: .3em .5em;
 	align-items: center;
 	display: flex;
 }
 
-.confirm::before,
-.edit::before {
+.primary::before,
+.secondary::before {
 	content: "";
 	background-repeat: no-repeat;
 	background-size: 1.5em 1.5em;
@@ -195,27 +193,52 @@ button,
 	display: inline-block;
 }
 
-.confirm {
+
+button:hover,
+.primary:hover,
+.secondary:hover {
+	transform: translateY(-1px);
+}
+
+button:disabled:hover,
+.primary:disabled:hover,
+.secondary:disabled:hover {
+	transform: none;
+}
+
+.primary {
 	color: var(--light-background-color);
 	background-color: var(--dark-brand-color);
 	border: none;
 	border-bottom: solid 2px var(--dark-brand-color);
 }
 
-.confirm::before {
-	background-image: url("/assets/icons/checked-white.svg?h=1");
+.primary:hover {
+	background-color: var(--light-brand-color);
 }
 
-.confirm:hover {
-	background-color: var(--light-brand-color);
+.secondary {
+	border: none;
+	background: none;
+	color: var(--dark-brand-color);
+	opacity: var(--inactive-opacity);
+}
+
+.secondary:hover {
+	opacity: 1;
+	text-decoration: underline;
+}
+
+.confirm::before {
+	background-image: url("/assets/icons/checked-white.svg?h=1");
 }
 
 .cancel {
 	color: var(--alert-color);
 }
 
-.edit {
-	color: var(--dark-brand-color);
+.cancel::before {
+	width: 0;
 }
 
 .edit::before {
@@ -224,68 +247,19 @@ button,
 	width: 1.7em;
 }
 
-.edit, .cancel {
-	opacity: var(--inactive-opacity);
+.bulkEdit::before {
+	background-image: url("/assets/icons/edit.svg?h=1");
+	background-size: 1.3em 1.3em;
+	width: 1.7em;
 }
 
-button:hover,
-.confirm:hover,
-.action:hover,
-.cancel:hover,
-.edit:hover {
-	transform: translateY(-1px);
+.share::before {
+	background-image: url("/assets/icons/edit.svg?h=1");
+	background-size: 1.3em 1.3em;
+	width: 1.7em;
 }
 
-button:disabled:hover {
-	transform: none;
-}
-
-.action:hover,
-.cancel:hover,
-.edit:hover {
-	opacity: 1;
-	text-decoration: underline;
-}
-
-.ListViewSearchBarLogo {
-	width: 2em;
-	height: 2em;
-	margin-left: 0.5em;
-	position: absolute;
-	cursor: pointer;
-}
-
-.ListViewSearchBarLogo > svg {
-	fill: var(--text-color);
-	opacity: var(--inactive-opacity-light-bg);
-}
-
-.ListViewSearchBar {
-	width: 50%;
-	font-size: 1em;
-	height: 2.5em !important;
-	margin-right: 1em;
-	padding: 0 3em;
-	flex-grow: 1;
-	border: none;
-	box-shadow: var(--box-shadow);
-	background: var(--light-background-color);
-}
-
-.ListViewBackButton:disabled {
-	opacity: var(--disabled-opacity);
-	cursor: default;
-}
-
-.ListViewFooter {
-	width: 50%;
-	height: 8em;
-	margin: 0 auto;
-	padding: 0;
-	visibility: hidden;
-}
-
-#edit-link {
+#editLink {
 	float: right;
 }
 
@@ -460,28 +434,41 @@ textarea[name="text-patch"] {
 	opacity: 0;
 }
 
-#error-dialog > form {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
+.dialog {
+	max-width: 450px;
+	box-shadow: var(--far-box-shadow);
 }
 
-#error-dialog::backdrop {
-	backdrop-filter: saturate(.4);
+.dialog h2 {
+	font-weight: normal;
+	margin: .4em 0 1em 0;
 }
 
-.ToDoList.NotFound {
-	box-shadow: none;
-	border: dashed 1px var(--text-color);
-	opacity: .9;
+.dialog::backdrop {
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
 }
 
 .FakeTodoList {
 	width: 100%;
 	padding: 1em;
 	box-sizing: border-box;
-	border: none;
 	border-radius: 10px;
 	background-color: var(--light-background-color);
 	border: dashed 1px var(--text-color);
+}
+
+#editDialog ul {
+    width: 100%;
+    padding: 0;
+    list-style: none;
+}
+
+#editDialog li {
+	border-top: 1px solid rgba(0, 0, 0, .1);
+	width: 100%;
+	padding: .7em 0;
+	display: flex;
+	box-sizing: border-box;
+	justify-content: center;
 }

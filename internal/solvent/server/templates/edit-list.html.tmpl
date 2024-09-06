@@ -8,8 +8,8 @@
   <input type="hidden" name="timestamp" value="{{.Data.UpdatedAt}}" />
   <textarea data-auto-grow name="text-patch" autofocus>{{.Data.String}}</textarea>
   <div id="ToDoListFooter">
-	<a href="/lists/{{.Data.ID}}" class="cancel">Cancel</a>
-	<button class="confirm">Save</button>
+	<a href="/lists/{{.Data.ID}}" class="secondary cancel">Cancel</a>
+	<button class="primary confirm">Save</button>
   </div>
 </form>
 

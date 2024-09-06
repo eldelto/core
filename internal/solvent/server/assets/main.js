@@ -59,6 +59,13 @@ function init() {
 		.forEach(e => e.addEventListener("htmx:afterRequest", e => {
 			if (e.detail.successful) e.target.reset();
 		}));
+
+
+	const editDialog = document.querySelector("#editDialog");
+	document.querySelectorAll("#editLink")
+		.forEach(e => e.addEventListener("click", e => {
+			editDialog.showModal();
+		}));
 }
 
 htmx.onLoad(function(content) {
@@ -127,8 +134,8 @@ document.addEventListener("DOMContentLoaded", function() {
 	const body = document.querySelector("body");
 	body.addEventListener("keydown", e => {
 		if (e.key == "e" && e.ctrlKey) {
-			const editLink = document.querySelector("#edit-link");
-			editLink && editLink.click();
+			const bulkEditLink = document.querySelector(".bulkEdit");
+			bulkEditLink && bulkEditLink.click();
 			e.preventDefault();
 		}
 	});
