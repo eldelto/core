@@ -38,6 +38,14 @@ function enableAddItemButton(e) {
 	button.disabled = input.value.length < 1;
 }
 
+function copyToClipboard(e) {
+	const button = e.currentTarget;
+	const selector = button.dataset.copy;
+	const target = button.parentElement.querySelector(selector);
+	navigator.clipboard.writeText(target.textContent);
+	e.preventDefault();
+}
+
 function init() {
 	document.querySelectorAll(".AddItemBar")
 		.forEach(e => {
@@ -60,12 +68,14 @@ function init() {
 			if (e.detail.successful) e.target.reset();
 		}));
 
-
 	const editDialog = document.querySelector("#editDialog");
 	document.querySelectorAll("#editLink")
 		.forEach(e => e.addEventListener("click", e => {
 			editDialog.showModal();
 		}));
+
+	document.querySelectorAll("[data-copy]")
+		.forEach(e => e.addEventListener("click", copyToClipboard));
 }
 
 htmx.onLoad(function(content) {

@@ -8,7 +8,11 @@
 		<a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">Bulk edit</a>
 	  </li>
 	  <li>
-		<a href="/lists/{{.Data.ID}}/share" class="secondary share">Share</a>
+		<a href="/lists/{{.Data.ID}}/share"
+		   class="secondary share"
+		   hx-get="/lists/{{.Data.ID}}/share" hx-swap="outerHTML">
+		  Share
+		</a>
 	  </li>
 	</ul>
 	<button class="secondary cancel">Cancel</button>
@@ -18,7 +22,7 @@
 <div class="ToDoList">
   {{block "todoListOnly" .}}
   <div id="TodoListBody" hx-swap-oob="true">
-	<a id="editLink" class="secondary edit">Edit</a>
+	<a id="editLink" class="secondary settings"></a>
 	<h1 class="ToDoListTitle {{if .Data.Done}}checked{{end}}">
 	  {{.Data.Title}}
 	</h1>

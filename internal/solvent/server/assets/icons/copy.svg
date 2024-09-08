@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+
+<svg
+   width="800px"
+   height="800px"
+   viewBox="0 0 24 24"
+   fill="none"
+   version="1.1"
+   id="svg138"
+   sodipodi:docname="copy.svg"
+   inkscape:version="1.2.2 (b0a8486, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs142" />
+  <sodipodi:namedview
+     id="namedview140"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="0.295"
+     inkscape:cx="274.57627"
+     inkscape:cy="405.08475"
+     inkscape:window-width="1440"
+     inkscape:window-height="847"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg138" />
+  <rect
+     x="2.5292237"
+     y="7.2647514"
+     width="14.206164"
+     height="14.206164"
+     rx="1.1838471"
+     stroke="#000000"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="rect134"
+     style="stroke:#f6f7eb;stroke-width:1.70736378;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     d="m 7.2646119,4.8970572 v -1.183847 c 0,-0.6538151 0.530032,-1.183847 1.183847,-1.183847 H 20.286929 c 0.653839,0 1.183847,0.5300319 1.183847,1.183847 V 15.551681 c 0,0.653838 -0.530008,1.183847 -1.183847,1.183847 h -1.183847"
+     stroke="#000000"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     stroke-dasharray="2 2"
+     id="path136"
+     style="stroke:#f6f7eb;stroke-width:1.70736378;stroke-dasharray:3.41472756,3.41472756;stroke-dashoffset:0;stroke-opacity:1" />
+</svg>

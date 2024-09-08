@@ -77,6 +77,7 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 	}
 }
 
+// TODO: Don't include base.html per default.
 func (t *Templater) Get(patterns ...string) (*Template, error) {
 	templatePaths := make([]string, len(patterns)+1)
 	templatePaths[0] = "templates/base.html.tmpl"

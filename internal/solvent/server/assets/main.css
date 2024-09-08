@@ -9,6 +9,7 @@
 	--text-color: black;
 	--light-brand-color: #14bca8;
 	--dark-brand-color: #21897e;
+	--extra-dark-brand-color: #356c67;
 	--accent-color: #ff9f1c;
 	--alert-color: #a20021;
 	--inactive-opacity: .7;
@@ -51,7 +52,8 @@ a {
 
 input,
 button,
-textarea {
+textarea,
+.input {
 	border-radius: var(--border-radius);
 	font-family: 'Cabin', sans-serif;
 	font-size: 1em;
@@ -67,11 +69,19 @@ textarea::placeholder {
 	opacity: var(--inactive-opacity-light-bg);
 }
 
-input {
+input,
+.input {
 	font-size: 1em;
 	margin: 0 .3em;
 	padding: .5em;
 	border: dashed 1px var(--text-color);
+	background-color: white;
+}
+
+.input {
+	white-space: nowrap;
+	overflow-x: scroll;
+	display: inline-block;
 }
 
 textarea {
@@ -207,6 +217,7 @@ button:disabled:hover,
 }
 
 .primary {
+	height: 2.3em;
 	color: var(--light-background-color);
 	background-color: var(--dark-brand-color);
 	border: none;
@@ -215,6 +226,12 @@ button:disabled:hover,
 
 .primary:hover {
 	background-color: var(--light-brand-color);
+}
+
+.primary:active {
+	background-color: var(--extra-dark-brand-color);
+	border-bottom: none;
+	transform: none;
 }
 
 .secondary {
@@ -254,9 +271,15 @@ button:disabled:hover,
 }
 
 .share::before {
-	background-image: url("/assets/icons/edit.svg?h=1");
-	background-size: 1.3em 1.3em;
-	width: 1.7em;
+	background-image: url("/assets/icons/share.svg?h=1");
+}
+
+.copy::before {
+	background-image: url("/assets/icons/copy.svg?h=1");
+}
+
+.settings::before {
+	background-image: url("/assets/icons/settings.svg?h=1");
 }
 
 #editLink {
@@ -471,4 +494,10 @@ textarea[name="text-patch"] {
 	display: flex;
 	box-sizing: border-box;
 	justify-content: center;
+}
+
+.flex {
+	display: flex;
+	width: 100%;
+	align-items: center;
 }

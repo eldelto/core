@@ -451,6 +451,6 @@ func shareList(service *solvent.Service) web.Handler {
 			return err
 		}
 
-		return shareTemplate.Execute(w, shareLink)
+		return shareTemplate.ExecuteFragment(w, "shareLinkOnly", shareLink)
 	}
 }

@@ -4,7 +4,7 @@
   "description": "Simple and efficient to-do list application.",
   "icons": [
     {
-      "src": "assets/favicon.svg",
+      "src": "/assets/favicon.svg?h=1",
       "sizes": "any",
       "type": "image/svg+xml"
     }
