@@ -222,6 +222,7 @@ button:disabled:hover,
 	background-color: var(--dark-brand-color);
 	border: none;
 	border-bottom: solid 2px var(--dark-brand-color);
+	border-radius: var(--border-radius);
 }
 
 .primary:hover {
@@ -231,6 +232,7 @@ button:disabled:hover,
 .primary:active {
 	background-color: var(--extra-dark-brand-color);
 	border-bottom: none;
+	border-top: solid 2px var(--text-color);
 	transform: none;
 }
 
@@ -457,17 +459,19 @@ textarea[name="text-patch"] {
 	opacity: 0;
 }
 
-.dialog {
+dialog {
+	width: 90vw;
 	max-width: 450px;
-	box-shadow: var(--far-box-shadow);
+	background: none;
+	border: none;
 }
 
-.dialog h2 {
+dialog h2 {
 	font-weight: normal;
 	margin: .4em 0 1em 0;
 }
 
-.dialog::backdrop {
+dialog::backdrop {
 	backdrop-filter: blur(3px);
 	-webkit-backdrop-filter: blur(3px);
 }
@@ -479,6 +483,10 @@ textarea[name="text-patch"] {
 	border-radius: 10px;
 	background-color: var(--light-background-color);
 	border: dashed 1px var(--text-color);
+}
+
+dialog > .FakeTodoList {
+	box-shadow: var(--far-box-shadow);
 }
 
 #editDialog ul {
@@ -496,8 +504,26 @@ textarea[name="text-patch"] {
 	justify-content: center;
 }
 
-.flex {
+.flex,
+.flexCol {
 	display: flex;
 	width: 100%;
 	align-items: center;
+}
+
+.flexCol {
+	flex-direction: column;
+}
+
+.shortCut {
+	margin-left: 2em;
+	color: var(--text-color);
+	opacity: .4;
+}
+
+.key {
+	margin: 0 .5em 0 .5em;
+    padding: .1em .4em;
+	border: solid 1px var(--text-color);
+	border-radius: 3px;
 }

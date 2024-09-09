@@ -1,11 +1,16 @@
 {{define "content"}}
 
-<dialog id="editDialog" class="FakeTodoList dialog">
-  <form method="dialog">
+<dialog id="editDialog">
+  <form method="dialog" class="FakeTodoList">
 	<h2>Edit Actions</h2>
 	<ul>
 	  <li>
-		<a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">Bulk edit</a>
+		<a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">
+		  Bulk edit
+		  <span class="shortCut">
+			<span class="key">ctrl</span>+<span class="key">E</span>
+		  </span>
+		</a>
 	  </li>
 	  <li>
 		<a href="/lists/{{.Data.ID}}/share"

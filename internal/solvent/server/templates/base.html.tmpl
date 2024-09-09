@@ -17,12 +17,13 @@
   </head>
 
   <body>
-	<dialog id="error-dialog" class="ToDoList">
-	  <form method="dialog">
+	<dialog id="error-dialog">
+	  <form method="dialog" class="FakeTodoList flexCol">
+		<h2>Error</h2>
 		<p id="error-content">
 		  {{.Msg}}
 		</p>
-		<button class="confirm">OK</button>
+		<button class="primary confirm">OK</button>
 	  </form>
 	</dialog>
 
