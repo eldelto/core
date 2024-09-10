@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/gob"
 	"fmt"
+	"html/template"
 	"log"
 	"net/mail"
 	"net/smtp"
@@ -23,7 +25,18 @@ const (
 
 var (
 	todoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
+
+	//go:embed login.tmpl
+	rawLoginTemplate string
+	loginTemplate    = template.New("login")
 )
+
+func init() {
+	_, err := loginTemplate.Parse(rawLoginTemplate)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse login template: %w", err))
+	}
+}
 
 type ShareTokenAuth struct {
 	Token  web.TokenID
@@ -316,28 +329,26 @@ func (s *Service) ApplyListPatch(ctx context.Context, listID uuid.UUID, patch st
 	return err
 }
 
-const loginTemplate = `Subject: Solvent Login
-From: eldelto.net <no-reply@eldelto.net>
-Content-Type: text/html; charset="UTF-8"
-
-<!DOCTYPE html>
-<html>
-<body>
-<p>Click the following link to complete the login:</p>
-<a href='%s/auth/session?token=%s'>login</a>
-</body>
-</html>`
+type loginData struct {
+	Host  string
+	Token web.TokenID
+}
 
 func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
-	template := fmt.Sprintf(loginTemplate, s.host, token)
+	data := loginData{Host: s.host, Token: token}
+
+	content := bytes.Buffer{}
+	if err := loginTemplate.Execute(&content, data); err != nil {
+		return fmt.Errorf("failed to execute login template: %w", err)
+	}
 
 	if s.smtpAuth == nil {
-		log.Println(template)
+		log.Println(content.String())
 		return nil
 	}
 
 	return smtp.SendMail(s.smtpHost, s.smtpAuth, "no-reply@eldelto.net",
-		[]string{email.Address}, []byte(template))
+		[]string{email.Address}, content.Bytes())
 }
 
 func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error) {
