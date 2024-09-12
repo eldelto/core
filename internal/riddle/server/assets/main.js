@@ -5,6 +5,7 @@ function isTileEmpty(tile) {
 document.addEventListener("DOMContentLoaded", function () {
 
 	let firstSelectedTile = null;
+	let comboCounter = 0;
 	let grid = document.querySelector(".grid-5x6");
 	grid.addEventListener("click", function (event) {
 		let clickedTile = event.target.closest(".tile");
@@ -37,6 +38,13 @@ document.addEventListener("DOMContentLoaded", function () {
 					}
 				}
 			}
+			if (matched == true) {
+				comboCounter = comboCounter + 1;
+
+			} else {
+				comboCounter = 0;
+			}
+			document.querySelector("#comboCounter").textContent = comboCounter;
 
 			if (firstSelectedTile.childElementCount == 0) {
 				firstSelectedTile.classList.add("empty");
