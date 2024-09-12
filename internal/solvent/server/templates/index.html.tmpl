@@ -1,9 +1,5 @@
 {{define "content"}}
 
-<p>
-  Get stuff done. Own your data.
-</p>
-
 <div class="FakeTodoList">
   <div id="TodoListBody">
 	<h1 class="ToDoListTitle">Get started now!</h1>
@@ -12,6 +8,42 @@
 	  <button class="primary confirm">Login</button>
 	</form>
   </div>
+</div>
+
+<div class="promoContent">
+  <section class="flex">
+	<div>
+	  <h2>Zero fuzz to-do list.</h2>
+	  <p>
+		Self-hosted or bla bla.
+	  </p>
+	</div>
+
+	<img src='{{asset "screens/list.png"}}' alt="Screenshot of the list view">
+  </section>
+
+  <section class="flex">
+	<div>
+	  <h2>Bulk-edit mode.</h2>
+	  <p>
+		Never manually type recipe ingredients ever again. Every line is
+		treated as a separate to-do item.
+	  </p>
+	</div>
+
+	<img src='{{asset "screens/bulk-edit.png"}}' alt="Screenshot of bulk editing">
+  </section>
+
+  <section class="flex">
+	<div>
+	  <h2>Sharing is caring.</h2>
+	  <p>
+		Share your list of tasks with family and friends - no account required.
+	  </p>
+	</div>
+
+	<img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
+	<section>
 </div>
 
 {{end}}

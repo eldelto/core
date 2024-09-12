@@ -30,20 +30,24 @@
 	src: url(/assets/Pattaya-Regular.ttf?h=1);
 }
 
+/*
+html {
+    background: linear-gradient(120deg, rgba(20,188,168,1) 0%, rgba(33,137,126,1) 100%);
+    min-height: 100%;
+}
+*/
+
 body {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	font-family: 'Cabin', sans-serif;
+	background-color: var(--light-brand-color);
 }
 
 #content {
 	width: 100%;
 	max-width: 900px;
-}
-
-body {
-	font-family: 'Cabin', sans-serif;
-	background-color: var(--light-brand-color);
 }
 
 a {
@@ -526,4 +530,43 @@ dialog > .FakeTodoList {
     padding: .1em .4em;
 	border: solid 1px var(--text-color);
 	border-radius: 3px;
+}
+
+.promoContent {
+    color: var(--light-background-color);
+}
+
+.promoContent h2 {
+    font-size: 2em;
+    border-bottom: solid 4px var(--dark-brand-color);
+    display: inline-block;
+    font-family: Pattaya;
+    font-weight: normal;
+	margin-top: 0;
+}
+
+.promoContent p {
+	font-size: 1.1em;
+	line-height: 1.5em;
+}
+
+.promoContent img {
+	border-radius: var(--border-radius);
+	flex: 1;
+	min-width: 30vh;
+	max-width: 50vh;
+}
+
+.promoContent .flex {
+	align-items: flex-start;	
+	justify-content: space-between;
+	flex-wrap: wrap;
+	margin: 7em 0;
+}
+
+.promoContent .flex > div{
+	max-width: 300px;
+	flex-shrink: 0;
+	margin-right: 3em;
+	padding: 1em;
 }
