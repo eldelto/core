@@ -5,12 +5,11 @@ bunch of helper libraries.
 
 It contains the following somewhat finished projects:
 
-## Blog
+## Solvent
 
-My personal blog that uses an Org-Mode file as CMS. Currently hosted at
-[www.eldelto.net](https://www.eldelto.net).
+Efficient, self-hostable, no-fuzz to-do list.
 
-Please see the project's [README](/cmd/blog/README.md) for more information.
+Please see the project's [README](/cmd/solvent/README.md) for more information.
 
 ## Plant Guild
 
@@ -19,3 +18,9 @@ planting project.
 
 Please see the project's [README](/cmd/plantguild/README.md) for more information.
 
+## Blog
+
+My personal blog that uses an Org-Mode file as CMS. Currently hosted at
+[www.eldelto.net](https://www.eldelto.net).
+
+Please see the project's [README](/cmd/blog/README.md) for more information.
