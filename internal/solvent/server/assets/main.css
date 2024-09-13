@@ -244,11 +244,9 @@ button:disabled:hover,
 	border: none;
 	background: none;
 	color: var(--dark-brand-color);
-	opacity: var(--inactive-opacity);
 }
 
 .secondary:hover {
-	opacity: 1;
 	text-decoration: underline;
 }
 
@@ -532,13 +530,31 @@ dialog > .FakeTodoList {
 	border-radius: 3px;
 }
 
+.landingPage .flex {
+	justify-content: space-between;
+}
+
+.landingPage a {
+	color: var(--dark-brand-color);
+	text-decoration: none;
+	cursor: pointer;
+	transition: all ease .1s;
+	font-size: 1em;
+}
+
+.landingPage a:hover {
+	transform: translateY(-1px);
+	text-decoration: underline;
+	display: inline-block;
+}
+
 .promoContent {
     color: var(--light-background-color);
 }
 
 .promoContent h2 {
     font-size: 2em;
-    border-bottom: solid 4px var(--dark-brand-color);
+    border-bottom: solid 4px var(--light-brand-color);
     display: inline-block;
     font-family: Pattaya;
     font-weight: normal;
@@ -547,7 +563,7 @@ dialog > .FakeTodoList {
 
 .promoContent p {
 	font-size: 1.1em;
-	line-height: 1.5em;
+	line-height: 1.7em;
 }
 
 .promoContent img {
@@ -561,12 +577,22 @@ dialog > .FakeTodoList {
 	align-items: flex-start;	
 	justify-content: space-between;
 	flex-wrap: wrap;
-	margin: 7em 0;
+	margin: 3.5em 0;
+	padding-top: 3.5em;
+	border-top: solid 2px var(--dark-brand-color);
 }
 
 .promoContent .flex > div{
 	max-width: 300px;
 	flex-shrink: 0;
 	margin-right: 3em;
-	padding: 1em;
+	background-color: var(--dark-brand-color);
+}
+
+.promoContent a {
+	color: var(--light-brand-color);
+}
+
+.promoList {
+	list-style-image: url("/assets/icons/checked-brand.svg?h=1");
 }

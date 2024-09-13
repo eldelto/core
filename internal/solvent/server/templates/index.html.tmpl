@@ -1,49 +1,82 @@
 {{define "content"}}
 
-<div class="FakeTodoList">
-  <div id="TodoListBody">
-	<h1 class="ToDoListTitle">Get started now!</h1>
+<div class="landingPage">
+  <div class="FakeTodoList">
+	<div id="TodoListBody">
+	  <div class="flex">
+		<h1 class="ToDoListTitle">Get started!</h1>
+		<form method="GET" action="/auth/login" style="float: right;">
+		  <button class="primary confirm">Login</button>
+		</form>
+	  </div>
 
-	<form method="GET" action="/auth/login">
-	  <button class="primary confirm">Login</button>
-	</form>
+	  <ul class="promoList">
+		<li>
+		  <span>Get the <a href="https://github.com/eldelto/core/tree/main/cmd/solvent">code</a>.</span>
+		</li>
+		<li>
+		  Read the <a href="https://github.com/eldelto/core/blob/main/cmd/solvent/README.md">docs</a>.
+		</li>
+	  </ul>
+	</div>
   </div>
-</div>
 
-<div class="promoContent">
-  <section class="flex">
-	<div>
-	  <h2>Zero fuzz to-do list.</h2>
-	  <p>
-		Self-hosted or bla bla.
-	  </p>
-	</div>
+  <div class="promoContent">
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Zero fuzz to-do list.</h2>
+		<p>
+		  No tracking.<br>
+		  No Ads.<br>
+		</p>
+		<p>
+		  Every action is synced so you don't accidentally work on stale
+		  date.
+		</p>
+	  </div>
 
-	<img src='{{asset "screens/list.png"}}' alt="Screenshot of the list view">
-  </section>
+	  <img src='{{asset "screens/list.png"}}' alt="Screenshot of the list view">
+	</section>
 
-  <section class="flex">
-	<div>
-	  <h2>Bulk-edit mode.</h2>
-	  <p>
-		Never manually type recipe ingredients ever again. Every line is
-		treated as a separate to-do item.
-	  </p>
-	</div>
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Bulk-edit mode.</h2>
+		<p>
+		  Never manually type recipe ingredients ever again. Plain-text
+		  with every line treated as a separate to-do item for efficient
+		  desktop editing.
+		</p>
+	  </div>
 
-	<img src='{{asset "screens/bulk-edit.png"}}' alt="Screenshot of bulk editing">
-  </section>
+	  <img src='{{asset "screens/bulk-edit.png"}}' alt="Screenshot of bulk editing">
+	</section>
 
-  <section class="flex">
-	<div>
-	  <h2>Sharing is caring.</h2>
-	  <p>
-		Share your list of tasks with family and friends - no account required.
-	  </p>
-	</div>
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Sharing is caring.</h2>
+		<p>
+		  Share your list of tasks with family and friends - no account required.
+		</p>
+	  </div>
 
-	<img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
-	<section>
+	  <img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
+	</section>
+
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Self-hostable.</h2>
+		<p>
+		  Don't want to trust someone else with your data? Solvent is a
+		  single binary so it is easy to self-host on your own hardware.
+		</p>
+		<p>
+		  See the <a>hosting guide</a> for details.
+		</p>
+	  </div>
+
+	  <img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
+	</section>
+  </div>
 </div>
 
 {{end}}
