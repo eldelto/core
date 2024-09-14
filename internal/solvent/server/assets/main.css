@@ -530,6 +530,9 @@ dialog > .FakeTodoList {
 	border-radius: 3px;
 }
 
+
+/* Landing Page */
+
 .landingPage .flex {
 	justify-content: space-between;
 }
@@ -569,14 +572,13 @@ dialog > .FakeTodoList {
 .promoContent img {
 	border-radius: var(--border-radius);
 	flex: 1;
-	min-width: 30vh;
-	max-width: 50vh;
+	min-width: 0px;
+	max-width: 50%;
 }
 
 .promoContent .flex {
 	align-items: flex-start;	
 	justify-content: space-between;
-	flex-wrap: wrap;
 	margin: 3.5em 0;
 	padding-top: 3.5em;
 	border-top: solid 2px var(--dark-brand-color);
@@ -594,5 +596,34 @@ dialog > .FakeTodoList {
 }
 
 .promoList {
-	list-style-image: url("/assets/icons/checked-brand.svg?h=1");
+	padding: 0;
+	list-style: none;
+}
+
+.promoList > li {
+	height: 2em;
+	padding-left: 2em;
+	margin-bottom: .5em;
+	align-items: center;
+	background-image: url("/assets/icons/checked-brand.svg?h=1");
+	background-repeat: no-repeat;
+	background-size: 1.5em 1.5em;
+	background-position-y: -0.1em;
+}
+
+@media (max-width: 40rem) {
+	.promoContent .flex {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.promoContent .flex > div{
+		max-width: 100%;
+		margin-right: 0;
+		margin-bottom: 2em;
+	}
+
+	.promoContent img {
+		max-width: 70%;
+	}
 }

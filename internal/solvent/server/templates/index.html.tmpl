@@ -3,19 +3,31 @@
 <div class="landingPage">
   <div class="FakeTodoList">
 	<div id="TodoListBody">
+
 	  <div class="flex">
-		<h1 class="ToDoListTitle">Get started!</h1>
+		<h2 class="ToDoListTitle">Get started ✏️</h2>
+
 		<form method="GET" action="/auth/login" style="float: right;">
 		  <button class="primary confirm">Login</button>
 		</form>
 	  </div>
 
+	  <p>
+		Click the login button to finally get a grip on your life (ok,
+		maybe just on your to-do lists).
+	  </p>
+
 	  <ul class="promoList">
 		<li>
-		  <span>Get the <a href="https://github.com/eldelto/core/tree/main/cmd/solvent">code</a>.</span>
+		  If you have any questions, make sure to read the
+		  <a href="https://github.com/eldelto/core/blob/main/cmd/solvent/README.md"
+			 target="_blank">docs</a>.
 		</li>
 		<li>
-		  Read the <a href="https://github.com/eldelto/core/blob/main/cmd/solvent/README.md">docs</a>.
+		  Fully open-source under the BSD-3 license. Checkout the code
+		  on
+		  <a href="https://github.com/eldelto/core/tree/main/cmd/solvent"
+		     target="_blank">Github</a>.
 		</li>
 	  </ul>
 	</div>
@@ -70,11 +82,15 @@
 		  single binary so it is easy to self-host on your own hardware.
 		</p>
 		<p>
-		  See the <a>hosting guide</a> for details.
+		  See
+		  the <a href="https://github.com/eldelto/core/tree/main/cmd/solvent#self-hosting"
+				 target="_blank">hosting guide</a> for details.
 		</p>
 	  </div>
 
-	  <img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
+	  <img src='{{asset "screens/self-host.png"}}' alt="Screenshot of
+														the
+														self-hosting manual">
 	</section>
   </div>
 </div>
