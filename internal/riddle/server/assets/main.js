@@ -2,11 +2,24 @@ function isTileEmpty(tile) {
 	return tile.classList.contains("empty");
 }
 
+function unsolvedTileCount () {
+	let unsolvedTileCount = 0;
+	let allTiles = document.querySelectorAll(".tile");
+	for (let tile of allTiles) {
+		if (tile.childElementCount != 0){
+			unsolvedTileCount++;
+		}
+		}
+console.log(unsolvedTileCount, allTiles)
+}
+
+
 document.addEventListener("DOMContentLoaded", function () {
 
 	let firstSelectedTile = null;
 	let comboCounter = 0;
-	let grid = document.querySelector(".grid-5x6");
+	let maxCounter = 0;
+	let grid = document.querySelector(".grid");
 	grid.addEventListener("click", function (event) {
 		let clickedTile = event.target.closest(".tile");
 
@@ -39,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 				}
 			}
 			if (matched == true) {
-				comboCounter = comboCounter + 1;
+				comboCounter++;
 
 			} else {
 				comboCounter = 0;
@@ -53,6 +66,13 @@ document.addEventListener("DOMContentLoaded", function () {
 				secondSelectedTile.classList.add("empty");
 			}
 
+			if (comboCounter > maxCounter) {
+				maxCounter = comboCounter;
+			}
+			document.querySelector("#maxCounter").textContent = maxCounter;
+
+
+
 			// TODO: Deselect the tile if there are no children left.
 
 			// Keep second tile selected if we've got a match and it
@@ -64,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			} else {
 				firstSelectedTile = null;
 			}
+			unsolvedTileCount();
 		}
 	});
 });
