@@ -1,11 +1,11 @@
-.grid-5x6 {
+.grid {
     display: grid;
-    grid-template-columns: auto auto auto auto auto;
-    grid-template-rows: auto auto auto auto auto auto;
-    width: 80vw;
-    height: 96vw;
-    max-width: 80vh;
-    max-height: 96vh;
+    grid-template-columns: auto auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
+    width: 96vw;
+    height: 80vw;
+    max-width: 96vh;
+    max-height: 80vh;
     gap: 3px;
     background-color: #c7c2c2;
     border: solid 3px #c7c2c2;

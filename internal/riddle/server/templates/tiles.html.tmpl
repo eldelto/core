@@ -7,8 +7,14 @@ Kombüsen:
 </span>
 </div>
 
+<div>
+Max-Kombüsen: 
+<span id="maxCounter">
+0
+</span>
+</div>
 
-<div class="grid-5x6">
+<div class="grid">
   {{range $i, $n := .Data.Center}}
   <div class="tile">
 	<div class="center-{{index $.Data.Center $i}}"></div>
