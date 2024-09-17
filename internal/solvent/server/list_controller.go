@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
@@ -113,99 +112,13 @@ type listsData struct {
 	Completed []solvent.TodoList
 }
 
-func loadSharedList(ctx context.Context,
-	service *solvent.Service,
-	cookie *http.Cookie,
-	currentUserID web.UserID,
-	rawListID string) (*solvent.TodoList, error) {
-	parts := strings.Split(cookie.Value, ":")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid share cookie value %q", cookie.Value)
-	}
-
-	rawUserID := parts[0]
-	userID, err := uuid.Parse(rawUserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse %q as UUID: %w",
-			rawUserID, err)
-	}
-
-	// We skip our own lists.
-	if currentUserID.UUID == userID {
-		return nil, nil
-	}
-
-	listID, err := uuid.Parse(rawListID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse %q as UUID: %w",
-			rawListID, err)
-	}
-
-	token := web.TokenID(parts[1])
-	auth := solvent.ShareTokenAuth{
-		Token:  token,
-		User:   web.UserID{UUID: userID},
-		ListID: listID,
-	}
-
-	ctx = web.SetAuth(ctx, &auth)
-	list, err := service.FetchTodoList(ctx, listID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &list, nil
-}
-
-func deleteCookie(w http.ResponseWriter, name string) {
-	cookie := http.Cookie{
-		Name:     name,
-		Value:    " ",
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Time{},
-	}
-	http.SetCookie(w, &cookie)
-}
-
 func getLists(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		auth, err := web.GetAuth(r.Context())
+		open, completed, err := service.FetchLists(r.Context(), r.Cookies())
 		if err != nil {
 			return err
 		}
 
-		ctx := r.Context()
-		sharedLists := []solvent.TodoList{}
-		for _, cookie := range r.Cookies() {
-			rawListID, found := strings.CutPrefix(cookie.Name, "share-")
-			if !found {
-				continue
-			}
-
-			list, err := loadSharedList(ctx, service, cookie,
-				auth.UserID(), rawListID)
-			if err != nil {
-				deleteCookie(w, cookie.Name)
-				continue
-			}
-
-			if list == nil {
-				continue
-			}
-
-			sharedLists = append(sharedLists, *list)
-		}
-
-		notebook, err := service.FetchNotebook(r.Context())
-		if err != nil {
-			return err
-		}
-
-		open, completed := notebook.GetLists()
-		// TODO: Somehow distinguish them...
-		open = append(open, sharedLists...)
 		data := listsData{
 			Open:      open,
 			Completed: completed,

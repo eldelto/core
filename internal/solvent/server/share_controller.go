@@ -7,16 +7,17 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/eldelto/core/internal/solvent"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-func NewShareController() *web.Controller {
+func NewShareController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/shared",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "/user/{userID}/list/{listID}"}: receiveShare(),
+			{Method: http.MethodGet, Path: "/user/{userID}/list/{listID}"}: receiveShare(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -34,7 +35,7 @@ func NewShareController() *web.Controller {
 	}
 }
 
-func receiveShare() web.Handler {
+func receiveShare(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		rawID := chi.URLParam(r, "userID")
 		userID, err := uuid.Parse(rawID)
@@ -54,12 +55,10 @@ func receiveShare() web.Handler {
 		}
 
 		cookie := http.Cookie{
-			Name:  "share-" + listID.String(),
-			Value: userID.String() + ":" + token,
-			Path:  "/",
-			// TODO: Read from service.
-			//Secure:   !strings.Contains(a.domain, "localhost"),
-			Secure:   false,
+			Name:     "share-" + listID.String(),
+			Value:    userID.String() + ":" + token,
+			Path:     "/",
+			Secure:   !service.IsLocalHost(),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			Expires:  time.Now().Add(30 * 24 * time.Hour),

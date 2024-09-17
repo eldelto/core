@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net/http"
 	"net/mail"
 	"net/smtp"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/eldelto/core/internal/web"
@@ -36,6 +38,12 @@ func init() {
 	if err != nil {
 		panic(fmt.Errorf("failed to parse login template: %w", err))
 	}
+}
+
+func sortTodoLists(l []TodoList) {
+	slices.SortFunc(l, func(a, b TodoList) int {
+		return int(b.CreatedAt - a.CreatedAt)
+	})
 }
 
 type ShareTokenAuth struct {
@@ -382,4 +390,79 @@ func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error
 		s.host, auth.UserID().String(), listID.String(), token)
 
 	return shareURL, nil
+}
+
+func (s *Service) IsLocalHost() bool {
+	return strings.Contains(s.host, "localhost")
+}
+
+func (s *Service) fetchSharedList(ctx context.Context, auth web.Auth, cookie *http.Cookie) (TodoList, error) {
+	rawListID, found := strings.CutPrefix(cookie.Name, "share-")
+	if !found {
+		return TodoList{}, fmt.Errorf("not a valid share cookie: %q", cookie.Name)
+	}
+
+	parts := strings.Split(cookie.Value, ":")
+	if len(parts) != 2 {
+		return TodoList{}, fmt.Errorf("invalid share cookie value %q", cookie.Value)
+	}
+
+	rawUserID := parts[0]
+	userID, err := uuid.Parse(rawUserID)
+	if err != nil {
+		return TodoList{}, fmt.Errorf("failed to parse %q as UUID: %w", rawUserID, err)
+	}
+
+	// We skip our own lists.
+	if auth.UserID().UUID == userID {
+		return TodoList{}, nil
+	}
+
+	listID, err := uuid.Parse(rawListID)
+	if err != nil {
+		return TodoList{}, fmt.Errorf("failed to parse %q as UUID: %w", rawListID, err)
+	}
+
+	token := web.TokenID(parts[1])
+	auth = &ShareTokenAuth{
+		Token:  token,
+		User:   web.UserID{UUID: userID},
+		ListID: listID,
+	}
+
+	ctx = web.SetAuth(ctx, auth)
+	return s.FetchTodoList(ctx, listID)
+}
+
+func (s *Service) FetchLists(ctx context.Context, cookies []*http.Cookie) ([]TodoList, []TodoList, error) {
+	notebook, err := s.FetchNotebook(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	open, completed := notebook.GetLists()
+
+	auth, err := web.GetAuth(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, cookie := range cookies {
+		sharedList, err := s.fetchSharedList(ctx, auth, cookie)
+		if err != nil {
+			log.Printf("failed to load shared list for cookie %q - skipping",
+				cookie.Name)
+			continue
+		}
+
+		if sharedList.Done() {
+			completed = append(completed, sharedList)
+		} else {
+			open = append(open, sharedList)
+		}
+	}
+
+	sortTodoLists(open)
+	sortTodoLists(completed)
+	return open, completed, nil
 }
