@@ -78,6 +78,14 @@ func AssertError(t testing.TB, err error, title string) {
 	}
 }
 
+func AssertNotNil(t testing.TB, actual any, title string) {
+	t.Helper()
+
+	if actual == nil {
+		t.Errorf("%s should not be\n'nil'\nbut was\n'%v'", title, actual)
+	}
+}
+
 type Response struct {
 	response   *http.Response
 	T          testing.TB

@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/eldelto/core/internal/rest"
+	"github.com/google/uuid"
 )
 
 const (
@@ -18,6 +22,7 @@ const (
 type driver struct {
 	name string
 	port int
+	maxSessions uint
 	wg   *sync.WaitGroup
 }
 
@@ -44,6 +49,7 @@ func runDriver(name string, port int) (*driver, error) {
 	d := driver{
 		name: name,
 		port: port,
+		maxSessions: 1,
 		wg:   wg,
 	}
 	d.acquire()
@@ -51,19 +57,52 @@ func runDriver(name string, port int) (*driver, error) {
 	return &d, nil
 }
 
+func (d *driver) host() string {
+	return "http://localhost:" + strconv.Itoa(d.port)
+}
+
 func (d *driver) acquire() {
 	d.wg.Add(1)
 }
 
-/*func (d *driver) release() {
+func (d *driver) release() {
 	d.wg.Done()
 }
 
-func (d *driver) createSession() (string, error) {
-	// TODO
-	return "", nil
+type createSessionRequest struct {
+	SessionID    string `json:"sessionId"`
+	Capabilities struct {
+	} `json:"capabilities"`
 }
-*/
+
+type createSessionResponse struct {
+	Value struct {
+		SessionID string `json:"sessionId"`
+	} `json:"value"`
+}
+
+func (d *driver) createSession() (string, error) {
+	url, err := url.JoinPath(d.host(), "session")
+	if err != nil {
+		panic(err)
+	}
+
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("failed to create session ID: %w", err)
+	}
+
+	request := createSessionRequest{
+		SessionID: id.String(),
+	}
+
+	var response createSessionResponse
+	if err := rest.Post(url, nil, request, &response, nil); err != nil {
+		return "", fmt.Errorf("failed to create new session via webdriver %q: %w", d.name, err)
+	}
+
+	return response.Value.SessionID, nil
+}
 
 var (
 	drivers        = []string{safariDriver, chromeDriver}
@@ -117,9 +156,29 @@ func NewSession() (*Session, error) {
 	}
 
 	// create session via API
+	sessionId, err := driver.createSession()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Session{
-		id:     "",
+		id:     sessionId,
 		driver: driver,
 	}, nil
+}
+
+func (s *Session) Close() error {
+	s.driver.release()
+
+	url, err := url.JoinPath(s.driver.host(), "session", s.id)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := rest.Delete(url, nil); err != nil {
+		return fmt.Errorf("failed to close session %q via webdriver %q: %w",
+			s.id, s.driver.name, err)
+	}
+
+	return nil
 }
