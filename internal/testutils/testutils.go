@@ -8,12 +8,22 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/eldelto/core/internal/web"
 )
+
+func SkipIntegrationTest(t testing.TB) {
+	t.Helper()
+
+	value, _ := os.LookupEnv("INTEGRATION_TESTS")
+	if value == "" {
+		t.Skip()
+	}
+}
 
 func AssertEquals(t testing.TB, expected, actual any, title string) {
 	t.Helper()

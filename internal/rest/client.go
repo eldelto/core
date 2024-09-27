@@ -103,7 +103,8 @@ func jsonRequest(httpMethod string, url string, auth Authenticator, payload io.R
 			return nil, fmt.Errorf("failed to read response body for %q and status code %d: %w",
 				url, response.StatusCode, err)
 		}
-		return nil, fmt.Errorf("request to %q returned unexpected response: %q", request.URL.String(), string(body))
+		return nil, fmt.Errorf("request to %q returned unexpected response %d: %q",
+			request.URL.String(), response.StatusCode, string(body))
 	}
 
 	return response, nil
