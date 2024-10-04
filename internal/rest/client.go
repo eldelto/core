@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
+
+	"github.com/eldelto/core/internal/web"
 )
 
 const ISO8601Format = "2006-01-02 15:04:05.000"
@@ -68,7 +71,12 @@ func (h *HeaderAuth) Authenticate(r *http.Request) error {
 	return nil
 }
 
-func jsonRequest(httpMethod string, url string, auth Authenticator, payload io.Reader, headers map[string]string) (*http.Response, error) {
+func jsonRequest(httpMethod string,
+	url string,
+	auth Authenticator,
+	payload io.Reader,
+	headers map[string]string,
+	cookies []http.Cookie) (*http.Response, error) {
 	request, err := http.NewRequest(httpMethod, url, payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request to %q: %w", url, err)
@@ -88,6 +96,10 @@ func jsonRequest(httpMethod string, url string, auth Authenticator, payload io.R
 
 	if host, ok := headers["Host"]; ok {
 		request.Host = host
+	}
+
+	for i := range cookies {
+		request.AddCookie(&cookies[i])
 	}
 
 	response, err := http.DefaultClient.Do(request)
@@ -116,7 +128,7 @@ func requestWithResponse(httpMethod, url string, auth Authenticator, requestData
 		return fmt.Errorf("failed to encode request data for %q: %w", url, err)
 	}
 
-	response, err := jsonRequest(httpMethod, url, auth, &payload, headers)
+	response, err := jsonRequest(httpMethod, url, auth, &payload, headers, []http.Cookie{})
 	if err != nil {
 		return err
 	}
@@ -152,4 +164,65 @@ func Put(url string, auth Authenticator, requestData, responseData any) error {
 
 func Delete(url string, auth Authenticator) error {
 	return requestWithResponse(http.MethodDelete, url, auth, nil, nil, nil)
+}
+
+type RequestBuilder struct {
+	method       string
+	url          *url.URL
+	requestBody  any
+	responseBody any
+	headers      map[string]string
+	cookies      []http.Cookie
+	auth         Authenticator
+}
+
+func GET(url *url.URL) *RequestBuilder {
+	return &RequestBuilder{
+		method:  http.MethodGet,
+		url:     url,
+		headers: map[string]string{web.ContentTypeHeader: web.ContentTypeJSON},
+	}
+}
+
+func (r *RequestBuilder) ResponseAs(responseBody any) *RequestBuilder {
+	r.responseBody = &responseBody
+	return r
+}
+
+func (r *RequestBuilder) AddHeader(key, value string) *RequestBuilder {
+	r.headers[key] = value
+	return r
+}
+
+func (r *RequestBuilder) Cookies(cookies []http.Cookie) *RequestBuilder {
+	r.cookies = cookies
+	return r
+}
+
+func (r *RequestBuilder) Auth(auth Authenticator) *RequestBuilder {
+	r.auth = auth
+	return r
+}
+
+func (r *RequestBuilder) Run() error {
+	payload := bytes.Buffer{}
+	if err := json.NewEncoder(&payload).Encode(r.requestBody); err != nil {
+		return fmt.Errorf("failed to encode request data for %q: %w", r.url, err)
+	}
+
+	response, err := jsonRequest(r.method, r.url.String(), r.auth, &payload, r.headers, r.cookies)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if r.responseBody == nil {
+		return nil
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(r.responseBody); err != nil {
+		return fmt.Errorf("failed to decode response from %q: %w", r.url, err)
+	}
+
+	return nil
 }

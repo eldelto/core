@@ -8,18 +8,21 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-const bucketKey = "config-provider"
+const bucketName = "config-provider"
 
 type ConfigProvider struct {
 	db *bbolt.DB
 }
 
-func NewConfigProvider(db *bbolt.DB) *ConfigProvider {
-	return &ConfigProvider{db: db}
+func NewConfigProvider(db *bbolt.DB) (*ConfigProvider, error) {
+	if err := boltutil.EnsureBucketExists(db, bucketName); err != nil {
+		return nil, fmt.Errorf("new config provider: %w", err)
+	}
+	return &ConfigProvider{db: db}, nil
 }
 
 func (cp *ConfigProvider) Set(key, value string) error {
-	if err := boltutil.Store(cp.db, bucketKey, key, value); err != nil {
+	if err := boltutil.Store(cp.db, bucketName, key, value); err != nil {
 		return fmt.Errorf("config provider set %q: %w", key, err)
 	}
 
@@ -27,7 +30,7 @@ func (cp *ConfigProvider) Set(key, value string) error {
 }
 
 func (cp *ConfigProvider) Get(key string) (string, error) {
-	value, err := boltutil.Find[string](cp.db, bucketKey, key)
+	value, err := boltutil.Find[string](cp.db, bucketName, key)
 	switch {
 	case err == nil:
 		return value, nil
@@ -48,7 +51,7 @@ func (cp *ConfigProvider) Get(key string) (string, error) {
 }
 
 func (cp *ConfigProvider) Remove(key string) error {
-	if err := boltutil.Remove(cp.db, bucketKey, key); err != nil {
+	if err := boltutil.Remove(cp.db, bucketName, key); err != nil {
 		return fmt.Errorf("config provider remove %q: %w", key, err)
 	}
 
