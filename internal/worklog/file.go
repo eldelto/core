@@ -358,6 +358,10 @@ func NewFileSource(path string) *FileSource {
 	}
 }
 
+func (s *FileSource) Name() string {
+	return "file source"
+}
+
 func (s *FileSource) FetchEntries(start, end time.Time) ([]Entry, error) {
 	isDir, err := isDir(s.path)
 	if err != nil {

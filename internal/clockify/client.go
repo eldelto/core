@@ -1,18 +1,25 @@
 package clockify
 
 import (
-	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/eldelto/core/internal/rest"
 )
 
+// Clockify doesn't accept proper RFC3339 times so we pretend that the
+// given time is UTC even though it isn't. Also Clockify expects the
+// given times to be in the user's configured timezone which most
+// probably is the same as the computer they make the API calls from.
+const clockifyFormat = "2006-01-02T15:04:05Z"
+
 type Client struct {
-	Host string
+	Host *url.URL
 	Auth rest.Authenticator
 }
 
-func NewClient(host string, auth rest.Authenticator) *Client {
+func NewClient(host *url.URL, auth rest.Authenticator) *Client {
 	return &Client{
 		Host: host,
 		Auth: auth,
@@ -64,28 +71,42 @@ type TimeEntry struct {
 }
 
 func (c *Client) FetchMyself() (Myself, error) {
+	endpoint := c.Host.JoinPath("api/v1/user")
 	response := Myself{}
-	if err := rest.Get(c.Host+"api/v1/user", c.Auth, &response); err != nil {
+	if err := rest.GET(endpoint).
+		Auth(c.Auth).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return Myself{}, err
 	}
 
 	return response, nil
 }
 
-func (c *Client) FetchTimeEntriesPaged(myself Myself, from time.Time, page int) ([]TimeEntry, error) {
+func (c *Client) FetchTimeEntriesPaged(myself Myself, start, end time.Time, page int) ([]TimeEntry, error) {
+	endpoint := c.Host.JoinPath("api/v1/workspaces", myself.WorkspaceId, "user", myself.UserId, "time-entries")
+	query := endpoint.Query()
+	query.Add("start", start.Format(clockifyFormat))
+	query.Add("end", end.Format(clockifyFormat))
+	query.Add("page", strconv.Itoa(page))
+	endpoint.RawQuery = query.Encode()
+
 	response := []TimeEntry{}
-	if err := rest.Get(c.Host+fmt.Sprintf("api/v1/workspaces/%s/user/%s/time-entries?page=%d&start=%s", myself.WorkspaceId, myself.UserId, page, from.Format(time.RFC3339)), c.Auth, &response); err != nil {
-		return []TimeEntry{}, err
+	if err := rest.GET(endpoint).
+		Auth(c.Auth).
+		ResponseAs(&response).
+		Run(); err != nil {
+		return nil, err
 	}
 
 	return response, nil
 }
 
-func (c *Client) FetchTimeEntries(myself Myself, from time.Time) ([]TimeEntry, error) {
+func (c *Client) FetchTimeEntries(myself Myself, start, end time.Time) ([]TimeEntry, error) {
 	total := []TimeEntry{}
 	//  Page 0 and Page 1 are the same in Clockify 🤦
 	for page, responseCnt := 1, 0; page == 1 || responseCnt > 0; page++ {
-		res, err := c.FetchTimeEntriesPaged(myself, from, page)
+		res, err := c.FetchTimeEntriesPaged(myself, start, end, page)
 		if err != nil {
 			return nil, err
 		}

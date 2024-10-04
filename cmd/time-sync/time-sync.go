@@ -6,11 +6,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
-	"github.com/eldelto/core/internal/jira"
 	"github.com/eldelto/core/internal/personio"
 	"github.com/eldelto/core/internal/worklog"
 	"github.com/spf13/cobra"
@@ -19,15 +17,18 @@ import (
 
 const dbPath = "time-sync.db"
 
-var (
-	clearCredentialsFlag = false
-	dryRunFlag           = false
-	startDateFlag        = ""
-)
+func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog.Source {
+	switch sourcePath {
+	case "clockify":
+		return worklog.NewClockifySource(configProvider)
+	default:
+		return worklog.NewFileSource(sourcePath)
+	}
+}
 
-var clockifyCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "clockify",
-	Args:  cobra.MatchAll(),
+	Args:  cobra.ExactArgs(1),
 	Short: "Uses clockify to sync time entries with Jira Tempo entries",
 	Long: `The command is idempotent and can be run multiple times without creating any duplicate entries.
 Configuration (e.g. user credentials) will be stored in a local bbolt database located in $HOME/.hodge/hodge.db.
@@ -44,88 +45,49 @@ https://app.clockify.me/user/settings
 			log.Fatal("could not resolve $HOME environment variable")
 		}
 
-		startDate := time.Now().Add(-7 * 24 * time.Hour)
-		if startDateFlag != "" {
-			date, err := time.Parse(time.DateOnly, startDateFlag)
-			if err != nil {
-				log.Fatalf("failed to parse startDate %q: %v", startDateFlag, err)
-			}
-			startDate = date
-		}
+		// startDate := time.Now().Add(-7 * 24 * time.Hour)
+		// if startDateFlag != "" {
+		// 	date, err := time.Parse(time.DateOnly, startDateFlag)
+		// 	if err != nil {
+		// 		log.Fatalf("failed to parse startDate %q: %v", startDateFlag, err)
+		// 	}
+		// 	startDate = date
+		// }
+
 		// Truncate time values to avoid trouble with entries close to the
 		// startDate along the line.
-		y, m, d := startDate.Date()
-		startDate = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		// y, m, d := startDate.Date()
+		// startDate = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 
-		configDir := filepath.Join(home, ".hodge")
+		configDir := filepath.Join(home, ".timesync")
 		if err := os.Mkdir(configDir, 0751); err != nil && os.IsNotExist(err) {
-			log.Fatalf("failed to create config dir %q: %v", configDir, err)
+			log.Fatalf("create config dir %q: %v", configDir, err)
 		}
 
-		db, err := bbolt.Open(filepath.Join(configDir, "hodge.db"), 0751, nil)
+		db, err := bbolt.Open(filepath.Join(configDir, dbPath), 0600, nil)
 		if err != nil {
-			log.Fatalf("failed to open bbolt database: %v", err)
+			log.Fatalf("open bbolt database: %v", err)
 		}
 		defer db.Close()
 
-		clockifyAuthProvider := worklog.NewCustomAuthenticationProvider(db, "clockify", &worklog.HeaderAuth{})
-		if clearCredentialsFlag {
-			if err := clockifyAuthProvider.Clear(); err != nil {
-				log.Fatalf("failed to clear credentials: %v", err)
-			}
-		}
-
-		entries, err := worklog.FetchClockify(clockifyAuthProvider, startDate)
+		configProvider, err := cli.NewConfigProvider(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		client := &jira.Client{Host: "https://<jira-host>"}
+		path := os.Args[1]
+		source := detectSource(path, configProvider)
+		sinks := []worklog.Sink{&worklog.StubSink{}}
+		now := time.Now()
+		oneWeekAgo := now.Add(-14 * 24 * time.Hour)
 
-		jiraAuthProvider := worklog.NewCustomAuthenticationProvider(db, "jira", &worklog.HeaderAuth{})
-		if clearCredentialsFlag {
-			if err := jiraAuthProvider.Clear(); err != nil {
-				log.Fatalf("failed to clear credentials: %v", err)
-			}
-		}
-		service := worklog.NewService(client, jiraAuthProvider)
-
-		actions, err := service.SyncDryRun(entries)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println()
-		worklog.PrettyPrintActions(actions)
-		if dryRunFlag || len(actions) < 1 {
-			return
-		}
-
-		answer, err := cli.ReadInput("Continue syncing? [Y/n]\n")
-		if err != nil {
-			log.Fatal(err)
-		}
-		if answer != "" && strings.ToLower(answer) != "y" {
-			return
-		}
-
-		if err := service.Execute(actions); err != nil {
+		if err := worklog.DryRun(source, sinks, oneWeekAgo, now); err != nil {
 			log.Fatal(err)
 		}
 	},
 }
 
 func init() {
-	clockifyCmd.Flags().BoolVarP(&clearCredentialsFlag, "clearCredentals", "c", false,
-		`If set, the saved user credentials will be cleared and you will be
-prompted to enter them again.`)
-	clockifyCmd.Flags().BoolVarP(&dryRunFlag, "dryRun", "d", false,
-		`If set, the tool will only print out the actions it would take to sync
-the worklogs but not actually do it.`)
-	clockifyCmd.Flags().StringVar(&startDateFlag, "startDate", "",
-		`If a date in the format YYYY-MM-DD is provided, entries that are before the
-given date are ignored. It defaults to today - 7 days.`)
-	worklogCmd.AddCommand(clockifyCmd)
 }
 
 func run() error {
@@ -163,4 +125,11 @@ func run() error {
 		log.Fatal(err)
 	}
 	fmt.Println(attendance)
+	return nil
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -88,15 +88,16 @@ type Sink interface {
 func DryRun(source Source, sinks []Sink, start, end time.Time) error {
 	localEntries, err := source.FetchEntries(start, end)
 	if err != nil {
-		fmt.Errorf("fetch entries from source %q: %w", source.Name(), err)
+		return fmt.Errorf("fetch entries from source %q: %w", source.Name(), err)
 	}
 
 	for _, sink := range sinks {
 		fmt.Println(cli.Brown("Syncing " + sink.Name()))
+		fmt.Println()
 
 		remoteEntries, err := sink.FetchEntries(start, end)
 		if err != nil {
-			fmt.Errorf("fetch entries from sink %q: %w", source.Name(), err)
+			return fmt.Errorf("fetch entries from sink %q: %w", source.Name(), err)
 		}
 
 		actions := generateActions(localEntries, remoteEntries)
@@ -106,7 +107,7 @@ func DryRun(source Source, sinks []Sink, start, end time.Time) error {
 		if !dryRun {
 			for _, a := range actions {
 				if err := sink.Handle(a); err != nil {
-					fmt.Errorf("handle action via sink %q: %w", sink.Name(), err)
+					return fmt.Errorf("handle action via sink %q: %w", sink.Name(), err)
 				}
 			}
 		}

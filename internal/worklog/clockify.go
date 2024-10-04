@@ -2,26 +2,51 @@ package worklog
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/clockify"
+	"github.com/eldelto/core/internal/rest"
 )
 
-func FetchClockify(authProvider AuthenticationProvider, startDate time.Time) ([]Entry, error) {
-	auth, err := authProvider.Authenticator()
+type ClockifySource struct {
+	configProvider *cli.ConfigProvider
+}
+
+func NewClockifySource(configProvider *cli.ConfigProvider) *ClockifySource {
+	return &ClockifySource{
+		configProvider: configProvider,
+	}
+}
+
+func (s *ClockifySource) Name() string {
+	return "clockify source"
+}
+
+func (s *ClockifySource) FetchEntries(start, end time.Time) ([]Entry, error) {
+	apiKey, err := s.configProvider.Get("clockify.api-key")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("clockify API key: %w", err)
 	}
 
-	client := &clockify.Client{Host: "https://api.clockify.me/", Auth: auth}
+	auth := &rest.HeaderAuth{
+		Name:  "X-Api-Key",
+		Value: apiKey,
+	}
+
+	host, err := url.Parse("https://api.clockify.me")
+	if err != nil {
+		return nil, fmt.Errorf("parse clockify host: %w", err)
+	}
+	client := &clockify.Client{Host: host, Auth: auth}
 
 	myself, err := client.FetchMyself()
 	if err != nil {
 		return nil, err
 	}
 
-	timeEntries, err := client.FetchTimeEntries(myself, startDate)
+	timeEntries, err := client.FetchTimeEntries(myself, start, end)
 	if err != nil {
 		return nil, err
 	}
