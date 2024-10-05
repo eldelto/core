@@ -23,11 +23,8 @@ const (
 
 var (
 	ticketRegex     = regexp.MustCompile(`(\w+-\d+)`)
-	dateRegex       = regexp.MustCompile(`(\d{1,2}\.\d{1,2}\.\d{4})`)
-	timeRegex       = regexp.MustCompile(`(\d{1,2}:\d{2}) - (\d{1,2}:\d{2})`)
 	errSkippedEntry = errors.New("entry is invalid and will be skipped")
 	clockPrefix     = []byte("CLOCK:")
-	emptyTime       = time.Time{}
 )
 
 func parseDateTime(s string) (time.Time, error) {
@@ -46,21 +43,6 @@ func parseTicket(s []byte) (string, error) {
 	}
 
 	return string(matches[1]), nil
-}
-
-func parseDate(s []byte) (time.Time, error) {
-	matches := dateRegex.FindSubmatch(s)
-	if len(matches) < 2 {
-		return time.Time{}, fmt.Errorf("failed to parse date: %q does not contain a valid date", s)
-	}
-
-	rawDate := string(matches[1])
-	date, err := time.ParseInLocation(GermanDateFormat, rawDate, time.Local)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse date from %q: %w", rawDate, err)
-	}
-
-	return date, nil
 }
 
 func validate(e Entry) error {
@@ -209,83 +191,6 @@ func parseFromOrg(r io.Reader, start, end time.Time) ([]Entry, error) {
 	return entries, nil
 }
 
-func entryFromMarkdownLine(line []byte, date, start, end time.Time) (Entry, error) {
-	ticket, err := parseTicket(line)
-	if err != nil {
-		return Entry{}, errSkippedEntry
-	}
-
-	matches := timeRegex.FindSubmatch(line)
-	if len(matches) < 3 {
-		return Entry{}, errSkippedEntry
-	}
-
-	rawFromTime := matches[1]
-	rawToTime := matches[2]
-
-	from, err := time.ParseInLocation(TimeFormat, string(rawFromTime), time.Local)
-	if err != nil {
-		return Entry{}, fmt.Errorf("parse from date from %q", line)
-	}
-	to, err := time.ParseInLocation(TimeFormat, string(rawToTime), time.Local)
-	if err != nil {
-		return Entry{}, fmt.Errorf("parse to time from %q", line)
-	}
-	if to.Before(start) || from.After(end) {
-		return Entry{}, errSkippedEntry
-	}
-
-	return Entry{
-		Ticket: ticket,
-		To:     to,
-		From:   from,
-	}, nil
-}
-
-func parseFromMarkdown(r io.Reader, start, end time.Time) ([]Entry, error) {
-	entries := []Entry{}
-	scanner := bufio.NewScanner(r)
-
-	i := 0
-	date := time.Time{}
-	for scanner.Scan() {
-		i++
-		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
-			return nil, fmt.Errorf("error on line %d: failed to scan line: %w", i, err)
-		}
-
-		line := scanner.Bytes()
-		if len(line) < 1 {
-			continue
-		}
-		trimmedLine := bytes.TrimSpace(line)
-
-		if line[0] == '#' {
-			date, _ = parseDate(trimmedLine)
-		} else {
-			if date == emptyTime {
-				continue
-			}
-
-			entry, err := entryFromMarkdownLine(trimmedLine, date, start, end)
-			if err != nil {
-				if errors.Is(err, errSkippedEntry) {
-					continue
-				}
-				return nil, fmt.Errorf("error on line %d: %w", i, err)
-			}
-
-			if err := validate(entry); err != nil {
-				return nil, fmt.Errorf("error on line %d: %w", i, err)
-			}
-
-			entries = append(entries, entry)
-		}
-	}
-
-	return entries, nil
-}
-
 func parseFile(path string, start, end time.Time, skipUnsupported bool) ([]Entry, error) {
 	r, err := os.Open(path)
 	if err != nil {
@@ -297,8 +202,6 @@ func parseFile(path string, start, end time.Time, skipUnsupported bool) ([]Entry
 		return parseFromCSV(r, start, end)
 	} else if strings.HasSuffix(path, ".org") {
 		return parseFromOrg(r, start, end)
-	} else if strings.HasSuffix(path, ".md") {
-		return parseFromMarkdown(r, start, end)
 	}
 
 	if skipUnsupported {

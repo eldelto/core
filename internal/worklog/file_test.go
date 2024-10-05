@@ -16,9 +16,6 @@ var testCSV string
 //go:embed test.org
 var testOrg string
 
-//go:embed test.md
-var testMarkdown string
-
 func generateTestCSV(ticket, from, to string) string {
 	return fmt.Sprintf("ticket,from,to\n%s,%s,%s", ticket, from, to)
 }
@@ -80,21 +77,6 @@ func TestParseFromOrg(t *testing.T) {
 	got, err := parseFromOrg(strings.NewReader(testOrg), time.Time{}, time.Now())
 	AssertNoError(t, err, "ParseFromOrg")
 	AssertEquals(t, want, fmt.Sprint(got), "entries")
-}
-
-func TestParseFromMarkdown(t *testing.T) {
-	time.Local = time.UTC
-
-	want := Entry{
-		Ticket: "HUM-13268",
-		From:   time.Date(2024, time.January, 29, 10, 0, 0, 0, time.Local),
-		To:     time.Date(2024, time.January, 29, 10, 15, 0, 0, time.Local),
-	}
-
-	got, err := parseFromMarkdown(strings.NewReader(testMarkdown), time.Time{}, time.Now())
-	AssertNoError(t, err, "ParseFromMarkdown")
-	AssertEquals(t, 2, len(got), "entry count")
-	AssertContains[Entry](t, want, got, "entries")
 }
 
 func BenchmarkParseOrg(b *testing.B) {
