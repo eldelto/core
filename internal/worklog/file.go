@@ -31,7 +31,7 @@ var (
 )
 
 func parseDateTime(s string) (time.Time, error) {
-	t, err := time.Parse(DateTimeFormat, s)
+	t, err := time.ParseInLocation(DateTimeFormat, s, time.Local)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to parse %q as time: %w", s, err)
 	}
@@ -55,7 +55,7 @@ func parseDate(s []byte) (time.Time, error) {
 	}
 
 	rawDate := string(matches[1])
-	date, err := time.Parse(GermanDateFormat, rawDate)
+	date, err := time.ParseInLocation(GermanDateFormat, rawDate, time.Local)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to parse date from %q: %w", rawDate, err)
 	}
@@ -129,7 +129,7 @@ func parseFromCSV(r io.Reader, start, end time.Time) ([]Entry, error) {
 			From:   from,
 			To:     to,
 		}
-		if entry.From.Before(start) || entry.From.After(end) {
+		if entry.To.Before(start) || entry.From.After(end) {
 			continue
 		}
 		if err := validate(entry); err != nil {
@@ -147,17 +147,16 @@ func entryFromClockLine(ticket, line string, start, end time.Time) (Entry, error
 		return Entry{}, errSkippedEntry
 	}
 
-	from, err := time.Parse(OrgDateTimeFormat, line[8:8+len(OrgDateTimeFormat)])
+	from, err := time.ParseInLocation(OrgDateTimeFormat, line[8:8+len(OrgDateTimeFormat)], time.Local)
 	if err != nil {
 		return Entry{}, fmt.Errorf("failed to parse from date from %q", line)
 	}
-	if from.Before(start) || from.After(end) {
-		return Entry{}, errSkippedEntry
-	}
-
-	to, err := time.Parse(OrgDateTimeFormat, line[32:32+len(OrgDateTimeFormat)])
+	to, err := time.ParseInLocation(OrgDateTimeFormat, line[32:32+len(OrgDateTimeFormat)], time.Local)
 	if err != nil {
 		return Entry{}, fmt.Errorf("failed to parse to date from %q", line)
+	}
+	if to.Before(start) || from.After(end) {
+		return Entry{}, errSkippedEntry
 	}
 
 	return Entry{
@@ -228,13 +227,12 @@ func entryFromMarkdownLine(line []byte, date, start, end time.Time) (Entry, erro
 	if err != nil {
 		return Entry{}, fmt.Errorf("parse from date from %q", line)
 	}
-	if from.Before(start) || from.After(end) {
-		return Entry{}, errSkippedEntry
-	}
-
 	to, err := time.ParseInLocation(TimeFormat, string(rawToTime), time.Local)
 	if err != nil {
 		return Entry{}, fmt.Errorf("parse to time from %q", line)
+	}
+	if to.Before(start) || from.After(end) {
+		return Entry{}, errSkippedEntry
 	}
 
 	return Entry{

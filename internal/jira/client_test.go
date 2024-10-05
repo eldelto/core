@@ -1,6 +1,7 @@
 package jira_test
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
@@ -13,11 +14,14 @@ func TestClientCalls(t *testing.T) {
 	// Skipped because nobody volunteered to check-in their credentials 🥲
 	t.Skip()
 
+	host, err := url.Parse("https://acme.jira.com")
+	AssertNoError(t, err, "url.Parse")
+
 	auth := &rest.BasicAuth{
 		Username: "dominic.aschauer",
 		Password: "<password>",
 	}
-	client := &jira.Client{Host: "https://jira.tmp.com"}
+	client := &jira.Client{Host: host}
 
 	tests := []struct {
 		url  string

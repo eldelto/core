@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 var (
@@ -18,4 +19,13 @@ func ReadInput(msg string) (string, error) {
 	}
 
 	return stdinScanner.Text(), nil
+}
+
+func ReadYesNo(msg string) (bool, error) {
+	answer, err := ReadInput(msg + " [Y/n]\n")
+	if err != nil {
+		return false, err
+	}
+
+	return answer == "" || strings.ToLower(answer) == "y", nil
 }

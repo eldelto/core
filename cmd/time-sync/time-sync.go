@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -17,6 +18,10 @@ import (
 
 const dbPath = "time-sync.db"
 
+var (
+	sinksFlag []string
+)
+
 func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog.Source {
 	switch sourcePath {
 	case "clockify":
@@ -26,8 +31,28 @@ func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog
 	}
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "clockify",
+func detectSinks(rawSinks []string, configProvider *cli.ConfigProvider) ([]worklog.Sink, error) {
+	sinks := []worklog.Sink{}
+	for _, rawSink := range rawSinks {
+		switch {
+		case rawSink == "stub":
+			sinks = append(sinks, &worklog.StubSink{})
+		case strings.Contains(rawSink, "jira"):
+			sink, err := worklog.NewJiraSink(configProvider)
+			if err != nil {
+				return nil, err
+			}
+			sinks = append(sinks, sink)
+		default:
+			return nil, fmt.Errorf("%q is not a supported sink", rawSink)
+		}
+	}
+
+	return sinks, nil
+}
+
+var syncCmd = &cobra.Command{
+	Use:   "sync",
 	Args:  cobra.ExactArgs(1),
 	Short: "Uses clockify to sync time entries with Jira Tempo entries",
 	Long: `The command is idempotent and can be run multiple times without creating any duplicate entries.
@@ -77,20 +102,27 @@ https://app.clockify.me/user/settings
 
 		path := os.Args[1]
 		source := detectSource(path, configProvider)
-		sinks := []worklog.Sink{&worklog.StubSink{}}
-		now := time.Now()
-		oneWeekAgo := now.Add(-14 * 24 * time.Hour)
+		sinks, err := detectSinks(sinksFlag, configProvider)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		if err := worklog.DryRun(source, sinks, oneWeekAgo, now); err != nil {
+		now := time.Now().Truncate(24 * time.Hour)
+		oneWeekAgo := now.Add(-2 * 24 * time.Hour)
+
+		if err := worklog.Sync(source, sinks, oneWeekAgo, now, false); err != nil {
 			log.Fatal(err)
 		}
 	},
 }
 
 func init() {
+	syncCmd.Flags().StringArrayVar(&sinksFlag, "sink", []string{},
+		`If a date in the format YYYY-MM-DD is provided, entries that are before the
+given date are ignored. It defaults to today - 7 days.`)
 }
 
-func run() error {
+func Run() error {
 	url, err := url.Parse(os.Args[1])
 	if err != nil {
 		return err
@@ -129,7 +161,7 @@ func run() error {
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := syncCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

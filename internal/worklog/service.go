@@ -8,9 +8,17 @@ import (
 	"github.com/eldelto/core/internal/cli"
 )
 
+type EntryType uint
+
+const (
+	EntryTypeWork EntryType = iota
+	EntryTypeBreak
+)
+
 type Entry struct {
 	Ticket     string
 	ExternalID string
+	Type       EntryType
 	From       time.Time
 	To         time.Time
 }
@@ -59,16 +67,20 @@ func entryEqual(this Entry) func(Entry) bool {
 	}
 }
 
-func generateActions(local, remote []Entry) []Action {
+func generateActions(local, remote []Entry, sink Sink) []Action {
 	actions := []Action{}
-	for _, l := range local {
-		if !slices.ContainsFunc(remote, entryEqual(l)) {
-			actions = append(actions, Action{Entry: l, Operation: Add})
-		}
-	}
 	for _, r := range remote {
 		if !slices.ContainsFunc(local, entryEqual(r)) {
 			actions = append(actions, Action{Entry: r, Operation: Remove})
+		}
+	}
+	for _, l := range local {
+		if !sink.IsApplicable(l) {
+			continue
+		}
+
+		if !slices.ContainsFunc(remote, entryEqual(l)) {
+			actions = append(actions, Action{Entry: l, Operation: Add})
 		}
 	}
 
@@ -82,10 +94,11 @@ type Source interface {
 
 type Sink interface {
 	Source
+	IsApplicable(e Entry) bool
 	Handle(a Action) error
 }
 
-func DryRun(source Source, sinks []Sink, start, end time.Time) error {
+func Sync(source Source, sinks []Sink, start, end time.Time, dryRun bool) error {
 	localEntries, err := source.FetchEntries(start, end)
 	if err != nil {
 		return fmt.Errorf("fetch entries from source %q: %w", source.Name(), err)
@@ -97,14 +110,22 @@ func DryRun(source Source, sinks []Sink, start, end time.Time) error {
 
 		remoteEntries, err := sink.FetchEntries(start, end)
 		if err != nil {
-			return fmt.Errorf("fetch entries from sink %q: %w", source.Name(), err)
+			return fmt.Errorf("fetch entries from sink %q: %w", sink.Name(), err)
 		}
 
-		actions := generateActions(localEntries, remoteEntries)
+		actions := generateActions(localEntries, remoteEntries, sink)
 		PrettyPrintActions(groupByDay(actions))
 
-		dryRun := true
-		if !dryRun {
+		if dryRun || len(actions) < 1 {
+			continue
+		}
+
+		approveSync, err := cli.ReadYesNo("Continue syncing?")
+		if err != nil {
+			return fmt.Errorf("approve syncing: %w", err)
+		}
+
+		if approveSync {
 			for _, a := range actions {
 				if err := sink.Handle(a); err != nil {
 					return fmt.Errorf("handle action via sink %q: %w", sink.Name(), err)

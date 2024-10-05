@@ -115,8 +115,8 @@ func jsonRequest(httpMethod string,
 			return nil, fmt.Errorf("failed to read response body for %q and status code %d: %w",
 				url, response.StatusCode, err)
 		}
-		return nil, fmt.Errorf("request to %q returned unexpected response %d: %q",
-			request.URL.String(), response.StatusCode, string(body))
+		return nil, fmt.Errorf("request to %s %q returned unexpected response %d: %q",
+			request.Method, request.URL.String(), response.StatusCode, string(body))
 	}
 
 	return response, nil
@@ -176,12 +176,37 @@ type RequestBuilder struct {
 	auth         Authenticator
 }
 
-func GET(url *url.URL) *RequestBuilder {
+func newRequestBuilder(url *url.URL, method string) *RequestBuilder {
 	return &RequestBuilder{
-		method:  http.MethodGet,
+		method:  method,
 		url:     url,
 		headers: map[string]string{web.ContentTypeHeader: web.ContentTypeJSON},
 	}
+}
+
+func GET(url *url.URL) *RequestBuilder {
+	return newRequestBuilder(url, http.MethodGet)
+}
+
+func POST(url *url.URL) *RequestBuilder {
+	return newRequestBuilder(url, http.MethodPost)
+}
+
+func PUT(url *url.URL) *RequestBuilder {
+	return newRequestBuilder(url, http.MethodPut)
+}
+
+func PATCH(url *url.URL) *RequestBuilder {
+	return newRequestBuilder(url, http.MethodPatch)
+}
+
+func DELETE(url *url.URL) *RequestBuilder {
+	return newRequestBuilder(url, http.MethodDelete)
+}
+
+func (r *RequestBuilder) RequestBody(requestBody any) *RequestBuilder {
+	r.requestBody = requestBody
+	return r
 }
 
 func (r *RequestBuilder) ResponseAs(responseBody any) *RequestBuilder {

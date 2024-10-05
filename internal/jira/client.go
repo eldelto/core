@@ -1,13 +1,14 @@
 package jira
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/eldelto/core/internal/rest"
 )
 
 type Client struct {
-	Host string
+	Host *url.URL
 }
 
 type Myself struct {
@@ -16,8 +17,13 @@ type Myself struct {
 }
 
 func (c *Client) FetchMyself(auth rest.Authenticator) (Myself, error) {
+	endpoint := c.Host.JoinPath("rest/api/2/myself")
 	response := Myself{}
-	if err := rest.Get(c.Host+"/rest/api/2/myself", auth, &response); err != nil {
+
+	if err := rest.GET(endpoint).
+		Auth(auth).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return Myself{}, err
 	}
 
@@ -30,8 +36,13 @@ type Issue struct {
 }
 
 func (c *Client) FetchIssue(auth rest.Authenticator, issueKey string) (Issue, error) {
+	endpoint := c.Host.JoinPath("rest/api/2/issue", issueKey)
 	response := Issue{}
-	if err := rest.Get(c.Host+"/rest/api/2/issue/"+issueKey, auth, &response); err != nil {
+
+	if err := rest.GET(endpoint).
+		Auth(auth).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return Issue{}, err
 	}
 
@@ -58,15 +69,19 @@ type Worklog struct {
 }
 
 func (c *Client) SearchForWorklogs(auth rest.Authenticator, userId string, from, to time.Time) ([]Worklog, error) {
+	endpoint := c.Host.JoinPath("rest/tempo-timesheets/4/worklogs/search")
 	request := worklogsRequest{
 		Worker: []string{userId},
 		From:   from.Format(time.DateOnly),
 		To:     to.Format(time.DateOnly),
 	}
-
 	response := []Worklog{}
 
-	if err := rest.Post(c.Host+"/rest/tempo-timesheets/4/worklogs/search", auth, request, &response, nil); err != nil {
+	if err := rest.POST(endpoint).
+		Auth(auth).
+		RequestBody(request).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return nil, err
 	}
 
@@ -82,9 +97,14 @@ type WorklogEntryRequest struct {
 }
 
 func (c *Client) CreateWorklogEntry(auth rest.Authenticator, request WorklogEntryRequest) ([]Worklog, error) {
+	endpoint := c.Host.JoinPath("rest/tempo-timesheets/4/worklogs")
 	response := []Worklog{}
 
-	if err := rest.Post(c.Host+"/rest/tempo-timesheets/4/worklogs", auth, request, &response, nil); err != nil {
+	if err := rest.POST(endpoint).
+		Auth(auth).
+		RequestBody(request).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return nil, err
 	}
 
@@ -92,5 +112,6 @@ func (c *Client) CreateWorklogEntry(auth rest.Authenticator, request WorklogEntr
 }
 
 func (c *Client) DeleteWorklogEntry(auth rest.Authenticator, worklogID string) error {
-	return rest.Delete(c.Host+"/rest/tempo-timesheets/4/worklogs/"+worklogID, auth)
+	endpoint := c.Host.JoinPath("rest/tempo-timesheets/4/worklogs", worklogID)
+	return rest.DELETE(endpoint).Auth(auth).Run()
 }

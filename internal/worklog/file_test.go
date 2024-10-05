@@ -24,6 +24,8 @@ func generateTestCSV(ticket, from, to string) string {
 }
 
 func TestParseFromCSV(t *testing.T) {
+	time.Local = time.UTC
+
 	tests := []struct {
 		name    string
 		csv     string
@@ -33,13 +35,13 @@ func TestParseFromCSV(t *testing.T) {
 		{
 			"valid CSV",
 			testCSV,
-			"[{ER-590  2023-12-01 09:00:00 +0000 UTC 2023-12-01 09:20:00 +0000 UTC} {HUM-123  2023-12-01 08:34:00 +0000 UTC 2023-12-01 12:00:00 +0000 UTC} {ER-590  2023-12-02 09:00:00 +0000 UTC 2023-12-02 09:20:00 +0000 UTC} {HUM-428  2023-12-02 07:24:00 +0000 UTC 2023-12-02 08:10:00 +0000 UTC}]",
+			"[{ER-590  0 2023-12-01 09:00:00 +0000 UTC 2023-12-01 09:20:00 +0000 UTC} {HUM-123  0 2023-12-01 08:34:00 +0000 UTC 2023-12-01 12:00:00 +0000 UTC} {ER-590  0 2023-12-02 09:00:00 +0000 UTC 2023-12-02 09:20:00 +0000 UTC} {HUM-428  0 2023-12-02 07:24:00 +0000 UTC 2023-12-02 08:10:00 +0000 UTC}]",
 			false,
 		},
 		{
 			"another valid ticket",
 			generateTestCSV("HUM-1", "2023-12-01 08:00", "2023-12-01 08:10"),
-			"[{HUM-1  2023-12-01 08:00:00 +0000 UTC 2023-12-01 08:10:00 +0000 UTC}]",
+			"[{HUM-1  0 2023-12-01 08:00:00 +0000 UTC 2023-12-01 08:10:00 +0000 UTC}]",
 			false,
 		},
 		{
@@ -58,7 +60,7 @@ func TestParseFromCSV(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseFromCSV(strings.NewReader(tt.csv), time.Time{}, time.Time{})
+			got, err := parseFromCSV(strings.NewReader(tt.csv), time.Time{}, time.Now())
 			if tt.wantErr {
 				AssertError(t, err, "ParseFromCSV")
 				return
@@ -71,21 +73,25 @@ func TestParseFromCSV(t *testing.T) {
 }
 
 func TestParseFromOrg(t *testing.T) {
-	want := "[{HUM-13311  2023-12-11 13:05:00 +0000 UTC 2023-12-11 14:17:00 +0000 UTC} {HUM-13311  2023-12-11 11:30:00 +0000 UTC 2023-12-11 12:09:00 +0000 UTC} {HUM-13403  2023-12-28 13:19:00 +0000 UTC 2023-12-28 15:21:00 +0000 UTC}]"
+	time.Local = time.UTC
 
-	got, err := parseFromOrg(strings.NewReader(testOrg), time.Time{}, time.Time{})
+	want := "[{HUM-13311  0 2023-12-11 13:05:00 +0000 UTC 2023-12-11 14:17:00 +0000 UTC} {HUM-13311  0 2023-12-11 11:30:00 +0000 UTC 2023-12-11 12:09:00 +0000 UTC} {HUM-13403  0 2023-12-28 13:19:00 +0000 UTC 2023-12-28 15:21:00 +0000 UTC}]"
+
+	got, err := parseFromOrg(strings.NewReader(testOrg), time.Time{}, time.Now())
 	AssertNoError(t, err, "ParseFromOrg")
 	AssertEquals(t, want, fmt.Sprint(got), "entries")
 }
 
 func TestParseFromMarkdown(t *testing.T) {
+	time.Local = time.UTC
+
 	want := Entry{
 		Ticket: "HUM-13268",
 		From:   time.Date(2024, time.January, 29, 10, 0, 0, 0, time.Local),
 		To:     time.Date(2024, time.January, 29, 10, 15, 0, 0, time.Local),
 	}
 
-	got, err := parseFromMarkdown(strings.NewReader(testMarkdown), time.Time{}, time.Time{})
+	got, err := parseFromMarkdown(strings.NewReader(testMarkdown), time.Time{}, time.Now())
 	AssertNoError(t, err, "ParseFromMarkdown")
 	AssertEquals(t, 2, len(got), "entry count")
 	AssertContains[Entry](t, want, got, "entries")

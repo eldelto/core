@@ -3,6 +3,7 @@ package worklog
 import (
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/jira"
 	"github.com/eldelto/core/internal/rest"
-	"golang.org/x/sync/errgroup"
 )
 
 func jiraWorklogToEntry(worklog jira.Worklog, timeZone string) Entry {
@@ -21,6 +21,7 @@ func jiraWorklogToEntry(worklog jira.Worklog, timeZone string) Entry {
 		loc = time.UTC
 	}
 
+	// TODO: Do we need this?
 	fromNoTimeZone := time.Time(worklog.Started)
 	from := time.Date(fromNoTimeZone.Year(), fromNoTimeZone.Month(), fromNoTimeZone.Day(), fromNoTimeZone.Hour(), fromNoTimeZone.Minute(), fromNoTimeZone.Second(), fromNoTimeZone.Nanosecond(), loc)
 
@@ -35,29 +36,39 @@ func jiraWorklogToEntry(worklog jira.Worklog, timeZone string) Entry {
 	}
 }
 
-type AuthenticationProvider interface {
-	Authenticator() (rest.Authenticator, error)
-}
-
-const maxParallel = 8
-
-type Service struct {
+type JiraSink struct {
 	client      *jira.Client
 	auth        rest.Authenticator
 	cacheMyself cache.Cacher[jira.Myself]
 	cache       cache.Cacher[string]
 }
 
-func NewService(client *jira.Client, auth rest.Authenticator) *Service {
-	return &Service{
-		client:      client,
-		auth:        auth,
+func NewJiraSink(configProvider *cli.ConfigProvider) (*JiraSink, error) {
+	rawHost, err := configProvider.Get("jira.host")
+	if err != nil {
+		return nil, fmt.Errorf("init JiraSink: %w", err)
+	}
+
+	host, err := url.Parse(rawHost)
+	if err != nil {
+		return nil, fmt.Errorf("init JiraSink: %w", err)
+	}
+
+	apiKey, err := configProvider.Get("jira.api-key")
+	if err != nil {
+		return nil, fmt.Errorf("init JiraSink: %w", err)
+	}
+	auth := rest.BearerAuth{Token: apiKey}
+
+	return &JiraSink{
+		client:      &jira.Client{Host: host},
+		auth:        &auth,
 		cacheMyself: cache.NewOneTime[jira.Myself](),
 		cache:       cache.NewOneTime[string](),
-	}
+	}, nil
 }
 
-func (s *Service) myself() (jira.Myself, error) {
+func (s *JiraSink) myself() (jira.Myself, error) {
 	defaultStruct := jira.Myself{
 		Key:      "",
 		TimeZone: "",
@@ -66,33 +77,14 @@ func (s *Service) myself() (jira.Myself, error) {
 	return s.cacheMyself.GetOrElse("myself", func() (jira.Myself, error) {
 		myself, err := s.client.FetchMyself(s.auth)
 		if err != nil {
-			return defaultStruct, fmt.Errorf("failed to resolve user ID: %w", err)
+			return defaultStruct, fmt.Errorf("resolve user ID: %w", err)
 		}
 
 		return myself, nil
 	})
 }
 
-func (s *Service) fetchRemoteEntries(day time.Time) ([]Entry, error) {
-	myself, err := s.myself()
-	if err != nil {
-		return nil, err
-	}
-
-	worklogs, err := s.client.SearchForWorklogs(s.auth, myself.Key, day, day)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch remote entries for day %v: %w", day, err)
-	}
-
-	entries := make([]Entry, len(worklogs))
-	for i, wl := range worklogs {
-		entries[i] = jiraWorklogToEntry(wl, myself.TimeZone)
-	}
-
-	return entries, nil
-}
-
-func (s *Service) resolveTicketID(e Entry) (string, error) {
+func (s *JiraSink) resolveTicketID(e Entry) (string, error) {
 	return s.cache.GetOrElse(e.Ticket, func() (string, error) {
 		issue, err := s.client.FetchIssue(s.auth, e.Ticket)
 		if err != nil {
@@ -103,10 +95,17 @@ func (s *Service) resolveTicketID(e Entry) (string, error) {
 	})
 }
 
-func (s *Service) addEntry(e Entry) error {
+func (s *JiraSink) addEntry(e Entry) error {
 	myself, err := s.myself()
 	if err != nil {
 		return err
+	}
+
+	loc, err := time.LoadLocation(myself.TimeZone)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to load location from jira: %v, falling back to UTC", myself.TimeZone)
+		fmt.Println(cli.Brown(msg))
+		loc = time.UTC
 	}
 
 	externalID, err := s.resolveTicketID(e)
@@ -117,7 +116,7 @@ func (s *Service) addEntry(e Entry) error {
 	request := jira.WorklogEntryRequest{
 		Worker:           myself.Key,
 		OriginTaskID:     externalID,
-		Started:          e.From.Format(rest.ISO8601Format),
+		Started:          e.From.In(loc).Format(rest.ISO8601Format),
 		TimeSpentSeconds: int(math.Round(e.To.Sub(e.From).Seconds())),
 		Comment:          "-",
 	}
@@ -126,7 +125,7 @@ func (s *Service) addEntry(e Entry) error {
 	return err
 }
 
-func (s *Service) removeEntry(e Entry) error {
+func (s *JiraSink) removeEntry(e Entry) error {
 	if e.ExternalID == "" {
 		return fmt.Errorf("worklog ID is not set for entry %v", e)
 	}
@@ -134,30 +133,40 @@ func (s *Service) removeEntry(e Entry) error {
 	return s.client.DeleteWorklogEntry(s.auth, e.ExternalID)
 }
 
-func (s *Service) executeAction(action Action) error {
-	switch action.Operation {
-	case Add:
-		return s.addEntry(action.Entry)
-	case Remove:
-		return s.removeEntry(action.Entry)
-	default:
-		return fmt.Errorf("failed to execute unknown action %v", action)
-	}
+func (s *JiraSink) Name() string {
+	return "Jira"
 }
 
-func (s *Service) Execute(actions map[time.Time][]Action) error {
-	g := errgroup.Group{}
-	g.SetLimit(maxParallel)
-
-	for d, actions := range actions {
-		day := d
-		fmt.Printf("Syncing %s ...\n", day.Format(time.DateOnly))
-		for _, a := range actions {
-			action := a
-			g.Go(func() error { return s.executeAction(action) })
-		}
-		fmt.Printf("Synced %s\n", day.Format(time.DateOnly))
+func (s *JiraSink) FetchEntries(start, end time.Time) ([]Entry, error) {
+	myself, err := s.myself()
+	if err != nil {
+		return nil, err
 	}
 
-	return g.Wait()
+	worklogs, err := s.client.SearchForWorklogs(s.auth, myself.Key, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("fetch entries: %w", err)
+	}
+
+	entries := make([]Entry, len(worklogs))
+	for i, wl := range worklogs {
+		entries[i] = jiraWorklogToEntry(wl, myself.TimeZone)
+	}
+
+	return entries, nil
+}
+
+func (s *JiraSink) IsApplicable(e Entry) bool {
+	return e.Type == EntryTypeWork
+}
+
+func (s *JiraSink) Handle(a Action) error {
+	switch a.Operation {
+	case Add:
+		return s.addEntry(a.Entry)
+	case Remove:
+		return s.removeEntry(a.Entry)
+	default:
+		return fmt.Errorf("jira sink has no handler for operation %v", a)
+	}
 }
