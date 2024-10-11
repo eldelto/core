@@ -145,7 +145,7 @@ func (s *JiraSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 
 	worklogs, err := s.client.SearchForWorklogs(s.auth, myself.Key, start, end)
 	if err != nil {
-		return nil, fmt.Errorf("fetch entries: %w", err)
+		return nil, fmt.Errorf("fetch jira entries: %w", err)
 	}
 
 	entries := make([]Entry, len(worklogs))
@@ -160,13 +160,21 @@ func (s *JiraSink) IsApplicable(e Entry) bool {
 	return e.Type == EntryTypeWork
 }
 
-func (s *JiraSink) Handle(a Action) error {
-	switch a.Operation {
-	case Add:
-		return s.addEntry(a.Entry)
-	case Remove:
-		return s.removeEntry(a.Entry)
-	default:
-		return fmt.Errorf("jira sink has no handler for operation %v", a)
+func (s *JiraSink) ProcessActions(actions []Action) error {
+	for _, a := range actions {
+		switch a.Operation {
+		case Add:
+			if err := s.addEntry(a.Entry); err != nil {
+				return err
+			}
+		case Remove:
+			if err := s.removeEntry(a.Entry); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("jira sink has no handler for operation %v", a)
+		}
 	}
+
+	return nil
 }

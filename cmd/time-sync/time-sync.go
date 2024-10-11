@@ -5,130 +5,20 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/personio"
-	"github.com/eldelto/core/internal/worklog"
-	"github.com/spf13/cobra"
 	"go.etcd.io/bbolt"
 )
 
-const dbPath = "time-sync.db"
-
-var (
-	sinksFlag []string
-)
-
-func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog.Source {
-	switch sourcePath {
-	case "clockify":
-		return worklog.NewClockifySource(configProvider)
-	default:
-		return worklog.NewFileSource(sourcePath)
-	}
-}
-
-func detectSinks(rawSinks []string, configProvider *cli.ConfigProvider) ([]worklog.Sink, error) {
-	sinks := []worklog.Sink{}
-	for _, rawSink := range rawSinks {
-		switch {
-		case rawSink == "stub":
-			sinks = append(sinks, &worklog.StubSink{})
-		case strings.Contains(rawSink, "jira"):
-			sink, err := worklog.NewJiraSink(configProvider)
-			if err != nil {
-				return nil, err
-			}
-			sinks = append(sinks, sink)
-		default:
-			return nil, fmt.Errorf("%q is not a supported sink", rawSink)
-		}
-	}
-
-	return sinks, nil
-}
-
-var syncCmd = &cobra.Command{
-	Use:   "sync",
-	Args:  cobra.ExactArgs(1),
-	Short: "Uses clockify to sync time entries with Jira Tempo entries",
-	Long: `The command is idempotent and can be run multiple times without creating any duplicate entries.
-Configuration (e.g. user credentials) will be stored in a local bbolt database located in $HOME/.hodge/hodge.db.
-Timezone information will be fetched from Jira and entries are matched accordingly.
-It fetches synced time entries from Clockify and syncs them with Jira Tempo.
-The description of the time entry must contain the ticket number e.g. ER-590 or HUM-1234.
-It will skip unparseable entries and prints a warning.
-You can find our api credentials here:
-https://app.clockify.me/user/settings
-`,
-	Run: func(cmd *cobra.Command, args []string) {
-		home, ok := os.LookupEnv("HOME")
-		if !ok {
-			log.Fatal("could not resolve $HOME environment variable")
-		}
-
-		// startDate := time.Now().Add(-7 * 24 * time.Hour)
-		// if startDateFlag != "" {
-		// 	date, err := time.Parse(time.DateOnly, startDateFlag)
-		// 	if err != nil {
-		// 		log.Fatalf("failed to parse startDate %q: %v", startDateFlag, err)
-		// 	}
-		// 	startDate = date
-		// }
-
-		// Truncate time values to avoid trouble with entries close to the
-		// startDate along the line.
-		// y, m, d := startDate.Date()
-		// startDate = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-
-		configDir := filepath.Join(home, ".timesync")
-		if err := os.Mkdir(configDir, 0751); err != nil && os.IsNotExist(err) {
-			log.Fatalf("create config dir %q: %v", configDir, err)
-		}
-
-		db, err := bbolt.Open(filepath.Join(configDir, dbPath), 0600, nil)
-		if err != nil {
-			log.Fatalf("open bbolt database: %v", err)
-		}
-		defer db.Close()
-
-		configProvider, err := cli.NewConfigProvider(db)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		path := os.Args[1]
-		source := detectSource(path, configProvider)
-		sinks, err := detectSinks(sinksFlag, configProvider)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		now := time.Now().Truncate(24 * time.Hour)
-		oneWeekAgo := now.Add(-2 * 24 * time.Hour)
-
-		if err := worklog.Sync(source, sinks, oneWeekAgo, now, false); err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
-func init() {
-	syncCmd.Flags().StringArrayVar(&sinksFlag, "sink", []string{},
-		`If a date in the format YYYY-MM-DD is provided, entries that are before the
-given date are ignored. It defaults to today - 7 days.`)
-}
-
-func Run() error {
+func run() error {
 	url, err := url.Parse(os.Args[1])
 	if err != nil {
 		return err
 	}
 
-	db, err := bbolt.Open(dbPath, 0600, nil)
+	db, err := bbolt.Open("time-sync.db", 0600, nil)
 	if err != nil {
 		return err
 	}
@@ -157,11 +47,27 @@ func Run() error {
 		log.Fatal(err)
 	}
 	fmt.Println(attendance)
+
+	day := time.Date(2024, 10, 1, 8, 0, 0, 0, time.Local)
+	attendances := []personio.Attendance{
+		{
+			Start: time.Date(2024, 10, 1, 8, 0, 0, 0, time.Local),
+			End:   time.Date(2024, 10, 1, 12, 0, 0, 0, time.Local),
+		},
+		{
+			Start: time.Date(2024, 10, 1, 13, 0, 0, 0, time.Local),
+			End:   time.Date(2024, 10, 1, 15, 0, 0, 0, time.Local),
+		},
+	}
+	if err := client.CreateAttendances(employeeID, day, attendances); err != nil {
+		log.Fatal(err)
+	}
+
 	return nil
 }
 
 func main() {
-	if err := syncCmd.Execute(); err != nil {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }

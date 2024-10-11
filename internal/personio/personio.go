@@ -9,20 +9,30 @@ import (
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/rest"
 	"github.com/eldelto/core/internal/webdriver"
+	"github.com/google/uuid"
 )
+
+// Personio doesn't accept proper RFC3339 times so we pretend that the
+// given time is UTC even though it isn't. Also Personio expects the
+// given times to be in the user's configured timezone which most
+// probably is the same as the computer they make the API calls from.
+const personioFormat = "2006-01-02T15:04:05Z"
 
 type EmployeeID int
 
 type Client struct {
 	host           *url.URL
 	configProvider *cli.ConfigProvider
+	employeeID     EmployeeID
 	cookies        []http.Cookie
+	dayIDs         map[string]string
 }
 
 func NewClient(host *url.URL, configProvider *cli.ConfigProvider) *Client {
 	return &Client{
 		host:           host,
 		configProvider: configProvider,
+		dayIDs:         map[string]string{},
 	}
 }
 
@@ -154,6 +164,16 @@ type getContextResponse struct {
 }
 
 func (c *Client) GetEmployeeID() (EmployeeID, error) {
+	if c.employeeID != 0 {
+		return c.employeeID, nil
+	}
+
+	if c.cookies == nil {
+		if err := c.Login(); err != nil {
+			return 0, fmt.Errorf("personio get context: %w", err)
+		}
+	}
+
 	endpoint := c.host.JoinPath("/api/v1/navigation/context")
 
 	var response getContextResponse
@@ -164,7 +184,9 @@ func (c *Client) GetEmployeeID() (EmployeeID, error) {
 		return 0, fmt.Errorf("personio get context: %w", err)
 	}
 
-	return response.Data.User.ID, nil
+	c.employeeID = response.Data.User.ID
+
+	return c.employeeID, nil
 }
 
 type AttendanceAttributes struct {
@@ -180,11 +202,21 @@ type AttendancePeriode struct {
 	Attributes AttendanceAttributes `json:"attributes"`
 }
 
+type attendanceDay struct {
+	ID         string `json:"id"`
+	Attributes struct {
+		Day string `json:"day"`
+	} `json:"attributes"`
+}
+
 type getAttendanceResponse struct {
 	Data struct {
 		AttendancePeriods struct {
 			Data []AttendancePeriode `json:"data"`
 		} `json:"attendance_periods"`
+		AttendanceDays struct {
+			Data []attendanceDay `json:"data"`
+		} `json:"attendance_days"`
 	} `json:"data"`
 }
 
@@ -204,5 +236,131 @@ func (c *Client) GetAttendance(employeeID EmployeeID, start, end time.Time) ([]A
 			employeeID, err)
 	}
 
+	// Cache date <-> day ID mapping for other requests.
+	for _, day := range response.Data.AttendanceDays.Data {
+		c.dayIDs[day.Attributes.Day] = day.ID
+	}
+
 	return response.Data.AttendancePeriods.Data, nil
+}
+
+func (c *Client) resolveDayID(day time.Time) (string, error) {
+	date := day.Format(time.DateOnly)
+	dayID, ok := c.dayIDs[date]
+	if ok {
+		return dayID, nil
+	}
+
+	start := day.Add(-7 * 24 * time.Hour)
+	end := day.Add(7 * 24 * time.Hour)
+	_, err := c.GetAttendance(c.employeeID, start, end)
+	if err != nil {
+		return "", fmt.Errorf("resolve day ID: %w", err)
+	}
+
+	dayID, ok = c.dayIDs[date]
+	if !ok {
+		return "", fmt.Errorf("could not resolve day ID for date %q, cache=%v", date, c.dayIDs)
+	}
+
+	return dayID, nil
+}
+
+type attendancePeriod struct {
+	ID             string  `json:"id"`
+	ProjectID      *string `json:"project_id"`
+	PeriodType     string  `json:"period_type"`
+	LegacyBreakMin int     `json:"legacy_break_min"`
+	Comment        *string `json:"comment"`
+	Start          string  `json:"start"`
+	End            string  `json:"end"`
+}
+
+type createAttendanceRequest struct {
+	EmployeeID           EmployeeID         `json:"employee_id"`
+	Periods              []attendancePeriod `json:"periods"`
+	RulesViolationReason *string            `json:"rules_violation_reason"`
+}
+
+type Attendance struct {
+	Start time.Time
+	End   time.Time
+}
+
+func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attendances []Attendance) error {
+	dayID, err := c.resolveDayID(day)
+	if err != nil {
+		return err
+	}
+
+	endpoint := c.host.JoinPath("api/v1/attendances/days", dayID)
+
+	periods := make([]attendancePeriod, len(attendances))
+	for i, attendance := range attendances {
+		// TODO: Validate start/end to be equal to day.
+
+		periodID, err := uuid.NewRandom()
+		if err != nil {
+			return fmt.Errorf("create attendance periode ID: %w", err)
+		}
+
+		periods[i] = attendancePeriod{
+			ID:         periodID.String(),
+			PeriodType: "work",
+			Start:      attendance.Start.Format(personioFormat),
+			End:        attendance.End.Format(personioFormat),
+		}
+	}
+
+	request := createAttendanceRequest{
+		EmployeeID: employeeID,
+		Periods:    periods,
+	}
+
+	csrfToken := ""
+	for _, c := range c.cookies {
+		if c.Name == "XSRF-TOKEN" {
+			csrfToken = c.Value
+			break
+		}
+	}
+
+	var response map[string]any
+
+	if err := rest.PUT(endpoint).
+		Cookies(c.cookies).
+		AddHeader("x-csrf-token", csrfToken).
+		RequestBody(request).
+		ResponseAs(&response).
+		Run(); err != nil {
+		return fmt.Errorf("create attendance for employee %d: %w", employeeID, err)
+	}
+
+	return nil
+}
+
+func (c *Client) RemoveAttendances(employeeID EmployeeID, day time.Time) error {
+	dayID, err := c.resolveDayID(day)
+	if err != nil {
+		return err
+	}
+
+	endpoint := c.host.JoinPath("api/v1/attendances/days", dayID, "periods")
+
+	csrfToken := ""
+	for _, c := range c.cookies {
+		if c.Name == "XSRF-TOKEN" {
+			csrfToken = c.Value
+			break
+		}
+	}
+
+	if err := rest.DELETE(endpoint).
+		Cookies(c.cookies).
+		AddHeader("x-csrf-token", csrfToken).
+		Run(); err != nil {
+		return fmt.Errorf("delete attendances for employee %d: %w", employeeID, err)
+	}
+
+	return nil
 }
