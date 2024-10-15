@@ -1,0 +1,19 @@
+*** Scrum Day
+    :LOGBOOK:
+    CLOCK: [2023-11-24 Fri 09:00]--[2023-11-24 Fri 11:33] =>  2:33
+    CLOCK: [2023-11-10 Fri 13:01]--[2023-11-10 Fri 15:15] =>  2:14
+    CLOCK: [2023-11-10 Fri 08:56]--[2023-11-10 Fri 12:18] =>  3:22
+    :END:
+
+**** TODO HUM-13311 Cleanup dangling Core Jobs
+     SCHEDULED: <2023-12-05 Tue>
+     :LOGBOOK:
+     CLOCK: [2023-12-11 Mon 13:05]--[2023-12-11 Mon 14:17] =>  1:12
+     CLOCK: [2023-12-11 Mon 11:30]--[2023-12-11 Mon 12:09] =>  0:39
+     :END:
+     
+**** TODO HUM-13403 Recruiting settings override company settings
+     SCHEDULED: <2023-12-28 Thu>
+     :LOGBOOK:
+     CLOCK: [2023-12-28 Thu 13:19]--[2023-12-28 Thu 15:21] =>  2:02
+     :END:
