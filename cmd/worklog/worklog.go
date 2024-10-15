@@ -19,7 +19,27 @@ const dbPath = "time-sync.db"
 var (
 	sinksFlag     []string
 	startDateFlag string
+	endDateFlag   string
+	dryRunFlag    bool
 )
+
+func parseDate(rawDate string, fallback time.Time) (time.Time, error) {
+	if startDateFlag == "" {
+		return fallback, nil
+	}
+
+	date, err := time.Parse(time.DateOnly, rawDate)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse %q as date: %w", rawDate, err)
+	}
+
+	// Truncate time values to avoid trouble with entries close to the
+	// startDate along the line.
+	y, m, d := date.Date()
+	date = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+
+	return date, nil
+}
 
 func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog.Source {
 	switch sourcePath {
@@ -76,18 +96,14 @@ https://app.clockify.me/user/settings
 		}
 
 		now := time.Now().Truncate(24 * time.Hour)
-		startDate := now.Add(-7 * 24 * time.Hour)
-		if startDateFlag != "" {
-			date, err := time.Parse(time.DateOnly, startDateFlag)
-			if err != nil {
-				log.Fatalf("failed to parse startDate %q: %v", startDateFlag, err)
-			}
-			startDate = date
+		startDate, err := parseDate(startDateFlag, now.Add(-7*24*time.Hour))
+		if err != nil {
+			log.Fatal(err)
 		}
-		// Truncate time values to avoid trouble with entries close to the
-		// startDate along the line.
-		y, m, d := startDate.Date()
-		startDate = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		endDate, err := parseDate(endDateFlag, now)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		configDir := filepath.Join(home, ".timesync")
 		if err := os.Mkdir(configDir, 0751); err != nil && os.IsNotExist(err) {
@@ -112,7 +128,7 @@ https://app.clockify.me/user/settings
 			log.Fatal(err)
 		}
 
-		if err := worklog.Sync(source, sinks, startDate, now, false); err != nil {
+		if err := worklog.Sync(source, sinks, startDate, endDate, dryRunFlag); err != nil {
 			log.Fatal(err)
 		}
 	},
@@ -122,9 +138,15 @@ func init() {
 	syncCmd.Flags().StringArrayVar(&sinksFlag, "sink", []string{},
 		`If a date in the format YYYY-MM-DD is provided, entries that are before the
 given date are ignored. It defaults to today - 7 days.`)
-	syncCmd.Flags().StringVar(&startDateFlag, "startDate", "",
+	syncCmd.Flags().StringVar(&startDateFlag, "start-date", "",
 		`If a date in the format YYYY-MM-DD is provided, entries that are before the
 given date are ignored. It defaults to today - 7 days.`)
+	syncCmd.Flags().StringVar(&endDateFlag, "end-date", "",
+		`If a date in the format YYYY-MM-DD is provided, entries that are after the
+given date are ignored. It defaults to today.`)
+	syncCmd.Flags().BoolVar(&dryRunFlag, "dry-run", false,
+		`If true, the command will not execute any action but only print the changes
+it would make.`)
 }
 
 func main() {
