@@ -1,6 +1,8 @@
 module github.com/eldelto/core
 
-go 1.22.0
+go 1.22.1
+
+toolchain go1.22.8
 
 require (
 	github.com/cespare/reflex v0.3.1
@@ -13,11 +15,11 @@ require (
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	gopkg.in/yaml.v3 v3.0.1
-	honnef.co/go/tools v0.4.7
+	honnef.co/go/tools v0.5.1
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/creack/pty v1.1.21 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

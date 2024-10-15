@@ -260,7 +260,12 @@ func (c *Client) resolveDayID(day time.Time) (string, error) {
 
 	dayID, ok = c.dayIDs[date]
 	if !ok {
-		return "", fmt.Errorf("could not resolve day ID for date %q, cache=%v", date, c.dayIDs)
+		//return "", fmt.Errorf("could not resolve day ID for date %q, cache=%v", date, c.dayIDs)
+		newId, err := uuid.NewRandom()
+		if err != nil {
+			return "", fmt.Errorf("resolve day ID: %w", err)
+		}
+		dayID = newId.String()
 	}
 
 	return dayID, nil
@@ -283,8 +288,25 @@ type createAttendanceRequest struct {
 }
 
 type Attendance struct {
-	Start time.Time
-	End   time.Time
+	Start   time.Time
+	End     time.Time
+	Comment string
+}
+
+func attendanceToPeriod(a Attendance) (attendancePeriod, error) {
+	// TODO: Validate start/end to be equal to day.
+	periodID, err := uuid.NewRandom()
+	if err != nil {
+		return attendancePeriod{}, fmt.Errorf("create attendance periode ID: %w", err)
+	}
+
+	return attendancePeriod{
+		ID:         periodID.String(),
+		PeriodType: "work",
+		Start:      a.Start.Format(personioFormat),
+		End:        a.End.Format(personioFormat),
+		Comment:    &a.Comment,
+	}, nil
 }
 
 func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attendances []Attendance) error {
@@ -297,19 +319,11 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 
 	periods := make([]attendancePeriod, len(attendances))
 	for i, attendance := range attendances {
-		// TODO: Validate start/end to be equal to day.
-
-		periodID, err := uuid.NewRandom()
+		period, err := attendanceToPeriod(attendance)
 		if err != nil {
-			return fmt.Errorf("create attendance periode ID: %w", err)
+			return err
 		}
-
-		periods[i] = attendancePeriod{
-			ID:         periodID.String(),
-			PeriodType: "work",
-			Start:      attendance.Start.Format(personioFormat),
-			End:        attendance.End.Format(personioFormat),
-		}
+		periods[i] = period
 	}
 
 	request := createAttendanceRequest{

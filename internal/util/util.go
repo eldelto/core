@@ -2,6 +2,7 @@ package util
 
 import (
 	"slices"
+	"time"
 
 	"golang.org/x/exp/constraints"
 )
@@ -30,4 +31,8 @@ func ReverseCopy[T any](slice []T) []T {
 
 	slices.Reverse(result)
 	return result
+}
+
+func SetLocation(t time.Time, loc *time.Location) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), loc)
 }

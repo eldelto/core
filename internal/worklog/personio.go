@@ -2,19 +2,27 @@ package worklog
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/personio"
+	"github.com/eldelto/core/internal/util"
 )
 
 func attendanceToEntry(a personio.AttendancePeriode) Entry {
+	entryType := EntryTypeWork
+	if a.Attributes.PeriodType == "break" {
+		entryType = EntryTypeBreak
+	}
+
 	return Entry{
 		Ticket:     a.Attributes.Comment,
 		ExternalID: a.ID,
-		From:       a.Attributes.Start,
-		To:         a.Attributes.End,
+		Type:       entryType,
+		From:       util.SetLocation(a.Attributes.Start, time.Local),
+		To:         util.SetLocation(a.Attributes.End, time.Local),
 	}
 }
 
@@ -52,8 +60,9 @@ func actionsToAttendances(actions []Action) []personio.Attendance {
 		}
 
 		attendance := personio.Attendance{
-			Start: a.Entry.From,
-			End:   a.Entry.To,
+			Start:   a.Entry.From,
+			End:     a.Entry.To,
+			Comment: a.Entry.Ticket,
 		}
 		attendances = append(attendances, attendance)
 	}
@@ -80,12 +89,14 @@ func (s *PersonioSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 }
 
 func (s *PersonioSink) IsApplicable(e Entry) bool {
-	return true
+	return e.Type == EntryTypeWork
 }
 
 func (s *PersonioSink) UpdateAttendances(employeeID personio.EmployeeID, day time.Time, attendances []personio.Attendance) error {
+	// TODO: Only remove if there is at least one remove action for this day.
 	if err := s.client.RemoveAttendances(employeeID, day); err != nil {
-		return fmt.Errorf("update attendances: %w", err)
+		err := fmt.Errorf("update attendances: %w", err)
+		log.Println(err)
 	}
 
 	if err := s.client.CreateAttendances(employeeID, day, attendances); err != nil {

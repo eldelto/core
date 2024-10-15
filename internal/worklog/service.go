@@ -70,6 +70,9 @@ func entryEqual(this Entry) func(Entry) bool {
 func generateActions(local, remote []Entry, sink Sink) []Action {
 	actions := []Action{}
 	for _, r := range remote {
+		if !sink.IsApplicable(r) {
+			continue
+		}
 		if !slices.ContainsFunc(local, entryEqual(r)) {
 			actions = append(actions, Action{Entry: r, Operation: Remove})
 		}
@@ -78,7 +81,6 @@ func generateActions(local, remote []Entry, sink Sink) []Action {
 		if !sink.IsApplicable(l) {
 			continue
 		}
-
 		if !slices.ContainsFunc(remote, entryEqual(l)) {
 			actions = append(actions, Action{Entry: l, Operation: Add})
 		}
