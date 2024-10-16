@@ -92,6 +92,24 @@ func (s *PersonioSink) IsApplicable(e Entry) bool {
 	return e.Type == EntryTypeWork
 }
 
+/*
+   Problem: Personio needs days to be updated at once, meaning I can't
+   add remove single entries without knowing everything that happened
+   on that day.
+
+   PUT /attendance/:dayID updates a given day with the attendence
+   periods contained in the request but can't clear all periods of
+   that day.
+
+   DELETE /attendance/:dayID/periods clears all periods.
+
+   If there are changes for a given day:
+   1. No additions => DELETE periods
+   2. Overwrite remote entries with local entries (PUT)
+
+   SyncEntries(start, end time.Time, local []Entries) error
+*/
+
 func (s *PersonioSink) UpdateAttendances(employeeID personio.EmployeeID, day time.Time, attendances []personio.Attendance) error {
 	// TODO: Only remove if there is at least one remove action for this day.
 	if err := s.client.RemoveAttendances(employeeID, day); err != nil {

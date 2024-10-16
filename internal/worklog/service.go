@@ -97,7 +97,7 @@ type Source interface {
 type Sink interface {
 	Source
 	IsApplicable(e Entry) bool
-	ProcessActions(actions []Action) error
+	ProcessActions(actions []Action, localEntries []Entry) error
 }
 
 func Sync(source Source, sinks []Sink, start, end time.Time, dryRun bool) error {
@@ -128,7 +128,7 @@ func Sync(source Source, sinks []Sink, start, end time.Time, dryRun bool) error 
 		}
 
 		if approveSync {
-			if err := sink.ProcessActions(actions); err != nil {
+			if err := sink.ProcessActions(actions, localEntries); err != nil {
 				return fmt.Errorf("handle action via sink %q: %w", sink.Name(), err)
 			}
 		}
