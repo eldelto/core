@@ -160,7 +160,7 @@ func (s *JiraSink) IsApplicable(e Entry) bool {
 	return e.Type == EntryTypeWork
 }
 
-func (s *JiraSink) ProcessActions(actions []Action) error {
+func (s *JiraSink) ProcessActions(actions []Action, localEntries []Entry) error {
 	for _, a := range actions {
 		switch a.Operation {
 		case Add:

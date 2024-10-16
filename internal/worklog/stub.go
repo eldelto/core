@@ -16,6 +16,6 @@ func (s *StubSink) IsApplicable(e Entry) bool {
 	return true
 }
 
-func (s *StubSink) ProcessActions(actions []Action) error {
+func (s *StubSink) ProcessActions(actions []Action, localEntries []Entry) error {
 	return nil
 }

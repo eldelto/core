@@ -27,12 +27,23 @@ func (e *Entry) Duration() time.Duration {
 	return e.To.Sub(e.From)
 }
 
-func groupByDay(actions []Action) map[time.Time][]Action {
+func groupActionsByDay(actions []Action) map[time.Time][]Action {
 	groups := map[time.Time][]Action{}
 	for _, a := range actions {
 		y, m, d := a.Entry.From.Date()
 		day := time.Date(y, m, d, 0, 0, 0, 0, time.Local)
 		groups[day] = append(groups[day], a)
+	}
+
+	return groups
+}
+
+func groupEntriesByDay(entries []Entry) map[time.Time][]Entry {
+	groups := map[time.Time][]Entry{}
+	for _, e := range entries {
+		y, m, d := e.From.Date()
+		day := time.Date(y, m, d, 0, 0, 0, 0, time.Local)
+		groups[day] = append(groups[day], e)
 	}
 
 	return groups
@@ -116,7 +127,7 @@ func Sync(source Source, sinks []Sink, start, end time.Time, dryRun bool) error 
 		}
 
 		actions := generateActions(localEntries, remoteEntries, sink)
-		PrettyPrintActions(groupByDay(actions))
+		PrettyPrintActions(groupActionsByDay(actions))
 
 		if dryRun || len(actions) < 1 {
 			continue
