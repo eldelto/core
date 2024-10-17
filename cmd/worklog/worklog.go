@@ -100,7 +100,7 @@ https://app.clockify.me/user/settings
 		if err != nil {
 			log.Fatal(err)
 		}
-		endDate, err := parseDate(endDateFlag, now.Add(24*time.Hour))
+		endDate, err := parseDate(endDateFlag, now)
 		if err != nil {
 			log.Fatal(err)
 		}
