@@ -2,7 +2,6 @@ package worklog
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 	"time"
 
@@ -35,6 +34,30 @@ func attendancesToEntries(attendances []personio.AttendancePeriode) []Entry {
 	return entries
 }
 
+func entriesToAttendances(entries []Entry) []personio.Attendance {
+	attendances := []personio.Attendance{}
+	for _, e := range entries {
+		attendance := personio.Attendance{
+			Start:   e.From,
+			End:     e.To,
+			Comment: e.Ticket,
+		}
+		attendances = append(attendances, attendance)
+	}
+
+	return attendances
+}
+
+func addActionCount(actions []Action) int {
+	count := 0
+	for _, a := range actions {
+		if a.Operation == Add {
+			count++
+		}
+	}
+	return count
+}
+
 type PersonioSink struct {
 	client *personio.Client
 }
@@ -50,24 +73,6 @@ func NewPersonioSink(rawHost string, configProvider *cli.ConfigProvider) (*Perso
 	return &PersonioSink{
 		client: client,
 	}, nil
-}
-
-func actionsToAttendances(actions []Action) []personio.Attendance {
-	attendances := []personio.Attendance{}
-	for _, a := range actions {
-		if a.Operation == Remove {
-			continue
-		}
-
-		attendance := personio.Attendance{
-			Start:   a.Entry.From,
-			End:     a.Entry.To,
-			Comment: a.Entry.Ticket,
-		}
-		attendances = append(attendances, attendance)
-	}
-
-	return attendances
 }
 
 func (s *PersonioSink) Name() string {
@@ -92,37 +97,24 @@ func (s *PersonioSink) IsApplicable(e Entry) bool {
 	return e.Type == EntryTypeWork
 }
 
-func (s *PersonioSink) UpdateAttendances(employeeID personio.EmployeeID, day time.Time, attendances []personio.Attendance) error {
-	// TODO: Only remove if there is at least one remove action for this day.
-	if err := s.client.RemoveAttendances(employeeID, day); err != nil {
-		err := fmt.Errorf("update attendances: %w", err)
-		log.Println(err)
-	}
-
-	if err := s.client.CreateAttendances(employeeID, day, attendances); err != nil {
-		return fmt.Errorf("update attendances: %w", err)
-	}
-
-	return nil
-}
-
-func (s *PersonioSink) ProcessActions(actions []Action) error {
+func (s *PersonioSink) ProcessActions(actions []Action, localEntries []Entry) error {
 	employeeID, err := s.client.GetEmployeeID()
 	if err != nil {
 		return fmt.Errorf("fetch personio entries: %w", err)
 	}
 
-	dailyActions := groupByDay(actions)
+	dailyActions := groupActionsByDay(actions)
+	dailyEntries := groupEntriesByDay(localEntries)
 	for day, actions := range dailyActions {
-		attendances := actionsToAttendances(actions)
-		if len(attendances) < 1 {
+		if addActionCount(actions) < 1 {
 			if err := s.client.RemoveAttendances(employeeID, day); err != nil {
 				return fmt.Errorf("remove personio actions for day %q: %w", day, err)
 			}
 			continue
 		}
 
-		if err := s.UpdateAttendances(employeeID, day, attendances); err != nil {
+		attendances := entriesToAttendances(dailyEntries[day])
+		if err := s.client.CreateAttendances(employeeID, day, attendances); err != nil {
 			return fmt.Errorf("update personio actions for day %q: %w", day, err)
 		}
 	}
