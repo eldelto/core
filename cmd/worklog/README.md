@@ -51,7 +51,10 @@ Now you are all set and can run your first worklog syncs 🎉
 If I want to sync my time entries of the last seven days from an
 `.org` file to Jira Tempo, I can now do so by running
 
-`worklog work-notes.org --sink 'https://jira.acme.com'`.
+`worklog sync work-notes.org --sink 'https://jira.acme.com'`.
 
 _This assumes that `https://jria.acme.com` is the Jira instance of my
 company._
+
+Please also refer to the CLI's help pages (`worklog -h`) for more
+parameters and sub-commands.
