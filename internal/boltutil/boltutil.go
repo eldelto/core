@@ -50,6 +50,35 @@ func Find[T any](db *bbolt.DB, bucketName, key string) (T, error) {
 	return result, nil
 }
 
+func List[T any](db *bbolt.DB, bucketName string) (map[string]T, error) {
+	props := map[string]T{}
+
+	err := db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("get bucket %q", bucketName)
+		}
+
+		c := bucket.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var result T
+			if err := gob.NewDecoder(bytes.NewBuffer(v)).Decode(&result); err != nil {
+				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
+					bucketName, k, err)
+			}
+
+			props[string(k)] = result
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list values - bucket=%q: %w", bucketName, err)
+	}
+
+	return props, nil
+}
+
 func Store[T any](db *bbolt.DB, bucketName, key string, value T) error {
 	err := db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucketName))
@@ -94,6 +123,24 @@ func Remove(db *bbolt.DB, bucketName, key string) error {
 	if err != nil {
 		return fmt.Errorf("remove value - bucket=%q, key=%q: %w",
 			bucketName, key, err)
+	}
+
+	return nil
+}
+
+func ClearBucket(db *bbolt.DB, bucketName string) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		if err := tx.DeleteBucket([]byte(bucketName)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(bucketName)); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("clear bucket - bucket=%q: %w", bucketName, err)
 	}
 
 	return nil

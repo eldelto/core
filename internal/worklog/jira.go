@@ -43,12 +43,7 @@ type JiraSink struct {
 	cache       cache.Cacher[string]
 }
 
-func NewJiraSink(configProvider *cli.ConfigProvider) (*JiraSink, error) {
-	rawHost, err := configProvider.Get("jira.host")
-	if err != nil {
-		return nil, fmt.Errorf("init JiraSink: %w", err)
-	}
-
+func NewJiraSink(rawHost string, configProvider *cli.ConfigProvider) (*JiraSink, error) {
 	host, err := url.Parse(rawHost)
 	if err != nil {
 		return nil, fmt.Errorf("init JiraSink: %w", err)

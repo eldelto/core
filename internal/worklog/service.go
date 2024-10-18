@@ -142,6 +142,9 @@ func Sync(source Source, sinks []Sink, start, end time.Time, dryRun bool) error 
 			if err := sink.ProcessActions(actions, localEntries); err != nil {
 				return fmt.Errorf("handle action via sink %q: %w", sink.Name(), err)
 			}
+
+			fmt.Println("Sync complete ✅")
+			fmt.Println()
 		}
 	}
 

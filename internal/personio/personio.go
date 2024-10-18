@@ -102,6 +102,10 @@ func (c *Client) Login() error {
 	}
 	defer session.Close()
 
+	if err := session.Maximize(); err != nil {
+		return fmt.Errorf("maximise new sessio: %w", err)
+	}
+
 	url := c.host.JoinPath("login", "index")
 	if err := session.NavigateTo(url); err != nil {
 		return fmt.Errorf("navigate to personio login %q: %w", url, err)
