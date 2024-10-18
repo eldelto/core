@@ -372,7 +372,7 @@ func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error
 			return nil
 		}
 
-		t, err := s.auth.GenerateToken()
+		t, err := s.auth.GenerateToken(32)
 		if err != nil {
 			return err
 		}
