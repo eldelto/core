@@ -25,7 +25,7 @@ const (
 // TODO: Look into session timeouts instead.
 func withRetry(f func() error) error {
 	var err error
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		err = f()
 		if err == nil {
 			return nil
@@ -377,7 +377,7 @@ type findElementResponse struct {
 	Value map[string]string
 }
 
-func (s *Session) FindElement(cssSelector string) (Element, error) {
+func (s *Session) findElement(cssSelector string) (Element, error) {
 	url, err := s.sessionEndpoint("element")
 	if err != nil {
 		return Element{}, fmt.Errorf("find element %q with selector %q: %w",
@@ -407,6 +407,21 @@ func (s *Session) FindElement(cssSelector string) (Element, error) {
 	}
 
 	return Element{}, fmt.Errorf("no element matching %q found", cssSelector)
+}
+
+func (s *Session) FindElement(cssSelector string) (Element, error) {
+	var element Element
+	err := withRetry(func() error {
+		e, err := s.findElement(cssSelector)
+		if err != nil {
+			return err
+		}
+
+		element = e
+		return nil
+	})
+
+	return element, err
 }
 
 func (s *Session) ClickElement(element Element) error {
