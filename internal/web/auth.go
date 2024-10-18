@@ -113,7 +113,7 @@ func NewAuthenticator(domain string,
 	assetsFS fs.FS) *Authenticator {
 	templater := NewTemplater(templateFS, assetsFS)
 	loginTemplate := templater.GetP("login.html")
-	tokenCreatedtemplate := templater.GetP("token-created.html")
+	tokenCreatedtemplate := templater.GetP("verify.html")
 
 	return &Authenticator{
 		domain:               domain,
@@ -231,8 +231,8 @@ func (a *Authenticator) createToken() Handler {
 		}
 
 		token := Token{
-			ID:    id,
-			Email: *email,
+			ID:         id,
+			Email:      *email,
 			ValidUntil: time.Now().Add(15 * time.Minute).Unix(),
 		}
 
@@ -264,7 +264,7 @@ func (a *Authenticator) authenticate() Handler {
 		}
 
 		if token.Expired() {
-			return fmt.Errorf("authentication token %q expired: %w %w",
+			return fmt.Errorf("authentication token %q expired: %w",
 				rawTokenID, ErrUnauthenticated)
 		}
 
