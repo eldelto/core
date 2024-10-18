@@ -36,6 +36,12 @@ type UserID struct{ uuid.UUID }
 type Token struct {
 	ID    TokenID
 	Email mail.Address
+	// Unix timestamp
+	ValidUntil int64
+}
+
+func (t *Token) Expired() bool {
+	return t.ValidUntil < time.Now().Unix()
 }
 
 type Session struct {
@@ -190,11 +196,11 @@ func (a *Authenticator) Controller() *Controller {
 	}
 }
 
-func (a *Authenticator) GenerateToken() (TokenID, error) {
-	rawToken := make([]byte, 32)
+func (a *Authenticator) GenerateToken(length int) (TokenID, error) {
+	rawToken := make([]byte, length)
 	_, err := rand.Read(rawToken)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate random token: %w", err)
+		return "", fmt.Errorf("generate token: %w", err)
 	}
 
 	return TokenID(base64.URLEncoding.EncodeToString(rawToken)), nil
@@ -219,7 +225,7 @@ func (a *Authenticator) createToken() Handler {
 				rawEmail, err)
 		}
 
-		id, err := a.GenerateToken()
+		id, err := a.GenerateToken(6)
 		if err != nil {
 			return err
 		}
@@ -227,6 +233,7 @@ func (a *Authenticator) createToken() Handler {
 		token := Token{
 			ID:    id,
 			Email: *email,
+			ValidUntil: time.Now().Add(15 * time.Minute).Unix(),
 		}
 
 		if err := a.repo.StoreToken(token); err != nil {
@@ -252,8 +259,13 @@ func (a *Authenticator) authenticate() Handler {
 
 		token, err := a.repo.FindToken(TokenID(rawTokenID))
 		if err != nil {
-			return fmt.Errorf("failed to find token %q: %w %w",
+			return fmt.Errorf("authentication token %q not found: %w %w",
 				rawTokenID, err, ErrUnauthenticated)
+		}
+
+		if token.Expired() {
+			return fmt.Errorf("authentication token %q expired: %w %w",
+				rawTokenID, ErrUnauthenticated)
 		}
 
 		userID, err := a.repo.ResolveUserID(token.Email)
@@ -368,20 +380,13 @@ type BBoltAuthRepository struct {
 
 // TODO: Rather return the errors here?
 func NewBBoltAuthRepository(db *bbolt.DB) *BBoltAuthRepository {
-	err := db.Update(func(tx *bbolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte(tokenBucket)); err != nil {
-			panic(err)
-		}
-		if _, err := tx.CreateBucketIfNotExists([]byte(emailMappingBucket)); err != nil {
-			panic(err)
-		}
-		if _, err := tx.CreateBucketIfNotExists([]byte(sessionBucket)); err != nil {
-			panic(err)
-		}
-
-		return nil
-	})
-	if err != nil {
+	if err := boltutil.EnsureBucketExists(db, tokenBucket); err != nil {
+		panic(err)
+	}
+	if err := boltutil.EnsureBucketExists(db, emailMappingBucket); err != nil {
+		panic(err)
+	}
+	if err := boltutil.EnsureBucketExists(db, sessionBucket); err != nil {
 		panic(err)
 	}
 
