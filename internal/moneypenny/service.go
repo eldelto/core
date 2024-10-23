@@ -40,7 +40,7 @@ type jsonTransaction struct {
 func toTransaction(jt jsonTransaction) (Transaction, error) {
 	date, err := time.Parse(georgeDateTimeLayout, jt.Booking)
 	if err != nil {
-		return Transaction{}, fmt.Errorf("failed to parse booking date: %w", err)
+		return Transaction{}, fmt.Errorf("parse booking date: %w", err)
 	}
 
 	return Transaction{
@@ -68,7 +68,7 @@ func ParseJSON(r io.Reader) ([]Transaction, error) {
 	var jsonTransactions []jsonTransaction
 
 	if err := json.NewDecoder(r).Decode(&jsonTransactions); err != nil {
-		return nil, fmt.Errorf("failed to decode transactions from JSON: %w", err)
+		return nil, fmt.Errorf("parse transactions from JSON: %w", err)
 	}
 
 	result := []Transaction{}
@@ -79,7 +79,7 @@ func ParseJSON(r io.Reader) ([]Transaction, error) {
 
 		t, err := toTransaction(jt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert transaction %q: %w",
+			return nil, fmt.Errorf("convert to transaction %q: %w",
 				jt.Reference, err)
 		}
 
