@@ -59,8 +59,8 @@ func (s *ClockifySource) FetchEntries(start, end time.Time) ([]Entry, error) {
 		loc = time.UTC
 	}
 	for _, v := range timeEntries {
-		ticket, err := parseTicket([]byte(v.Description))
-		if err != nil {
+		ticket := parseTicketNumber([]byte(v.Description))
+		if ticket == "" {
 			msg := fmt.Sprintf("failed to parse ticket for %s, skipping", v.Description)
 			fmt.Println(cli.Brown(msg))
 			continue

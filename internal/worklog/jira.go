@@ -152,7 +152,7 @@ func (s *JiraSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 }
 
 func (s *JiraSink) IsApplicable(e Entry) bool {
-	return e.Type == EntryTypeWork
+	return e.Type == EntryTypeWork && e.Ticket != ""
 }
 
 func (s *JiraSink) ProcessActions(actions []Action, localEntries []Entry) error {

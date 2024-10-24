@@ -36,13 +36,13 @@ func parseDateTime(s string) (time.Time, error) {
 	return t, nil
 }
 
-func parseTicket(s []byte) (string, error) {
+func parseTicketNumber(s []byte) string {
 	matches := ticketRegex.FindSubmatch(s)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("failed to parse ticket number: %q does not contain a valid ticket number", s)
+		return ""
 	}
 
-	return string(matches[1]), nil
+	return string(matches[1])
 }
 
 func validate(e Entry) error {
@@ -92,10 +92,7 @@ func parseFromCSV(r io.Reader, start, end time.Time) ([]Entry, error) {
 			return nil, fmt.Errorf("failed to read CSV line %d: %w", i, err)
 		}
 
-		ticket, err := parseTicket([]byte(rec[ticketIndex]))
-		if err != nil {
-			return nil, fmt.Errorf("error on line %d: %w", i, err)
-		}
+		ticket := parseTicketNumber([]byte(rec[ticketIndex]))
 
 		from, err := parseDateTime(rec[fromIndex])
 		if err != nil {
@@ -167,11 +164,8 @@ func parseFromOrg(r io.Reader, start, end time.Time) ([]Entry, error) {
 		trimmedLine := bytes.TrimSpace(line)
 
 		if line[0] == '*' {
-			ticket, _ = parseTicket(line)
+			ticket = parseTicketNumber(line)
 		} else if bytes.HasPrefix(trimmedLine, clockPrefix) {
-			if ticket == "" {
-				continue
-			}
 			entry, err := entryFromClockLine(ticket, string(trimmedLine), start, end)
 			if err != nil {
 				if errors.Is(err, errSkippedEntry) {

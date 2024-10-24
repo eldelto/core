@@ -21,7 +21,7 @@ var (
 )
 
 func parseDate(rawDate string, fallback time.Time) (time.Time, error) {
-	if startDateFlag == "" {
+	if rawDate == "" {
 		return fallback, nil
 	}
 
@@ -106,7 +106,7 @@ to either stdout or stderr depending on the severity.
 The sync command is idempotent and can be run multiple times without
 creating duplicate entries. `,
 	Run: func(cmd *cobra.Command, args []string) {
-		now := time.Now().Truncate(24 * time.Hour)
+		now := time.Now().Add(24 * time.Hour).Truncate(24 * time.Hour)
 		startDate, err := parseDate(startDateFlag, now.Add(-7*24*time.Hour))
 		if err != nil {
 			log.Fatal(err)
