@@ -29,8 +29,8 @@ func main() {
 
 	// Controllers
 	web.NewAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, server.AssetsFS,
-		&server.TemplateData{}).Register(r)
+	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS,
+		&server.TemplateData{}).Controller().Register(r)
 
 	http.Handle("/", r)
 

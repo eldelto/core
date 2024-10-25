@@ -116,12 +116,21 @@ func main() {
 	// Controllers
 	r := chi.NewRouter()
 
+	statsRepo, err := web.NewBoltStatisticsRepository(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	statsModule := web.NewStatisticsModule(statsRepo)
+
 	sitemapContoller.Register(r)
 	web.NewAssetController("", server.AssetsFS).Register(r)
 	web.NewAssetController("/dynamic", boltfs.NewBoltFS(db, []byte(blog.AssetBucket))).Register(r)
-	server.NewArticleController(service).Register(r)
+	server.NewArticleController(service).
+		AddMiddleware(statsModule.Middleware).
+		Register(r)
 	server.NewFeedController(service).Register(r)
 	server.NewDiatomController().Register(r)
+	statsModule.Controller().Register(r)
 
 	http.Handle("/", r)
 

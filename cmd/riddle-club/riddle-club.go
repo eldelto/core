@@ -23,7 +23,7 @@ func main() {
 	sitemapContoller.Register(r)
 
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
+	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil).Controller().Register(r)
 
 	server.NewTilesController().Register(r)
 	http.Handle("/", r)

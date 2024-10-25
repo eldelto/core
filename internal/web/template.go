@@ -7,9 +7,13 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"path"
 	"path/filepath"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var (
@@ -116,4 +120,56 @@ func (t *Templater) Write(writer io.Writer, msg string, data any, patterns ...st
 	}
 
 	return nil
+}
+
+const templatePathUrlParam = "templatePath"
+
+type TemplateData struct {
+	Msg  string
+	Data any
+}
+
+type TemplateModule struct {
+	templater *Templater
+	data      any
+}
+
+func NewTemplateModule(templateFS, assetsFS fs.FS, data any) *TemplateModule {
+	return &TemplateModule{
+		templater: NewTemplater(templateFS, assetsFS),
+		data:      data,
+	}
+}
+
+func (m *TemplateModule) Controller() *Controller {
+	c := Controller{
+		BasePath: "/",
+		Handlers: map[Endpoint]Handler{
+			{Method: http.MethodGet, Path: "/"}:                                  m.getTemplate(),
+			{Method: http.MethodGet, Path: "/{" + templatePathUrlParam + ":.*}"}: m.getTemplate(),
+		},
+		Middleware: []HandlerProvider{middleware.Compress(5)},
+	}
+
+	return &c
+}
+
+func (m *TemplateModule) getTemplate() Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		templatePath := chi.URLParam(r, templatePathUrlParam)
+		if templatePath == "" {
+			templatePath = "index.html"
+		}
+
+		msg := r.URL.Query().Get("msg")
+		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
+
+		if err := m.templater.Write(w, msg, m.data, templatePath); err != nil {
+			log.Printf("failed to execute template at path %q: %v", templatePath, err)
+			w.WriteHeader(http.StatusNotFound)
+			return m.templater.Write(w, "", m.data, "not-found.html")
+		}
+
+		return nil
+	}
 }

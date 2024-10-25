@@ -67,7 +67,7 @@ func main() {
 
 	// Controllers
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateController(server.TemplatesFS, server.AssetsFS, nil).Register(r)
+	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil).Controller().Register(r)
 	server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
 	server.NewShareController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)

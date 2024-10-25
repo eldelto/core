@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 var startupTime = time.Now()
@@ -127,46 +126,6 @@ func getFile(fileSystem fs.FS, filename string) Handler {
 		defer file.Close()
 
 		http.ServeContent(w, r, filename, startupTime, file.(io.ReadSeeker))
-
-		return nil
-	}
-}
-
-const templatePathUrlParam = "templatePath"
-
-type TemplateData struct {
-	Msg  string
-	Data any
-}
-
-func NewTemplateController(templateFS, assetsFS fs.FS, data any) *Controller {
-	var templater = NewTemplater(templateFS, assetsFS)
-
-	return &Controller{
-		BasePath: "/",
-		Handlers: map[Endpoint]Handler{
-			{Method: "GET", Path: "/"}:                                  getTemplate(templater, data),
-			{Method: "GET", Path: "/{" + templatePathUrlParam + ":.*}"}: getTemplate(templater, data),
-		},
-		Middleware: []HandlerProvider{middleware.Compress(5)},
-	}
-}
-
-func getTemplate(templater *Templater, data any) Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		templatePath := chi.URLParam(r, templatePathUrlParam)
-		if templatePath == "" {
-			templatePath = "index.html"
-		}
-
-		msg := r.URL.Query().Get("msg")
-		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
-
-		if err := templater.Write(w, msg, data, templatePath); err != nil {
-			log.Printf("failed to execute template at path %q: %v", templatePath, err)
-			w.WriteHeader(http.StatusNotFound)
-			return templater.Write(w, "", data, "not-found.html")
-		}
 
 		return nil
 	}

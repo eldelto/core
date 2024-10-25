@@ -106,6 +106,44 @@ func Store[T any](db *bbolt.DB, bucketName, key string, value T) error {
 	return nil
 }
 
+func Update[T any](db *bbolt.DB, bucketName, key string, f func(old T) T) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("get bucket - bucket=%q", bucketName)
+		}
+
+		var oldValue T
+		byteValue := bucket.Get([]byte(key))
+		if byteValue != nil {
+			if err := gob.NewDecoder(bytes.NewBuffer(byteValue)).Decode(&oldValue); err != nil {
+				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
+					bucketName, key, err)
+			}
+		}
+
+		newValue := f(oldValue)
+
+		buffer := bytes.Buffer{}
+		if err := gob.NewEncoder(&buffer).Encode(newValue); err != nil {
+			return fmt.Errorf("encode value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
+			return fmt.Errorf("persist value - bucket=%q, key=%q: %w",
+				bucketName, key, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("store value - bucket=%q, key=%q: %w", bucketName, key, err)
+	}
+
+	return nil
+}
+
 func Remove(db *bbolt.DB, bucketName, key string) error {
 	err := db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucketName))
