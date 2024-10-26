@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cache"
@@ -130,6 +131,15 @@ func (s *JiraSink) removeEntry(e Entry) error {
 
 func (s *JiraSink) Name() string {
 	return "Jira"
+}
+
+func (s JiraSink) ValidIdentifier(identifier string) bool {
+	_, err := url.Parse(identifier)
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(identifier, "jira")
 }
 
 func (s *JiraSink) FetchEntries(start, end time.Time) ([]Entry, error) {

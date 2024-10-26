@@ -102,6 +102,7 @@ func generateActions(local, remote []Entry, sink Sink) []Action {
 
 type Source interface {
 	Name() string
+	ValidIdentifier(identifier string) bool
 	FetchEntries(start, end time.Time) ([]Entry, error)
 }
 

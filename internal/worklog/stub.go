@@ -8,6 +8,10 @@ func (s *StubSink) Name() string {
 	return "Stub-Sink"
 }
 
+func (s StubSink) ValidIdentifier(identifier string) bool {
+	return identifier == "stub"
+}
+
 func (s *StubSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 	return []Entry{}, nil
 }

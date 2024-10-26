@@ -8,6 +8,8 @@ import (
 	"github.com/eldelto/core/internal/cli"
 )
 
+const TimeFormat = "15:04"
+
 type dailyActions struct {
 	date    time.Time
 	actions []Action

@@ -3,6 +3,7 @@ package worklog
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -22,6 +23,10 @@ func NewClockifySource(configProvider *cli.ConfigProvider) *ClockifySource {
 
 func (s *ClockifySource) Name() string {
 	return "clockify source"
+}
+
+func (s ClockifySource) ValidIdentifier(identifier string) bool {
+	return identifier == "clockify" || strings.HasPrefix(identifier, "https://clockify.me")
 }
 
 func (s *ClockifySource) FetchEntries(start, end time.Time) ([]Entry, error) {

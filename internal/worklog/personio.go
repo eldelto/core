@@ -3,6 +3,7 @@ package worklog
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -77,6 +78,15 @@ func NewPersonioSink(rawHost string, configProvider *cli.ConfigProvider) (*Perso
 
 func (s *PersonioSink) Name() string {
 	return "Personio"
+}
+
+func (s PersonioSink) ValidIdentifier(identifier string) bool {
+	_, err := url.Parse(identifier)
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(identifier, "personio")
 }
 
 func (s *PersonioSink) FetchEntries(start, end time.Time) ([]Entry, error) {

@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -38,36 +37,57 @@ func parseDate(rawDate string, fallback time.Time) (time.Time, error) {
 	return date, nil
 }
 
-func detectSource(sourcePath string, configProvider *cli.ConfigProvider) worklog.Source {
-	switch sourcePath {
-	case "clockify":
-		return worklog.NewClockifySource(configProvider)
+func detectSource(sourcePath string, configProvider *cli.ConfigProvider) (worklog.Source, error) {
+	var source worklog.Source
+	var err error
+	switch {
+	case worklog.StubSink{}.ValidIdentifier(sourcePath):
+		source = &worklog.StubSink{}
+	case worklog.OrgSource{}.ValidIdentifier(sourcePath):
+		source, err = worklog.NewOrgSource(sourcePath)
+	case worklog.CSVSink{}.ValidIdentifier(sourcePath):
+		source, err = worklog.NewCSVSink(sourcePath)
+	case worklog.ClockifySource{}.ValidIdentifier(sourcePath):
+		source = worklog.NewClockifySource(configProvider)
+	case worklog.JiraSink{}.ValidIdentifier(sourcePath):
+		source, err = worklog.NewJiraSink(sourcePath, configProvider)
+	case worklog.PersonioSink{}.ValidIdentifier(sourcePath):
+		source, err = worklog.NewPersonioSink(sourcePath, configProvider)
 	default:
-		return worklog.NewFileSource(sourcePath)
+		source = worklog.NewFileSource(sourcePath)
 	}
+
+	return source, err
+}
+
+func detectSink(rawSink string, configProvider *cli.ConfigProvider) (worklog.Sink, error) {
+	var sink worklog.Sink
+	var err error
+	switch {
+	case worklog.StubSink{}.ValidIdentifier(rawSink):
+		sink = &worklog.StubSink{}
+	case worklog.CSVSink{}.ValidIdentifier(rawSink):
+		sink, err = worklog.NewCSVSink(rawSink)
+	case worklog.JiraSink{}.ValidIdentifier(rawSink):
+		sink, err = worklog.NewJiraSink(rawSink, configProvider)
+	case worklog.PersonioSink{}.ValidIdentifier(rawSink):
+		sink, err = worklog.NewPersonioSink(rawSink, configProvider)
+	default:
+		return nil, fmt.Errorf("%q is not a supported sink", rawSink)
+	}
+
+	return sink, err
 }
 
 func detectSinks(rawSinks []string, configProvider *cli.ConfigProvider) ([]worklog.Sink, error) {
 	sinks := []worklog.Sink{}
 	for _, rawSink := range rawSinks {
-		switch {
-		case rawSink == "stub":
-			sinks = append(sinks, &worklog.StubSink{})
-		case strings.Contains(rawSink, "jira"):
-			sink, err := worklog.NewJiraSink(rawSink, configProvider)
-			if err != nil {
-				return nil, err
-			}
-			sinks = append(sinks, sink)
-		case strings.Contains(rawSink, "personio"):
-			sink, err := worklog.NewPersonioSink(rawSink, configProvider)
-			if err != nil {
-				return nil, err
-			}
-			sinks = append(sinks, sink)
-		default:
-			return nil, fmt.Errorf("%q is not a supported sink", rawSink)
+		sink, err := detectSink(rawSink, configProvider)
+		if err != nil {
+			return nil, err
 		}
+
+		sinks = append(sinks, sink)
 	}
 
 	return sinks, nil
@@ -122,7 +142,11 @@ creating duplicate entries. `,
 		}
 
 		path := args[0]
-		source := detectSource(path, configProvider)
+		source, err := detectSource(path, configProvider)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		sinks, err := detectSinks(sinksFlag, configProvider)
 		if err != nil {
 			log.Fatal(err)
