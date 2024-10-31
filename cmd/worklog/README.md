@@ -2,6 +2,8 @@
 
 A CLI tool to sync work time entries between different systems.
 
+![Demo GIF](./media/demo.gif?raw=true "Demo GIF")
+
 ## Motivation
 
 As many jobs require time bookings in different systems (more often
