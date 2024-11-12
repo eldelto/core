@@ -12,6 +12,7 @@ import (
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/jira"
 	"github.com/eldelto/core/internal/rest"
+	"golang.org/x/sync/errgroup"
 )
 
 func jiraWorklogToEntry(worklog jira.Worklog, timeZone string) Entry {
@@ -166,20 +167,24 @@ func (s *JiraSink) IsApplicable(e Entry) bool {
 }
 
 func (s *JiraSink) ProcessActions(actions []Action, localEntries []Entry) error {
+	group := errgroup.Group{}
+	group.SetLimit(5)
+
 	for _, a := range actions {
+		a := a
 		switch a.Operation {
 		case Add:
-			if err := s.addEntry(a.Entry); err != nil {
-				return err
-			}
+			group.Go(func() error {
+				return s.addEntry(a.Entry)
+			})
 		case Remove:
-			if err := s.removeEntry(a.Entry); err != nil {
-				return err
-			}
+			group.Go(func() error {
+				return s.removeEntry(a.Entry)
+			})
 		default:
 			return fmt.Errorf("jira sink has no handler for operation %v", a)
 		}
 	}
 
-	return nil
+	return group.Wait()
 }
