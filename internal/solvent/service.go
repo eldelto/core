@@ -228,7 +228,9 @@ func (s *Service) FetchTodoList(ctx context.Context, listID uuid.UUID) (TodoList
 	return getList(notebook, auth.UserID(), listID)
 }
 
-func (s *Service) UpdateTodoList(ctx context.Context, listID uuid.UUID, fn func(*TodoList) error) (TodoList, bool, error) {
+func (s *Service) UpdateTodoList(ctx context.Context, listID uuid.UUID, updatedAt int64,
+	fn func(*TodoList) error) (TodoList, bool, error) {
+
 	auth, err := getListAuth(ctx, listID)
 	if err != nil {
 		return TodoList{}, false, err
@@ -244,8 +246,11 @@ func (s *Service) UpdateTodoList(ctx context.Context, listID uuid.UUID, fn func(
 		}
 
 		oldDone := list.Done()
+		oldUpdatedAt := list.UpdatedAt
+
 		err = fn(&list)
-		listStateChanged = list.Done() != oldDone
+
+		listStateChanged = list.Done() != oldDone || updatedAt != oldUpdatedAt
 
 		result = list
 		n.Lists[list.ID] = list
@@ -297,7 +302,7 @@ func parseListPatch(patch string) (string, map[string]todoItem, error) {
 }
 
 func (s *Service) ApplyListPatch(ctx context.Context, listID uuid.UUID, patch string, timestamp int64) error {
-	_, _, err := s.UpdateTodoList(ctx, listID, func(list *TodoList) error {
+	_, _, err := s.UpdateTodoList(ctx, listID, timestamp, func(list *TodoList) error {
 		newTitle, newItems, err := parseListPatch(patch)
 		if err != nil {
 			return err
@@ -366,7 +371,7 @@ func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error
 	}
 
 	var token web.TokenID
-	_, _, err = s.UpdateTodoList(ctx, listID, func(list *TodoList) error {
+	_, _, err = s.UpdateTodoList(ctx, listID, 0, func(list *TodoList) error {
 		if list.ShareToken != "" {
 			token = list.ShareToken
 			return nil
