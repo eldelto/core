@@ -295,7 +295,7 @@ func (a *Authenticator) authenticate() Handler {
 			Secure:   !strings.Contains(a.domain, "localhost"),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
-			Expires:  time.Now().Add(14 * 24 * time.Hour),
+			Expires:  time.Now().Add(90 * 24 * time.Hour),
 		}
 		http.SetCookie(w, &cookie)
 
