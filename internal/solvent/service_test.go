@@ -129,7 +129,7 @@ that`,
 			_, err = service.UpdateNotebook(ctx,
 				func(n *Notebook) error {
 					l, err := n.NewList("List 1")
-					list = *l
+					list = l
 					return err
 				})
 			AssertNoError(t, err, "create a new list")

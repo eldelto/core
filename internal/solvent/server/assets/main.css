@@ -282,6 +282,10 @@ button:disabled:hover,
 	background-image: url("/assets/icons/copy.svg?h=1");
 }
 
+.primary.copy::before {
+	background-image: url("/assets/icons/copy-white.svg?h=1");
+}
+
 .settings::before {
 	background-image: url("/assets/icons/settings.svg?h=1");
 }
@@ -301,9 +305,10 @@ button:disabled:hover,
 }
 
 .ToDoListTitle {
-	margin: .3em 0 .3em 0;
+	margin: .3em 2em .3em 0;
 	font-family: 'Merriweather Sans', sans-serif;
 	font-weight: normal;
+	overflow-wrap: break-word;
 }
 
 .ToDoListTitle.checked {

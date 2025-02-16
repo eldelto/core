@@ -364,6 +364,37 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 		[]string{email.Address}, content.Bytes())
 }
 
+func (s Service) CopyList(ctx context.Context, listID uuid.UUID) (TodoList, error) {
+	originalList, err := s.FetchTodoList(ctx, listID)
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	var list TodoList
+	_, err = s.UpdateNotebook(ctx, func(n *Notebook) error {
+		l, err := n.NewList(originalList.Title)
+		if err != nil {
+			return err
+		}
+
+		l.Items = make([]TodoItem, len(originalList.Items))
+		copy(l.Items, originalList.Items)
+		for i := range l.Items {
+			l.Items[i].Checked = false
+		}
+
+		n.AddList(l)
+		list = l
+
+		return nil
+	})
+	if err != nil {
+		return TodoList{}, fmt.Errorf("copy list: %w", err)
+	}
+
+	return list, nil
+}
+
 func (s Service) ShareList(ctx context.Context, listID uuid.UUID) (string, error) {
 	auth, err := web.GetAuth(ctx)
 	if err != nil {

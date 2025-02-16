@@ -45,7 +45,7 @@
      stroke-linecap="round"
      stroke-linejoin="round"
      id="rect134"
-     style="stroke:#21897e;stroke-width:1.70736378;stroke-dasharray:none;stroke-opacity:1" />
+     style="stroke:#f6f7eb;stroke-width:1.70736378;stroke-dasharray:none;stroke-opacity:1" />
   <path
      d="m 7.2646119,4.8970572 v -1.183847 c 0,-0.6538151 0.530032,-1.183847 1.183847,-1.183847 H 20.286929 c 0.653839,0 1.183847,0.5300319 1.183847,1.183847 V 15.551681 c 0,0.653838 -0.530008,1.183847 -1.183847,1.183847 h -1.183847"
      stroke="#000000"
@@ -53,5 +53,5 @@
      stroke-linejoin="round"
      stroke-dasharray="2 2"
      id="path136"
-     style="stroke:#21897e;stroke-width:1.70736378;stroke-dasharray:3.41472756,3.41472756;stroke-dashoffset:0;stroke-opacity:1" />
+     style="stroke:#f6f7eb;stroke-width:1.70736378;stroke-dasharray:3.41472756,3.41472756;stroke-dashoffset:0;stroke-opacity:1" />
 </svg>

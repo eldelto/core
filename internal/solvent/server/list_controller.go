@@ -81,6 +81,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{listID}/move"}:    moveItem(service),
 			{Method: http.MethodPost, Path: "{listID}/add"}:     addItem(service),
 			{Method: http.MethodPost, Path: "{listID}/delete"}:  deleteItem(service),
+			{Method: http.MethodGet, Path: "{listID}/copy"}:     copyList(service),
 			{Method: http.MethodGet, Path: "{listID}/share"}:    shareList(service),
 		},
 		Middleware: []web.HandlerProvider{
@@ -133,7 +134,7 @@ func createList(service *solvent.Service) web.Handler {
 		var list solvent.TodoList
 		_, err := service.UpdateNotebook(r.Context(), func(n *solvent.Notebook) error {
 			l, err := n.NewList("")
-			list = *l
+			list = l
 			return err
 		})
 		if err != nil {
@@ -386,6 +387,31 @@ func deleteItem(service *solvent.Service) web.Handler {
 				return nil
 			})
 		return err
+	}
+}
+
+func copyList(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		rawID := chi.URLParam(r, "listID")
+		listID, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		list, err := service.CopyList(r.Context(), listID)
+		if err != nil {
+			return err
+		}
+
+		redirectURL, err := url.JoinPath("/lists", list.ID.String())
+		if err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		w.Header().Set("HX-Redirect", redirectURL)
+
+		return nil
 	}
 }
 

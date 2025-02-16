@@ -240,12 +240,16 @@ func (n *Notebook) GetLists() ([]TodoList, []TodoList) {
 	return open, completed
 }
 
-func (n *Notebook) NewList(title string) (*TodoList, error) {
+func (n *Notebook) NewList(title string) (TodoList, error) {
 	l, err := NewTodoList(title)
 	if err != nil {
-		return nil, err
+		return TodoList{}, err
 	}
 
 	n.Lists[l.ID] = *l
-	return l, nil
+	return *l, nil
+}
+
+func (n *Notebook) AddList(l TodoList) {
+	n.Lists[l.ID] = l
 }
