@@ -253,3 +253,7 @@ func (n *Notebook) NewList(title string) (TodoList, error) {
 func (n *Notebook) AddList(l TodoList) {
 	n.Lists[l.ID] = l
 }
+
+func (n *Notebook) DeleteList(id uuid.UUID) {
+	delete(n.Lists, id)
+}

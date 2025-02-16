@@ -364,6 +364,18 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 		[]string{email.Address}, content.Bytes())
 }
 
+func (s Service) DeleteList(ctx context.Context, listID uuid.UUID) error {
+	_, err := s.UpdateNotebook(ctx, func(n *Notebook) error {
+		n.DeleteList(listID)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("delete list: %w", err)
+	}
+
+	return nil
+}
+
 func (s Service) CopyList(ctx context.Context, listID uuid.UUID) (TodoList, error) {
 	originalList, err := s.FetchTodoList(ctx, listID)
 	if err != nil {

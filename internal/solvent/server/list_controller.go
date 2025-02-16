@@ -17,6 +17,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const listOverview = "/lists"
+
 func shareTokenAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawID := chi.URLParam(r, "listID")
@@ -71,18 +73,19 @@ func NewListController(service *solvent.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/lists",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:                  getLists(service),
-			{Method: http.MethodPost, Path: ""}:                 createList(service),
-			{Method: http.MethodGet, Path: "{listID}"}:          getList(service),
-			{Method: http.MethodGet, Path: "{listID}/edit"}:     editList(service),
-			{Method: http.MethodPost, Path: "{listID}"}:         updateList(service),
-			{Method: http.MethodPost, Path: "{listID}/check"}:   checkItem(service),
-			{Method: http.MethodPost, Path: "{listID}/uncheck"}: uncheckItem(service),
-			{Method: http.MethodPost, Path: "{listID}/move"}:    moveItem(service),
-			{Method: http.MethodPost, Path: "{listID}/add"}:     addItem(service),
-			{Method: http.MethodPost, Path: "{listID}/delete"}:  deleteItem(service),
-			{Method: http.MethodGet, Path: "{listID}/copy"}:     copyList(service),
-			{Method: http.MethodGet, Path: "{listID}/share"}:    shareList(service),
+			{Method: http.MethodGet, Path: ""}:                      getLists(service),
+			{Method: http.MethodPost, Path: ""}:                     createList(service),
+			{Method: http.MethodGet, Path: "{listID}"}:              getList(service),
+			{Method: http.MethodGet, Path: "{listID}/edit"}:         editList(service),
+			{Method: http.MethodPost, Path: "{listID}"}:             updateList(service),
+			{Method: http.MethodPost, Path: "{listID}/check"}:       checkItem(service),
+			{Method: http.MethodPost, Path: "{listID}/uncheck"}:     uncheckItem(service),
+			{Method: http.MethodPost, Path: "{listID}/move"}:        moveItem(service),
+			{Method: http.MethodPost, Path: "{listID}/add"}:         addItem(service),
+			{Method: http.MethodPost, Path: "{listID}/delete"}:      deleteItem(service),
+			{Method: http.MethodPost, Path: "{listID}/delete-list"}: deleteList(service),
+			{Method: http.MethodPost, Path: "{listID}/copy"}:        copyList(service),
+			{Method: http.MethodGet, Path: "{listID}/share"}:        shareList(service),
 		},
 		Middleware: []web.HandlerProvider{
 			shareTokenAuthMiddleware,
@@ -390,6 +393,23 @@ func deleteItem(service *solvent.Service) web.Handler {
 	}
 }
 
+func deleteList(service *solvent.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		rawID := chi.URLParam(r, "listID")
+		listID, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		if err := service.DeleteList(r.Context(), listID); err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, listOverview, http.StatusSeeOther)
+		return nil
+	}
+}
+
 func copyList(service *solvent.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		rawID := chi.URLParam(r, "listID")
@@ -409,8 +429,6 @@ func copyList(service *solvent.Service) web.Handler {
 		}
 
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-		w.Header().Set("HX-Redirect", redirectURL)
-
 		return nil
 	}
 }

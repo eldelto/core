@@ -290,6 +290,14 @@ button:disabled:hover,
 	background-image: url("/assets/icons/settings.svg?h=1");
 }
 
+.delete {
+	color: var(--alert-color);
+}
+
+.delete::before {
+	background-image: url("/assets/icons/delete.svg?h=1");
+}
+
 #editLink {
 	float: right;
 }

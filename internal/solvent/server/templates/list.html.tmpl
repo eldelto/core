@@ -1,30 +1,37 @@
 {{define "content"}}
 
-<dialog id="editDialog">
-  <form method="dialog" class="FakeTodoList">
-	<h2>Edit Actions</h2>
-	<ul>
-	  <li>
-		<a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">
-		  Bulk edit
-		  <span class="shortCut">
-			<span class="key">ctrl</span>+<span class="key">e</span>
-		  </span>
-		</a>
-	  </li>
-	  <li>
-		<a href="/lists/{{.Data.ID}}/copy" class="secondary copy">
-		  Create a copy
-		</a>
-	  </li>
-	  <li>
-		<a href="/lists/{{.Data.ID}}/share"
-		   class="secondary share"
-		   hx-get="/lists/{{.Data.ID}}/share" hx-swap="outerHTML">
-		  Share
-		</a>
-	  </li>
-	</ul>
+<dialog id="editDialog" class="FakeTodoList">
+  <h2>Edit Actions</h2>
+  <ul>
+	<li>
+	  <a href="/lists/{{.Data.ID}}/edit" class="secondary bulkEdit">
+		Bulk edit
+		<span class="shortCut">
+		  <span class="key">ctrl</span>+<span class="key">e</span>
+		</span>
+	  </a>
+	</li>
+	<li>
+	  <form method="POST" action="/lists/{{.Data.ID}}/copy">
+		<button class="secondary copy">Create a copy</button>
+	  </form>
+	</li>
+	<li>
+	  <a href="/lists/{{.Data.ID}}/share"
+		 class="secondary share"
+		 hx-get="/lists/{{.Data.ID}}/share" hx-swap="outerHTML">
+		Share
+	  </a>
+	</li>
+	<li>
+	  <form method="POST" action="/lists/{{.Data.ID}}/delete-list"
+			hx-confirm="Delete this to-do list?"
+			hx-boost="true">
+		<button class="secondary delete">Delete this list</button>
+	  </form>
+	</li>
+  </ul>
+  <form method="dialog">
 	<button class="secondary cancel">Cancel</button>
   </form>
 </dialog>
