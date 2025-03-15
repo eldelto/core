@@ -16,6 +16,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/eldelto/core/internal/boltutil"
 	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -69,12 +70,8 @@ func NewService(db *bbolt.DB,
 	smtpHost string,
 	smtpAuth smtp.Auth,
 	auth *web.Authenticator) (*Service, error) {
-	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(notebookBucket))
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bucket: %w", err)
+	if err := boltutil.EnsureBucketExists(db, notebookBucket); err != nil {
+		panic(err)
 	}
 
 	return &Service{

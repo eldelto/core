@@ -181,6 +181,11 @@ svg {
 	fill: var(--light-background-color);
 }
 
+.form {
+	display: flex;
+	flex-direction: column;
+}
+
 button {
 	cursor: pointer;
 	transition: transform ease .1s;

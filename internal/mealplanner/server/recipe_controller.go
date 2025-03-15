@@ -6,6 +6,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/eldelto/core/internal/mealplanner"
 	"github.com/eldelto/core/internal/web"
@@ -14,21 +17,20 @@ import (
 )
 
 var (
-	templater        = web.NewTemplater(TemplatesFS, AssetsFS)
-	recipesTemplate    = templater.GetP("recipes.html")
-	recipeTemplate     = templater.GetP("recipe.html")
-	newRecipeTemplate     = templater.GetP("new-recipe.html")
-	editListTemplate = templater.GetP("edit-list.html")
-	shareTemplate    = templater.GetP("share-list.html")
+	templater         = web.NewTemplater(TemplatesFS, AssetsFS)
+	recipesTemplate   = templater.GetP("recipes.html")
+	recipeTemplate    = templater.GetP("recipe.html")
+	newRecipeTemplate = templater.GetP("new-recipe.html")
 )
 
 func NewRecipeController(service *mealplanner.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/recipes",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:                      getRecipes(service),
-			{Method: http.MethodGet, Path: "new"}:                      newRecipe(service),
-			{Method: http.MethodGet, Path: "{recipeID}"}:                      getRecipe(service),
+			{Method: http.MethodGet, Path: ""}:           getRecipes(service),
+			{Method: http.MethodPost, Path: ""}:          postNewRecipe(service),
+			{Method: http.MethodGet, Path: "new"}:        newRecipe(service),
+			{Method: http.MethodGet, Path: "{recipeID}"}: getRecipe(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -77,27 +79,48 @@ func getRecipe(service *mealplanner.Service) web.Handler {
 			return err
 		}
 
-		return recipeTemplate.Execute(w, &recipe)}
+		return recipeTemplate.Execute(w, &recipe)
+	}
 }
 
 func newRecipe(service *mealplanner.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return newRecipeTemplate.Execute(w, nil)
 	}
-	}
-	
+}
+
 func postNewRecipe(service *mealplanner.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-				if err := r.ParseForm(); err != nil {
+		if err := r.ParseForm(); err != nil {
 			return err
 		}
-		rawRecipe := r.PostForm.Get("recipe")
 
-		recipe, err := service.NewRecipe(r.Context(), rawRecipe)
+		portions, err := strconv.ParseUint(r.PostForm.Get("portions"), 10, 64)
+		if err != nil {
+			return fmt.Errorf("parse ingredient amount: %w", err)
+		}
+		time, err := strconv.ParseUint(r.PostForm.Get("time"), 10, 64)
+		if err != nil {
+			return fmt.Errorf("parse time amount: %w", err)
+		}
+
+		recipe, err := service.NewRecipe(r.Context(),
+			r.PostForm.Get("title"),
+			uint(portions),
+			uint(time),
+			strings.Split(r.PostForm.Get("ingredients"), "\n"),
+			strings.Split(r.PostForm.Get("steps"), "\n"),
+		)
 		if err != nil {
 			return err
 		}
 
-		return recipeTemplate.Execute(w, &recipe)}
-}
+		redirectURL, err := url.JoinPath("/recipes", recipe.ID.String())
+		if err != nil {
+			return err
+		}
 
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		return nil
+	}
+}

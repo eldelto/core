@@ -4,25 +4,25 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
 	"net/mail"
 	"net/smtp"
-	"regexp"
 
+	"github.com/eldelto/core/internal/boltutil"
 	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
 const (
-	recipeBucket = "recipes"
+	recipeBucket   = "recipes"
+	userDataBucket = "userData"
 )
 
 var (
-	todoItemRegex = regexp.MustCompile(`-?\s*(\[([xX ])?\])?\s*([^\[]+)`)
-
 	//go:embed login.tmpl
 	rawLoginTemplate string
 	loginTemplate    = template.New("login")
@@ -48,12 +48,11 @@ func NewService(db *bbolt.DB,
 	smtpHost string,
 	smtpAuth smtp.Auth,
 	auth *web.Authenticator) (*Service, error) {
-	err := db.Update(func(tx *bbolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(recipeBucket))
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bucket: %w", err)
+	if err := boltutil.EnsureBucketExists(db, recipeBucket); err != nil {
+		panic(err)
+	}
+	if err := boltutil.EnsureBucketExists(db, userDataBucket); err != nil {
+		panic(err)
 	}
 
 	return &Service{
@@ -101,55 +100,83 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 		[]string{email.Address}, content.Bytes())
 }
 
+type userData struct {
+	ID      web.UserID
+	Recipes []uuid.UUID
+}
+
 func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
-		recipe1, _ := ParseRecipe(`
-Carbonara
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-$Portions: 2
-$Time: 20
+	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
+	switch {
+	case err == nil:
+	case errors.Is(err, boltutil.ErrNotFound):
+		log.Printf("warn - could not find user data for user %q", auth.User)
+		return []Recipe{}, nil
+	default:
+		return nil, fmt.Errorf("get user data for user %q: %w", auth.User, err)
+	}
 
-Cut {100 g | guanciale} into small pieces and start searing them in
-a pan with butter.
+	recipes := []Recipe{}
+	for _, id := range data.Recipes {
+		recipe, err := s.GetRecipe(ctx, id)
+		if err != nil {
+			return recipes, err
+		}
+		recipes = append(recipes, recipe)
+	}
 
-Meanwhile cook {300 g | spaghetti} in a pot of salted water.
-`)
-		recipe2, _ := ParseRecipe(`
-Burritos
-
-$Portions: 3
-$Time: 35
-
-Cut {1 | red onion}, {1 | zucchini} and {2 cloves | garlic}.
-
-Preheat a pan with {oil} and add {2 tsp | paprika powder} and let simmer until fragrant.
-
-Add the {garlic}, {onion} and the {zucchini}.
-`)
-
-	recipes := []Recipe{recipe1, recipe2}
 	return recipes, nil
 }
 
 func (s *Service) GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error) {
-			return ParseRecipe(`
-Carbonara
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return Recipe{}, err
+	}
 
-$Portions: 2
-$Time: 20
+	recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, id.String())
+	if err != nil {
+		return recipe, fmt.Errorf("get recipe %q for user %q: %w",
+			id, auth.User, err)
+	}
 
-Cut {100 g | guanciale} into small pieces and start searing them in
-a pan with butter.
-
-Meanwhile cook {300 g | spaghetti} in a pot of salted water.
-`)
+	return recipe, nil
 }
 
-func (s *Service) NewRecipe(ctx context.Context, rawRecipe string) (Recipe, error) {
-	recipe, err := ParseRecipe(rawRecipe)
+func (s *Service) NewRecipe(ctx context.Context, title string, portions, timeToCompleteMin uint, ingredients, steps []string) (Recipe, error) {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	recipe, err := newRecipe(title, portions, timeToCompleteMin, ingredients, steps, auth.User)
 	if err != nil {
 		return recipe, err
 	}
 
-	// TODO: Store
+	// TODO: Do transactionally.
+	if err := boltutil.Store(s.db, recipeBucket, recipe.ID.String(), recipe); err != nil {
+		return recipe, fmt.Errorf("store new recipe for user %q: %w",
+			auth.User, err)
+	}
+
+	err = boltutil.Update(s.db, userDataBucket, auth.User.String(), func(data *userData) *userData {
+		if data == nil {
+			data = &userData{ID: auth.User}
+		}
+
+		data.Recipes = append(data.Recipes, recipe.ID)
+		return data
+	})
+	if err != nil {
+		return recipe, fmt.Errorf("update user data with new recipe %q for user %q: %w",
+			recipe.ID, auth.User, err)
+	}
+
 	return recipe, nil
 }

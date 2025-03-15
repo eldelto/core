@@ -105,7 +105,7 @@ type Authenticator struct {
 	loginTemplate        *Template
 	tokenCreatedTemplate *Template
 	TokenCallback        func(mail.Address, TokenID) error
-	RedirectTarget string
+	RedirectTarget       string
 }
 
 func NewAuthenticator(domain string,
@@ -122,7 +122,7 @@ func NewAuthenticator(domain string,
 		repo:                 repo,
 		loginTemplate:        loginTemplate,
 		tokenCreatedTemplate: tokenCreatedtemplate,
-		RedirectTarget: redirectTarget,
+		RedirectTarget:       redirectTarget,
 	}
 }
 
@@ -303,7 +303,7 @@ func (a *Authenticator) authenticate() Handler {
 		}
 		http.SetCookie(w, &cookie)
 
-		http.Redirect(w, r, a.RedirectTarget , http.StatusSeeOther)
+		http.Redirect(w, r, a.RedirectTarget, http.StatusSeeOther)
 		return nil
 	}
 }
