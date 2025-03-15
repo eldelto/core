@@ -1,0 +1,16 @@
+{{define "left-action"}}
+{{end}}
+
+{{define "content"}}
+
+<form method="POST" action="/lists/{{.Data.ID}}"
+	  class="ToDoList" data-quick-submit>
+  <input type="hidden" name="timestamp" value="{{.Data.UpdatedAt}}" />
+  <textarea data-auto-grow name="text-patch" autofocus>{{.Data.String}}</textarea>
+  <div id="ToDoListFooter">
+	<a href="/lists/{{.Data.ID}}" class="secondary cancel">Cancel</a>
+	<button class="primary confirm">Save</button>
+  </div>
+</form>
+
+{{end}}

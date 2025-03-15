@@ -1,0 +1,642 @@
+/*
+  Fonts
+  Pattaya
+  Merriweather Sans
+  Cabin
+*/
+
+:root {
+	--text-color: black;
+	--light-brand-color: #14bca8;
+	--dark-brand-color: #21897e;
+	--extra-dark-brand-color: #356c67;
+	--accent-color: #ff9f1c;
+	--alert-color: #a20021;
+	--inactive-opacity: .7;
+	--inactive-opacity-light-bg: .3;
+	--disabled-color: black;
+	--disabled-opacity: .2;
+	--light-background-color: #f6f7eb;
+	--border-radius: 6px;
+	--box-shadow: 0px 2px 3px rgba(0, 0, 0, .3);
+	--far-box-shadow: 0px 7px 5px rgba(0, 0, 0, .3);
+}
+
+@font-face {
+	font-family: 'Pattaya';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url(/assets/Pattaya-Regular.ttf?h=1);
+}
+
+/*
+html {
+    background: linear-gradient(120deg, rgba(20,188,168,1) 0%, rgba(33,137,126,1) 100%);
+    min-height: 100%;
+}
+*/
+
+body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	font-family: 'Cabin', sans-serif;
+	background-color: var(--light-brand-color);
+}
+
+#content {
+	width: 100%;
+	max-width: 900px;
+}
+
+a {
+	text-decoration: none;
+}
+
+input,
+button,
+textarea,
+.input {
+	border-radius: var(--border-radius);
+	font-family: 'Cabin', sans-serif;
+	font-size: 1em;
+}
+
+input[type=text] {
+	height: 100%;
+}
+
+input[type=text]::placeholder,
+textarea::placeholder {
+	color: var(--text-color);
+	opacity: var(--inactive-opacity-light-bg);
+}
+
+input,
+.input {
+	font-size: 1em;
+	margin: 0 .3em;
+	padding: .5em;
+	border: dashed 1px var(--text-color);
+	background-color: white;
+}
+
+.input {
+	white-space: nowrap;
+	overflow-x: scroll;
+	display: inline-block;
+}
+
+textarea {
+	resize: none;
+	line-height: 1.5em;
+}
+
+svg {
+	width: 100%;
+	height: 100%;
+}
+
+.header {
+	height: 3.5em;
+	padding: 0 1em;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+.footer {
+	width: 100vw;
+	height: 4em;
+	padding: 0 1em;
+	position: absolute;
+	bottom: 0;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	align-items: center;
+}
+
+.menuButton {
+	height: 2.5em;
+	width: 2.5em;
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+}
+
+.menuButton > svg {
+	fill: var(--light-background-color);
+}
+
+.ListViewToDoListsTitle {
+	width: 100%;
+	display: inline-block;
+	box-sizing: border-box;
+	padding: .5em 1em;
+	border-bottom: solid 1px var(--light-background-color);
+	color: var(--light-background-color);
+	opacity: var(--inactive-opacity);
+}
+
+.ListViewToDoList {
+	font-family: 'Merriweather Sans', sans-serif;
+	font-size: 1em;
+	width: 100%;
+	display: block;
+	margin: 1em 0;
+	padding: 0 1em;
+	min-height: 3.5em;
+	text-align: left;
+	border: none;
+	cursor: pointer;
+	box-shadow: var(--box-shadow);
+	background-color: var(--light-background-color);
+}
+
+.ListViewToDoList.checked .ListViewToDoListTitle {
+	text-decoration: line-through;
+	opacity: var(--inactive-opacity-light-bg);
+}
+
+.ListViewAddListButton {
+	width: 100%;
+	font-size: 1em;
+	height: 3.5em;
+	display: block;
+	margin: 1em 0;
+	padding: 0 1em;
+	border: 1px dashed var(--light-background-color);
+	cursor: pointer;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.ListViewAddListButton>svg {
+	height: 70%;
+	fill: var(--light-background-color);
+}
+
+button {
+	cursor: pointer;
+	transition: transform ease .1s;
+}
+
+.primary,
+.secondary {
+	text-decoration: none;
+	cursor: pointer;
+	transition: all ease .1s;
+	font-size: 1em;
+	padding: .3em .5em;
+	align-items: center;
+	display: flex;
+}
+
+.primary::before,
+.secondary::before {
+	content: "";
+	background-repeat: no-repeat;
+	background-size: 1.5em 1.5em;
+	width: 2em;
+	height: 1.5em;
+	display: inline-block;
+}
+
+
+button:hover,
+.primary:hover,
+.secondary:hover {
+	transform: translateY(-1px);
+}
+
+button:disabled:hover,
+.primary:disabled:hover,
+.secondary:disabled:hover {
+	transform: none;
+}
+
+.primary {
+	height: 2.3em;
+	color: var(--light-background-color);
+	background-color: var(--dark-brand-color);
+	border: none;
+	border-bottom: solid 2px var(--dark-brand-color);
+	border-radius: var(--border-radius);
+}
+
+.primary:hover {
+	background-color: var(--light-brand-color);
+}
+
+.primary:active {
+	background-color: var(--extra-dark-brand-color);
+	border-bottom: none;
+	border-top: solid 2px var(--text-color);
+	transform: none;
+}
+
+.secondary {
+	border: none;
+	background: none;
+	color: var(--dark-brand-color);
+}
+
+.secondary:hover {
+	text-decoration: underline;
+}
+
+.confirm::before {
+	background-image: url("/assets/icons/checked-white.svg?h=1");
+}
+
+.cancel {
+	color: var(--alert-color);
+}
+
+.cancel::before {
+	width: 0;
+}
+
+.edit::before {
+	background-image: url("/assets/icons/edit.svg?h=1");
+	background-size: 1.3em 1.3em;
+	width: 1.7em;
+}
+
+.bulkEdit::before {
+	background-image: url("/assets/icons/edit.svg?h=1");
+	background-size: 1.3em 1.3em;
+	width: 1.7em;
+}
+
+.share::before {
+	background-image: url("/assets/icons/share.svg?h=1");
+}
+
+.copy::before {
+	background-image: url("/assets/icons/copy.svg?h=1");
+}
+
+.primary.copy::before {
+	background-image: url("/assets/icons/copy-white.svg?h=1");
+}
+
+.settings::before {
+	background-image: url("/assets/icons/settings.svg?h=1");
+}
+
+.delete {
+	color: var(--alert-color);
+}
+
+.delete::before {
+	background-image: url("/assets/icons/delete.svg?h=1");
+}
+
+#editLink {
+	float: right;
+}
+
+.ToDoList {
+	width: 100%;
+	padding: 1em;
+	box-sizing: border-box;
+	border: none;
+	border-radius: 10px;
+	box-shadow: var(--box-shadow);
+	background-color: var(--light-background-color);
+}
+
+.ToDoListTitle {
+	margin: .3em 2em .3em 0;
+	font-family: 'Merriweather Sans', sans-serif;
+	font-weight: normal;
+	overflow-wrap: break-word;
+}
+
+.ToDoListTitle.checked {
+	text-decoration: line-through;
+	opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoListBody {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.ToDoItem {
+	width: 100%;
+	min-height: 3em;
+	padding: .4em 0;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	border-radius: var(--border-radius);
+	background-color: var(--light-background-color);
+}
+
+.checkboxForm {
+	display: flex;
+}
+
+.ToDoItemCheckbox {
+	height: 2em;
+	width: 2em;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: none;
+	opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoItemCheckbox > img {
+	height: 100%;
+	width: 100%;
+}
+
+.ToDoItem.checked .ToDoItemCheckbox,
+.ToDoItemCheckbox:hover {
+	opacity: 1;
+}
+
+.ToDoItemTitle {
+	flex-shrink: 10000;
+	max-height: 5em;
+	overflow-y: auto;
+	font-size: 1em;
+	margin: 0 .3em;
+	padding: 0 .5em;
+	flex-grow: 1;
+	border: none;
+	background: none;
+}
+
+.ToDoItem.checked > .ToDoItemTitle {
+	text-decoration: line-through;
+	opacity: var(--inactive-opacity-light-bg);
+}
+
+.ToDoItemDelete {
+	height: 2em;
+	width: 2em;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	visibility: hidden;
+}
+
+.ToDoItemTitle:focus+.ToDoItemDelete {
+	visibility: visible;
+}
+
+.ToDoItemDragHandle {
+	height: 1.5em;
+	width: 1.5em;
+	opacity: var(--inactive-opacity-light-bg);
+	cursor: move;
+}
+
+.AddItemBar, #ToDoListFooter {
+	height: 3em;
+	width: 100%;
+	padding: .4em 0 0 0;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+}
+
+#AddItemBarTitle {
+	font-size: 1em;
+	margin: 0 .3em;
+	padding: 0 .5em;
+	flex-grow: 1;
+	border: none;
+	background: none;
+}
+
+#AddItemBarButton {
+	height: 2em;
+	width: 2em;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	background-image: url("/assets/icons/plus-circle.svg?h=1");
+	background-size: 30px 30px;
+	background-repeat: no-repeat;
+}
+
+#AddItemBarButton:disabled {
+	background-image: url("/assets/icons/plus.svg?h=1");
+	opacity: var(--disabled-opacity);
+	cursor: default;
+}
+
+.HeaderTitle {
+	margin: 0;
+	font-size: 2em;
+	text-align: center;
+	flex-grow: 1;
+	font-family: 'Pattaya', sans-serif;
+	color: var(--light-background-color);
+}
+
+textarea[name="text-patch"] {
+	width: 100%;
+	background: none;
+	border: none;
+	font-size: 1em;
+}
+
+.deleting {
+	transition: all 250ms ease;
+	transition-delay: 250ms;
+	background-color: var(--alert-color);
+	color: var(--light-background-color);
+}
+
+.sortDrag {
+	border: dashed 1px var(--text-color);
+}
+
+.sortGhost {
+	opacity: 0;
+}
+
+dialog {
+	width: 90vw;
+	max-width: 450px;
+	background: none;
+	border: none;
+}
+
+dialog h2 {
+	font-weight: normal;
+	margin: .4em 0 1em 0;
+}
+
+dialog::backdrop {
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+}
+
+.FakeTodoList {
+	width: 100%;
+	padding: 1em;
+	box-sizing: border-box;
+	border-radius: 10px;
+	background-color: var(--light-background-color);
+	border: dashed 1px var(--text-color);
+}
+
+dialog > .FakeTodoList {
+	box-shadow: var(--far-box-shadow);
+}
+
+#editDialog ul {
+    width: 100%;
+    padding: 0;
+    list-style: none;
+}
+
+#editDialog li {
+	border-top: 1px solid rgba(0, 0, 0, .1);
+	width: 100%;
+	padding: .7em 0;
+	display: flex;
+	box-sizing: border-box;
+	justify-content: center;
+}
+
+.flex,
+.flexCol {
+	display: flex;
+	width: 100%;
+	align-items: center;
+}
+
+.flexCol {
+	flex-direction: column;
+}
+
+.shortCut {
+	margin-left: 2em;
+	color: var(--text-color);
+	opacity: .4;
+}
+
+.key {
+	margin: 0 .5em 0 .5em;
+    padding: .1em .4em;
+	border: solid 1px var(--text-color);
+	border-radius: 3px;
+}
+
+
+/* Landing Page */
+
+.landingPage .flex {
+	justify-content: space-between;
+}
+
+.landingPage a {
+	color: var(--dark-brand-color);
+	text-decoration: none;
+	cursor: pointer;
+	transition: all ease .1s;
+	font-size: 1em;
+}
+
+.landingPage a:hover {
+	transform: translateY(-1px);
+	text-decoration: underline;
+	display: inline-block;
+}
+
+.promoContent {
+    color: var(--light-background-color);
+}
+
+.promoContent h2 {
+    font-size: 2em;
+    border-bottom: solid 4px var(--light-brand-color);
+    display: inline-block;
+    font-family: Pattaya;
+    font-weight: normal;
+	margin-top: 0;
+}
+
+.promoContent p {
+	font-size: 1.1em;
+	line-height: 1.7em;
+}
+
+.promoContent img {
+	border-radius: var(--border-radius);
+	flex: 1;
+	min-width: 0px;
+	max-width: 50%;
+}
+
+.promoContent .flex {
+	align-items: flex-start;	
+	justify-content: space-between;
+	margin: 3.5em 0;
+	padding-top: 3.5em;
+	border-top: solid 2px var(--dark-brand-color);
+}
+
+.promoContent .flex > div{
+	max-width: 300px;
+	flex-shrink: 0;
+	margin-right: 3em;
+	background-color: var(--dark-brand-color);
+}
+
+.promoContent a {
+	color: var(--light-brand-color);
+}
+
+.promoList {
+	padding: 0;
+	list-style: none;
+}
+
+.promoList > li {
+	height: 2em;
+	padding-left: 2em;
+	margin-bottom: .5em;
+	align-items: center;
+	background-image: url("/assets/icons/checked-brand.svg?h=1");
+	background-repeat: no-repeat;
+	background-size: 1.5em 1.5em;
+	background-position-y: -0.1em;
+}
+
+@media (max-width: 40rem) {
+	.promoContent .flex {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.promoContent .flex > div{
+		max-width: 100%;
+		margin-right: 0;
+		margin-bottom: 2em;
+	}
+
+	.promoContent img {
+		max-width: 80%;
+	}
+}

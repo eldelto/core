@@ -105,9 +105,11 @@ type Authenticator struct {
 	loginTemplate        *Template
 	tokenCreatedTemplate *Template
 	TokenCallback        func(mail.Address, TokenID) error
+	RedirectTarget string
 }
 
 func NewAuthenticator(domain string,
+	redirectTarget string,
 	repo AuthRepository,
 	templateFS,
 	assetsFS fs.FS) *Authenticator {
@@ -120,6 +122,7 @@ func NewAuthenticator(domain string,
 		repo:                 repo,
 		loginTemplate:        loginTemplate,
 		tokenCreatedTemplate: tokenCreatedtemplate,
+		RedirectTarget: redirectTarget,
 	}
 }
 
@@ -141,7 +144,8 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 
 		session, err := a.repo.FindSession(SessionID(cookie.Value))
 		if err != nil {
-			log.Printf("failed to fetch session: %v", err)
+			log.Printf("failed to fetch session while accessing %q: %v",
+				r.URL.String(), err)
 			http.Redirect(w, r, LoginPath, http.StatusSeeOther)
 			return
 		}
@@ -157,7 +161,7 @@ func (a *Authenticator) forwardingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := GetAuth(r.Context())
 		if err == nil {
-			http.Redirect(w, r, "/lists", http.StatusSeeOther)
+			http.Redirect(w, r, a.RedirectTarget, http.StatusSeeOther)
 			return
 		}
 
@@ -299,7 +303,7 @@ func (a *Authenticator) authenticate() Handler {
 		}
 		http.SetCookie(w, &cookie)
 
-		http.Redirect(w, r, "/lists", http.StatusSeeOther)
+		http.Redirect(w, r, a.RedirectTarget , http.StatusSeeOther)
 		return nil
 	}
 }

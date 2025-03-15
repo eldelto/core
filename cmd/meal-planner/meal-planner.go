@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/eldelto/core/internal/conf"
-	"github.com/eldelto/core/internal/solvent"
-	"github.com/eldelto/core/internal/solvent/server"
+	"github.com/eldelto/core/internal/mealplanner"
+	"github.com/eldelto/core/internal/mealplanner/server"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"go.etcd.io/bbolt"
@@ -23,7 +23,7 @@ const (
 	smtpHostEnv     = "SMTP_HOST"
 	smtpPortEnv     = "SMTP_PORT"
 
-	dbPath = "solvent.db"
+	dbPath = "meal-planner.db"
 )
 
 func main() {
@@ -53,11 +53,11 @@ func main() {
 
 	auth := web.NewAuthenticator(
 		host,
-		"/lists",
+		"/recipes",
 		web.NewBBoltAuthRepository(db),
 		server.TemplatesFS, server.AssetsFS)
 
-	service, err := solvent.NewService(db, host, smtpHost, smtpAuth, auth)
+	service, err := mealplanner.NewService(db, host, smtpHost, smtpAuth, auth)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,12 +69,11 @@ func main() {
 	// Controllers
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil).Controller().Register(r)
-	server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
-	server.NewShareController(service).AddMiddleware(auth.Middleware).Register(r)
+	server.NewRecipeController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)
 
 	http.Handle("/", r)
 
-	log.Printf("Solvent listening on localhost:%d with host %q", port, host)
+	log.Printf("Meal-Planner listening on localhost:%d with host %q", port, host)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }

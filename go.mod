@@ -12,7 +12,8 @@ require (
 	go.bug.st/serial v1.6.2
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
+	golang.org/x/text v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 	honnef.co/go/tools v0.5.1
 )

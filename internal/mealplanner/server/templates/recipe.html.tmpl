@@ -1,0 +1,24 @@
+{{define "content"}}
+
+<div class="recipe">
+  {{with .Data}}
+  <h1>{{.Title}}</h1>
+
+  <ul>
+	{{range .Ingredients}}
+	<li>{{.String}}</li>
+	{{end}}
+  </ul>
+
+  <ul>
+	<li>Time: {{.TimeToCompleteMin}} min</li>
+	<li>Portions: {{.Portions}}</li>
+  </ul>
+
+  {{range .Steps}}
+  <p>{{.}}</p>
+  {{end}}
+  {{end}}
+</div>
+
+{{end}}

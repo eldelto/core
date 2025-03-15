@@ -1,0 +1,98 @@
+{{define "content"}}
+
+<div class="landingPage">
+  <div class="FakeTodoList">
+	<div id="TodoListBody">
+
+	  <div class="flex">
+		<h2 class="ToDoListTitle">Get started ✏️</h2>
+
+		<form method="GET" action="/auth/login" style="float: right;">
+		  <button class="primary confirm">Login</button>
+		</form>
+	  </div>
+
+	  <p>
+		Click the login button to finally get a grip on your life (ok,
+		maybe just on your to-do lists).
+	  </p>
+
+	  <ul class="promoList">
+		<li>
+		  If you have any questions, make sure to read the
+		  <a href="https://github.com/eldelto/core/blob/main/cmd/solvent/README.md"
+			 target="_blank">docs</a>.
+		</li>
+		<li>
+		  Fully open-source under the BSD-3 license. Checkout the code
+		  on
+		  <a href="https://github.com/eldelto/core/tree/main/cmd/solvent"
+		     target="_blank">Github</a>.
+		</li>
+	  </ul>
+	</div>
+  </div>
+
+  <div class="promoContent">
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Zero fuzz to-do list.</h2>
+		<p>
+		  No tracking.<br>
+		  No Ads.<br>
+		</p>
+		<p>
+		  Every action is synced so you don't accidentally work on stale
+		  date.
+		</p>
+	  </div>
+
+	  <img src='{{asset "screens/list.png"}}' alt="Screenshot of the list view">
+	</section>
+
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Bulk-edit mode.</h2>
+		<p>
+		  Never manually type recipe ingredients ever again. Plain-text
+		  with every line treated as a separate to-do item for efficient
+		  desktop editing.
+		</p>
+	  </div>
+
+	  <img src='{{asset "screens/bulk-edit.png"}}' alt="Screenshot of bulk editing">
+	</section>
+
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Sharing is caring.</h2>
+		<p>
+		  Share your list of tasks with family and friends - no account required.
+		</p>
+	  </div>
+
+	  <img src='{{asset "screens/share.png"}}' alt="Screenshot of list sharing">
+	</section>
+
+	<section class="flex">
+	  <div class="FakeTodoList">
+		<h2>Self-hostable.</h2>
+		<p>
+		  Don't want to trust someone else with your data? Solvent is a
+		  single binary so it is easy to self-host on your own hardware.
+		</p>
+		<p>
+		  See
+		  the <a href="https://github.com/eldelto/core/tree/main/cmd/solvent#self-hosting"
+				 target="_blank">hosting guide</a> for details.
+		</p>
+	  </div>
+
+	  <img src='{{asset "screens/self-host.png"}}' alt="Screenshot of
+														the
+														self-hosting manual">
+	</section>
+  </div>
+</div>
+
+{{end}}

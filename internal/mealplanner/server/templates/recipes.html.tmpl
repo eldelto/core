@@ -1,0 +1,16 @@
+{{define "content"}}
+
+<div>
+  <a href="/recipes/new">New Recipe</a>
+  
+  {{range .Data }}
+  <a href="/recipes/{{.ID}}">
+	<div class="recipe-card">
+	  <h3>{{.Title}}</h3>
+	  <span>{{.TimeToCompleteMin}} min</span>
+	</div>
+  </a>
+  {{end}}
+</div>
+
+{{end}}
