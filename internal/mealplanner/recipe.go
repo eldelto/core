@@ -3,6 +3,7 @@ package mealplanner
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,14 +22,14 @@ var (
 
 type Ingredient struct {
 	Name   string
-	Amount uint
+	Amount *big.Rat
 }
 
 func (i *Ingredient) String() string {
-	if i.Amount == 0 {
+	if i.Amount == nil {
 		return i.Name
 	}
-	return fmt.Sprintf("%d %s", i.Amount, i.Name)
+	return fmt.Sprintf("%s %s", i.Amount.RatString(), i.Name)
 }
 
 func parseIngredient(rawIngredient string) (Ingredient, error) {
@@ -37,14 +38,19 @@ func parseIngredient(rawIngredient string) (Ingredient, error) {
 		return Ingredient{Name: rawIngredient}, nil
 	}
 
-	amount, err := strconv.ParseUint(matches[1], 10, 64)
-	if err != nil {
-		return Ingredient{}, fmt.Errorf("parse ingredient amount: %w", err)
+	// amount, err := strconv.ParseUint(matches[1], 10, 64)
+	// if err != nil {
+	// 	return Ingredient{}, fmt.Errorf("parse ingredient amount: %w", err)
+	// }
+
+	amount := big.Rat{}
+	if _, ok := amount.SetString(matches[1]); !ok {
+		return Ingredient{}, fmt.Errorf("parse ingredient amount %q", rawIngredient)
 	}
 
 	return Ingredient{
 		Name:   strings.TrimSpace(matches[2]),
-		Amount: uint(amount),
+		Amount: &amount,
 	}, nil
 }
 
@@ -60,14 +66,6 @@ type Recipe struct {
 	Steps             []string
 }
 
-func parseAmount(s string) uint {
-	amount, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		amount = 0
-	}
-	return uint(amount)
-}
-
 func parseTitle(s string) string {
 	s = strings.TrimSpace(s)
 	return cases.Title(language.English).String(s)
@@ -77,8 +75,8 @@ func parseIngredients(r *Recipe, step string) {
 	matches := ingredientRegex.FindAllStringSubmatch(step, -1)
 	for _, match := range matches {
 		ingredient := Ingredient{
-			Name:   parseTitle(match[4]),
-			Amount: parseAmount(match[2]),
+			Name: parseTitle(match[4]),
+			//			Amount: parseAmount(match[2]),
 		}
 		r.Ingredients = append(r.Ingredients, ingredient)
 	}
