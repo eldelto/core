@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math/rand/v2"
 	"net/mail"
 	"net/smtp"
+	"time"
 
 	"github.com/eldelto/core/internal/boltutil"
+	"github.com/eldelto/core/internal/collections"
 	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -103,6 +106,7 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 type userData struct {
 	ID      web.UserID
 	Recipes []uuid.UUID
+	LastEaten []uuid.UUID
 }
 
 func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
@@ -179,4 +183,59 @@ func (s *Service) NewRecipe(ctx context.Context, title string, portions, timeToC
 	}
 
 	return recipe, nil
+}
+
+func (s *Service) SuggestRecipe(ctx context.Context) (Recipe, error) {
+		auth, err := getUserAuth(ctx)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
+	if err != nil {
+		return Recipe{}, fmt.Errorf("find user data for recipe suggestion: %w", err)
+	}
+	if len(data.Recipes) <= 0 {
+		return Recipe{}, fmt.Errorf("can't suggest recipe as user %q doesn't have any recipes", auth.User)
+	}
+
+	recipes := collections.SetFromSlice(data.Recipes)
+	lastEaten := collections.SetFromSlice(data.LastEaten)
+	possibleRecipes := recipes.Difference(lastEaten)
+
+	i := rand.IntN(len(possibleRecipes))
+	recipeID := data.Recipes[i]
+	recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, recipeID.String())
+	if err != nil {
+		return recipe, fmt.Errorf("find suggested recipe %q for user %q: %w",
+		recipeID, auth.User, err)
+	}
+	
+	return recipe, nil
+}
+
+type MealPlan struct {
+	Recipes []Recipe
+	Week int
+}
+
+func weekOfYear(t time.Time) int {
+	_, week := t.ISOWeek()
+	return week
+}
+
+func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint) (MealPlan, error) {
+	mealPlan := MealPlan{
+		Recipes: make([]Recipe, mealCount),
+		Week: weekOfYear(date),
+	}
+	for i:= uint(0); i< mealCount; i++ {
+		recipe, err := s.SuggestRecipe(ctx)
+		if err != nil {
+			return mealPlan, err
+		}
+		mealPlan.Recipes[i] = recipe
+	}
+
+	return mealPlan, nil
 }

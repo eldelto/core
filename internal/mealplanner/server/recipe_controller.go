@@ -29,7 +29,7 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 		Handlers: map[web.Endpoint]web.Handler{
 			{Method: http.MethodGet, Path: ""}:           getRecipes(service),
 			{Method: http.MethodPost, Path: ""}:          postNewRecipe(service),
-			{Method: http.MethodGet, Path: "new"}:        newRecipe(service),
+			{Method: http.MethodGet, Path: "new"}:        renderTemplate(newRecipeTemplate),
 			{Method: http.MethodGet, Path: "{recipeID}"}: getRecipe(service),
 		},
 		Middleware: []web.HandlerProvider{
@@ -52,6 +52,12 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 				return err
 			}
 		},
+	}
+}
+
+func renderTemplate(template *web.Template) web.Handler{
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return template.Execute(w, nil)
 	}
 }
 
@@ -80,12 +86,6 @@ func getRecipe(service *mealplanner.Service) web.Handler {
 		}
 
 		return recipeTemplate.Execute(w, &recipe)
-	}
-}
-
-func newRecipe(service *mealplanner.Service) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return newRecipeTemplate.Execute(w, nil)
 	}
 }
 

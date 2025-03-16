@@ -1,8 +1,6 @@
 {{define "content"}}
 
 <div>
-  <a href="/recipes/new">New Recipe</a>
-  
   {{range .Data }}
   <a href="/recipes/{{.ID}}">
 	<div class="recipe-card">
