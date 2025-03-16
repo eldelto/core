@@ -12,14 +12,14 @@ import (
 )
 
 var (
-	newMealPlanTemplate   = templater.GetP("new-meal-plan.html")
+	newMealPlanTemplate = templater.GetP("new-meal-plan.html")
 )
 
 func NewMealPlanController(service *mealplanner.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/meal-plans",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "new"}:        newMealPlan(service),
+			{Method: http.MethodGet, Path: "new"}: newMealPlan(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),

@@ -104,8 +104,8 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 }
 
 type userData struct {
-	ID      web.UserID
-	Recipes []uuid.UUID
+	ID        web.UserID
+	Recipes   []uuid.UUID
 	LastEaten []uuid.UUID
 }
 
@@ -152,13 +152,13 @@ func (s *Service) GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error) {
 	return recipe, nil
 }
 
-func (s *Service) NewRecipe(ctx context.Context, title string, portions, timeToCompleteMin uint, ingredients, steps []string) (Recipe, error) {
+func (s *Service) NewRecipe(ctx context.Context, title, source string, portions, timeToCompleteMin uint, ingredients, steps []string) (Recipe, error) {
 	auth, err := getUserAuth(ctx)
 	if err != nil {
 		return Recipe{}, err
 	}
 
-	recipe, err := newRecipe(title, portions, timeToCompleteMin, ingredients, steps, auth.User)
+	recipe, err := newRecipe(title, source, portions, timeToCompleteMin, ingredients, steps, auth.User)
 	if err != nil {
 		return recipe, err
 	}
@@ -186,7 +186,7 @@ func (s *Service) NewRecipe(ctx context.Context, title string, portions, timeToC
 }
 
 func (s *Service) SuggestRecipe(ctx context.Context) (Recipe, error) {
-		auth, err := getUserAuth(ctx)
+	auth, err := getUserAuth(ctx)
 	if err != nil {
 		return Recipe{}, err
 	}
@@ -208,15 +208,15 @@ func (s *Service) SuggestRecipe(ctx context.Context) (Recipe, error) {
 	recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, recipeID.String())
 	if err != nil {
 		return recipe, fmt.Errorf("find suggested recipe %q for user %q: %w",
-		recipeID, auth.User, err)
+			recipeID, auth.User, err)
 	}
-	
+
 	return recipe, nil
 }
 
 type MealPlan struct {
 	Recipes []Recipe
-	Week int
+	Week    int
 }
 
 func weekOfYear(t time.Time) int {
@@ -227,9 +227,9 @@ func weekOfYear(t time.Time) int {
 func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint) (MealPlan, error) {
 	mealPlan := MealPlan{
 		Recipes: make([]Recipe, mealCount),
-		Week: weekOfYear(date),
+		Week:    weekOfYear(date),
 	}
-	for i:= uint(0); i< mealCount; i++ {
+	for i := uint(0); i < mealCount; i++ {
 		recipe, err := s.SuggestRecipe(ctx)
 		if err != nil {
 			return mealPlan, err

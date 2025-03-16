@@ -53,6 +53,7 @@ type Recipe struct {
 	UserID            web.UserID
 	CreatedAt         time.Time
 	Title             string
+	Source            string
 	Portions          uint
 	TimeToCompleteMin uint
 	Ingredients       []Ingredient
@@ -211,7 +212,7 @@ func ParseRecipe(rawRecipe string, userID web.UserID) (Recipe, error) {
 	return recipe, nil
 }
 
-func newRecipe(title string, portions, timeToCompleteMin uint, ingredients, steps []string, userID web.UserID) (Recipe, error) {
+func newRecipe(title, source string, portions, timeToCompleteMin uint, ingredients, steps []string, userID web.UserID) (Recipe, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return Recipe{}, fmt.Errorf("generate recipe ID: %w", err)
@@ -222,6 +223,7 @@ func newRecipe(title string, portions, timeToCompleteMin uint, ingredients, step
 		CreatedAt:         time.Now(),
 		UserID:            userID,
 		Title:             title,
+		Source:            source,
 		Steps:             steps,
 		Portions:          portions,
 		TimeToCompleteMin: timeToCompleteMin,

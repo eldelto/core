@@ -4,17 +4,22 @@
   {{with .Data}}
   <h1>{{.Title}}</h1>
 
+  <cite>Source: {{.Source}}</cite>
+
+  <h2>Ingredients</h2>
   <ul>
 	{{range .Ingredients}}
 	<li>{{.String}}</li>
 	{{end}}
   </ul>
 
+  <h2>Info</h2>
   <ul>
 	<li>Time: {{.TimeToCompleteMin}} min</li>
 	<li>Portions: {{.Portions}}</li>
   </ul>
 
+  <h2>Steps</h2>
   {{range .Steps}}
   <p>{{.}}</p>
   {{end}}

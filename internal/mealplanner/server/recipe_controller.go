@@ -55,7 +55,7 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 	}
 }
 
-func renderTemplate(template *web.Template) web.Handler{
+func renderTemplate(template *web.Template) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return template.Execute(w, nil)
 	}
@@ -106,6 +106,7 @@ func postNewRecipe(service *mealplanner.Service) web.Handler {
 
 		recipe, err := service.NewRecipe(r.Context(),
 			r.PostForm.Get("title"),
+			r.PostForm.Get("source"),
 			uint(portions),
 			uint(time),
 			strings.Split(r.PostForm.Get("ingredients"), "\n"),
