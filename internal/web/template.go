@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"path"
-	"path/filepath"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -71,11 +70,11 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 		templateFS: templateFS,
 		assetsFS:   assetsFS,
 		funcs: template.FuncMap{
-			"asset": func(path string) string {
+			"asset": func(assetPath string) string {
 				// TODO: This breaks on Windows
-				path = filepath.Join("assets", path)
-				hash := getFileHash(assetsFS, path)
-				return filepath.Join("/", path+"?h="+hash)
+				assetPath = path.Join("assets", assetPath)
+				hash := getFileHash(assetsFS, assetPath)
+				return path.Join("/", assetPath+"?h="+hash)
 			},
 		},
 	}
