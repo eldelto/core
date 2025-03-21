@@ -178,22 +178,25 @@ func parseMetaData(r *Recipe, step string) error {
 // Meanwhile cook {300 g | spaghetti} in a pot of salted water.
 // ...
 func ParseRecipe(rawRecipe string, userID web.UserID) (Recipe, error) {
-	// TODO: Implement
-
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return Recipe{}, fmt.Errorf("generate recipe ID: %w", err)
 	}
 
-	parts := strings.Split(rawRecipe, "\n\n")
+	parts := strings.Split(rawRecipe, "\n")
 	recipe := Recipe{
 		ID:        id,
 		CreatedAt: time.Now(),
 		UserID:    userID,
 	}
 	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
 		if i == 0 {
-			recipe.Title = strings.TrimSpace(part)
+			recipe.Title = part
 			continue
 		}
 
