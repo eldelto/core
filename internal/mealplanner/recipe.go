@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -241,17 +242,20 @@ func parseIngredientsFromHTML(t *html.Tokenizer, recipe *Recipe) error {
 }
 
 func parseStepFromHTML(t *html.Tokenizer, recipe *Recipe) error {
+	step := ""
+
 	for t.Err() == nil {
 		t.Next()
 		token := t.Token()
 		switch token.Type {
 		case html.TextToken:
-			step := strings.TrimSpace(token.Data)
-			if step != "" {
-				recipe.Steps = append(recipe.Steps, token.Data)
+			s := strings.TrimSpace(token.Data)
+			if s != "" {
+				step += " " + s
 			}
 		case html.EndTagToken:
 			if isTag(token, "li") {
+				recipe.Steps = append(recipe.Steps, strings.TrimSpace(step))
 				return nil
 			}
 		}
@@ -321,13 +325,17 @@ func parseStepsFromHTML(t *html.Tokenizer, recipe *Recipe) error {
 				}
 			}
 		case html.EndTagToken:
-			if isTag(token, "ol") {
+			if isTag(token, "ul") || isTag(token, "ol") {
 				return nil
 			}
 		}
 	}
 
 	return t.Err()
+}
+
+func handleParsingError(url *url.URL, err error) {
+	log.Printf("could not fully parse recipe at %q: %v", url, err)
 }
 
 func parseFromHTML(url *url.URL) (Recipe, error) {
@@ -348,23 +356,23 @@ func parseFromHTML(url *url.URL) (Recipe, error) {
 			switch {
 			case isTag(token, "h2") && hasClass(token, "wprm-recipe-name"):
 				if err := parseTitleFromHTML(t, &recipe); err != nil {
-					return recipe, err
+					handleParsingError(url, err)
 				}
 			case isTag(token, "div") && hasClass(token, "wprm-recipe-container"):
 				if err := parsePortionsFromHTML(token, &recipe); err != nil {
-					return recipe, err
+					handleParsingError(url, err)
 				}
 			case isTag(token, "span") && hasClass(token, "wprm-recipe-details-minutes") && !hasClass(token, "wprm-recipe-details-unit"):
 				if err := parseTimeFromHTML(t, &recipe); err != nil {
-					return recipe, err
+					handleParsingError(url, err)
 				}
 			case isTag(token, "ul") && hasClass(token, "wprm-recipe-ingredients"):
 				if err := parseIngredientsFromHTML(t, &recipe); err != nil {
-					return recipe, err
+					handleParsingError(url, err)
 				}
-			case isTag(token, "ol") && hasClass(token, "wprm-recipe-instructions"):
+			case (isTag(token, "ul") || isTag(token, "ol")) && hasClass(token, "wprm-recipe-instructions"):
 				if err := parseStepsFromHTML(t, &recipe); err != nil {
-					return recipe, err
+					handleParsingError(url, err)
 				}
 			}
 		}
