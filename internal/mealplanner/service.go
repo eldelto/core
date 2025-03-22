@@ -158,7 +158,7 @@ func (s *Service) NewRecipe(ctx context.Context, title, source string, portions,
 		return Recipe{}, err
 	}
 
-	recipe, err := newRecipe(title, source, portions, timeToCompleteMin, ingredients, steps, auth.User)
+	recipe, err := NewRecipe(title, source, portions, timeToCompleteMin, ingredients, steps, auth.User)
 	if err != nil {
 		return recipe, err
 	}

@@ -1,47 +1,33 @@
 package mealplanner
 
-// import (
-// 	"testing"
-// 	"time"
+import (
+	"net/url"
+	"testing"
 
-// 	. "github.com/eldelto/core/internal/testutils"
-// 	"github.com/eldelto/core/internal/web"
-// 	"github.com/google/uuid"
-// )
+	. "github.com/eldelto/core/internal/testutils"
+)
 
-// func TestRecipeParsing(t *testing.T) {
-// 	rawRecipe := `
-// Carbonara
+func TestParseFromHTML(t *testing.T) {
+	t.Skip()
 
-// $Portions: 2
-// $Time: 20
+	url, err := url.Parse("https://spainonafork.com/creamy-seared-salmon-skillet-with-spinach-artichokes/")
+	AssertNoError(t, err, "parse URL")
 
-// Cut {100 g | guanciale} into small pieces and start searing them in
-// a pan with butter.
+	recipe, err := parseFromHTML(url)
+	AssertNoError(t, err, "parse from HTML")
 
-// Meanwhile cook {300 g | spaghetti} in a pot of salted water.
-// `
+	AssertEquals(t, "Creamy Seared Salmon Skillet with Spinach & Artichokes", recipe.Title,
+		"recipe.Title")
+	AssertEquals(t, url.String(), recipe.Source, "recipe.Source")
+	AssertEquals(t, uint(2), recipe.Portions, "recipe.Portions")
+	AssertEquals(t, uint(30), recipe.TimeToCompleteMin, "recipe.TimeToCompleteMin")
+	// AssertEquals(t, "main", recipe.Category, "recipe.Category")
 
-// 	recipe, err := ParseRecipe(rawRecipe, web.UserID{})
-// 	AssertNoError(t, err, "ParseRecipe")
-// 	AssertEquals(t, "Carbonara", recipe.Title, "title")
-// 	AssertNotEquals(t, uuid.UUID{}, recipe.ID, "ID")
-// 	AssertNotEquals(t, time.Time{}, recipe.CreatedAt, "created at")
-// 	AssertEquals(t, uint(2), recipe.Portions, "portions")
-// 	AssertEquals(t, uint(20), recipe.TimeToCompleteMin, "time to complete")
-// 	AssertEquals(t, 2, len(recipe.Ingredients), "ingredients count")
-// 	AssertEquals(t, 2, len(recipe.Steps), "Steps count")
+	AssertEquals(t, 12, len(recipe.Ingredients), "recipe.Ingredients len")
+	ingredient0 := recipe.Ingredients[0]
+	AssertEquals(t, "15", ingredient0.Amount.RatString(), "ingredient0.Amount")
+	AssertEquals(t, "ounce fresh salmon", ingredient0.Name, "ingredient0.Name")
 
-// 	ingredient1 := recipe.Ingredients[0]
-// 	AssertEquals(t, "Guanciale", ingredient1.Name, "ingredient1.Name")
-// 	AssertEquals(t, uint(100), ingredient1.Amount, "ingredient1.Amount")
-// 	AssertEquals(t, "g", ingredient1.Unit, "ingredient1.Unit")
-
-// 	ingredient2 := recipe.Ingredients[1]
-// 	AssertEquals(t, "Spaghetti", ingredient2.Name, "ingredient2.Name")
-// 	AssertEquals(t, uint(300), ingredient2.Amount, "ingredient2.Amount")
-// 	AssertEquals(t, "g", ingredient2.Unit, "ingredient2.Unit")
-
-// 	AssertEquals(t, "Cut 100 g guanciale into small pieces and start searing them in a pan with butter.", recipe.Steps[0], "first step")
-// 	AssertEquals(t, "Meanwhile cook 300 g spaghetti in a pot of salted water.", recipe.Steps[1], "second step")
-// }
+	AssertEquals(t, 4, len(recipe.Steps), "recipe.Steps len")
+	AssertEquals(t, "Cut one 15 ounce piece of fresh salmon into 2 evenly sized fillets, pat them down with paper towels and season with sea salt & black pepper, drain a 15 oz can of artichoke hearts into a sieve and shake off any excess liquid, cut about 6 to 8 artichoke hearts into small pieces, grab 2 cups of tightly packed fresh spinach and roughly chop", recipe.Steps[0], "step0")
+}
