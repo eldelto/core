@@ -11,6 +11,7 @@ import (
 	"math/rand/v2"
 	"net/mail"
 	"net/smtp"
+	"net/url"
 	"time"
 
 	"github.com/eldelto/core/internal/boltutil"
@@ -238,4 +239,19 @@ func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, me
 	}
 
 	return mealPlan, nil
+}
+
+func (s *Service) NewRecipeFromURL(ctx context.Context, url *url.URL) (Recipe, error) {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	recipe, err := parseFromHTML(url)
+	if err != nil {
+		return recipe, err
+	}
+	recipe.UserID = auth.UserID()
+
+	return recipe, nil
 }

@@ -29,7 +29,8 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 		Handlers: map[web.Endpoint]web.Handler{
 			{Method: http.MethodGet, Path: ""}:           getRecipes(service),
 			{Method: http.MethodPost, Path: ""}:          postNewRecipe(service),
-			{Method: http.MethodGet, Path: "new"}:        renderTemplate(newRecipeTemplate),
+			{Method: http.MethodPost, Path: "/from-url"}: parseRecipeFromURL(service),
+			{Method: http.MethodGet, Path: "new"}:        renderTemplate(newRecipeTemplate, &mealplanner.Recipe{}),
 			{Method: http.MethodGet, Path: "{recipeID}"}: getRecipe(service),
 		},
 		Middleware: []web.HandlerProvider{
@@ -55,9 +56,9 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 	}
 }
 
-func renderTemplate(template *web.Template) web.Handler {
+func renderTemplate(template *web.Template, data any) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		return template.Execute(w, nil)
+		return template.Execute(w, data)
 	}
 }
 
@@ -123,5 +124,27 @@ func postNewRecipe(service *mealplanner.Service) web.Handler {
 
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		return nil
+	}
+}
+
+func parseRecipeFromURL(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+
+		source := r.PostForm.Get("source")
+		url, err := url.Parse(source)
+		if err != nil {
+			w.WriteHeader(http.StatusNoContent)
+			return nil
+		}
+
+		recipe, err := service.NewRecipeFromURL(r.Context(), url)
+		if err != nil {
+			return err
+		}
+
+		return newRecipeTemplate.ExecuteFragment(w, "form", &recipe)
 	}
 }

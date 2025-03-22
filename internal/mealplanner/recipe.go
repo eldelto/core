@@ -49,6 +49,26 @@ func parseIngredient(rawIngredient string) (Ingredient, error) {
 	}, nil
 }
 
+type Ingredients []Ingredient
+
+func (in Ingredients) String() string {
+	b := strings.Builder{}
+	for i, ingredient := range in {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(ingredient.String())
+	}
+
+	return b.String()
+}
+
+type Steps []string
+
+func (s Steps) String() string {
+	return strings.Join(s, "\n\n")
+}
+
 type Recipe struct {
 	ID                uuid.UUID
 	UserID            web.UserID
@@ -57,8 +77,8 @@ type Recipe struct {
 	Source            string
 	Portions          uint
 	TimeToCompleteMin uint
-	Ingredients       []Ingredient
-	Steps             []string
+	Ingredients       Ingredients
+	Steps             Steps
 }
 
 func NewRecipe(title, source string, portions, timeToCompleteMin uint, ingredients, steps []string, userID web.UserID) (Recipe, error) {
