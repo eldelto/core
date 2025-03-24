@@ -27,11 +27,13 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/recipes",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: ""}:           getRecipes(service),
-			{Method: http.MethodPost, Path: ""}:          postNewRecipe(service),
-			{Method: http.MethodPost, Path: "/from-url"}: parseRecipeFromURL(service),
-			{Method: http.MethodGet, Path: "new"}:        renderTemplate(newRecipeTemplate, &mealplanner.Recipe{}),
-			{Method: http.MethodGet, Path: "{recipeID}"}: getRecipe(service),
+			{Method: http.MethodGet, Path: ""}:                getRecipes(service),
+			{Method: http.MethodPost, Path: ""}:               postNewRecipe(service),
+			{Method: http.MethodPost, Path: "/from-url"}:      parseRecipeFromURL(service),
+			{Method: http.MethodGet, Path: "new"}:             renderTemplate(newRecipeTemplate, &mealplanner.Recipe{}),
+			{Method: http.MethodGet, Path: "{recipeID}"}:      getRecipe(service),
+			{Method: http.MethodGet, Path: "{recipeID}/edit"}: editRecipe(service),
+			{Method: http.MethodPost, Path: "{recipeID}"}:     updateRecipe(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -146,5 +148,73 @@ func parseRecipeFromURL(service *mealplanner.Service) web.Handler {
 		}
 
 		return newRecipeTemplate.ExecuteFragment(w, "form", &recipe)
+	}
+}
+
+func editRecipe(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		rawID := chi.URLParam(r, "recipeID")
+		recipeID, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		recipe, err := service.GetRecipe(r.Context(), recipeID)
+		if err != nil {
+			return err
+		}
+
+		return newRecipeTemplate.Execute(w, &recipe)
+	}
+}
+
+func parseRecipeFromForm(r *http.Request) (mealplanner.Recipe, error) {
+	if err := r.ParseForm(); err != nil {
+		return mealplanner.Recipe{}, err
+	}
+
+	portions, err := strconv.ParseUint(r.PostForm.Get("portions"), 10, 64)
+	if err != nil {
+		return mealplanner.Recipe{}, fmt.Errorf("parse ingredient amount: %w", err)
+	}
+	time, err := strconv.ParseUint(r.PostForm.Get("time"), 10, 64)
+	if err != nil {
+		return mealplanner.Recipe{}, fmt.Errorf("parse time amount: %w", err)
+	}
+
+	return mealplanner.Recipe{
+		Title:             r.PostForm.Get("title"),
+		Source:            r.PostForm.Get("source"),
+		Portions:          uint(portions),
+		TimeToCompleteMin: uint(time),
+		Ingredients:       mealplanner.ParseIngredients(strings.Split(r.PostForm.Get("ingredients"), "\n")),
+		Steps:             strings.Split(r.PostForm.Get("steps"), "\n"),
+	}, nil
+}
+
+func updateRecipe(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		rawID := chi.URLParam(r, "recipeID")
+		recipeID, err := uuid.Parse(rawID)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+		}
+
+		recipe, err := parseRecipeFromForm(r)
+		if err != nil {
+			return err
+		}
+
+		if err := service.UpdateRecipe(r.Context(), recipeID, &recipe); err != nil {
+			return err
+		}
+
+		redirectURL, err := url.JoinPath("/recipes", recipe.ID.String())
+		if err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		return nil
 	}
 }

@@ -255,3 +255,33 @@ func (s *Service) NewRecipeFromURL(ctx context.Context, url *url.URL) (Recipe, e
 
 	return recipe, nil
 }
+
+func (s *Service) UpdateRecipe(ctx context.Context, id uuid.UUID, recipe *Recipe) error {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.GetRecipe(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// TODO: This should be able to return an error.
+	err = boltutil.Update(s.db, recipeBucket, id.String(), func(oldRecipe *Recipe) *Recipe {
+		if oldRecipe == nil {
+			return nil
+		}
+
+		recipe.ID = oldRecipe.ID
+		recipe.UserID = oldRecipe.UserID
+		recipe.CreatedAt = oldRecipe.CreatedAt
+
+		return recipe
+	})
+	if err != nil {
+		return fmt.Errorf("update recipe %q for user %q: %w", recipe.ID, auth.User, err)
+	}
+
+	return nil
+}

@@ -2,6 +2,8 @@
 
 <div class="recipe">
   {{with .Data}}
+  <a href="/recipes/{{.ID}}/edit">Edit</a>
+  
   <h1>{{.Title}}</h1>
 
   <cite>Source: {{.Source}}</cite>

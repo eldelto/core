@@ -52,6 +52,20 @@ func parseIngredient(rawIngredient string) (Ingredient, error) {
 
 type Ingredients []Ingredient
 
+func ParseIngredients(rawIngredients []string) Ingredients {
+	ingredients := Ingredients{}
+	for _, rawIngredient := range rawIngredients {
+		ingredient, err := parseIngredient(rawIngredient)
+		if err != nil {
+			log.Printf("parse ingredients: %v", err)
+			continue
+		}
+		ingredients = append(ingredients, ingredient)
+	}
+
+	return ingredients
+}
+
 func (in Ingredients) String() string {
 	b := strings.Builder{}
 	for i, ingredient := range in {
@@ -94,17 +108,10 @@ func NewRecipe(title, source string, portions, timeToCompleteMin uint, ingredien
 		UserID:            userID,
 		Title:             title,
 		Source:            source,
+		Ingredients:       ParseIngredients(ingredients),
 		Steps:             steps,
 		Portions:          portions,
 		TimeToCompleteMin: timeToCompleteMin,
-	}
-
-	for _, rawIngredient := range ingredients {
-		ingredient, err := parseIngredient(rawIngredient)
-		if err != nil {
-			return recipe, err
-		}
-		recipe.Ingredients = append(recipe.Ingredients, ingredient)
 	}
 
 	return recipe, nil
