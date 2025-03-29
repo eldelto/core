@@ -19,7 +19,8 @@ func NewMealPlanController(service *mealplanner.Service) *web.Controller {
 	return &web.Controller{
 		BasePath: "/meal-plans",
 		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "new"}: newMealPlan(service),
+			{Method: http.MethodGet, Path: "new"}:         newMealPlan(service),
+			{Method: http.MethodGet, Path: "reroll/{id}"}: rerollRecipe(service),
 		},
 		Middleware: []web.HandlerProvider{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
@@ -52,5 +53,20 @@ func newMealPlan(service *mealplanner.Service) web.Handler {
 		}
 
 		return newMealPlanTemplate.Execute(w, mealPlan)
+	}
+}
+
+func rerollRecipe(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		recipe, err := service.SuggestRecipe(r.Context())
+		if err != nil {
+			return err
+		}
+
+		data := mealplanner.MealPlan{
+			Recipes: []mealplanner.Recipe{recipe},
+		}
+
+		return newMealPlanTemplate.ExecuteFragment(w, "recipe", data)
 	}
 }

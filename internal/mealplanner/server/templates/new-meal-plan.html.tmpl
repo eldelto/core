@@ -3,15 +3,20 @@
 <div>
   <h1>Meal plan for week {{.Data.Week}}</h1>
   
+  {{block "recipe" .}}
   {{range .Data.Recipes }}
-  <a href="/recipes/{{.ID}}">
-	<div class="recipe-card">
+  <div class="recipe-card">
+	<a href="/recipes/{{.ID}}">
 	  <h3>{{.Title}}</h3>
 	  <span>{{.TimeToCompleteMin}} min</span>
-	</div>
-  </a>
-  
-  <a href="/meal-plans/reroll/{{.ID}}">Reroll</a>
+	</a>
+	
+	<button class="secondary"
+			hx-get="/meal-plans/reroll/{{.ID}}"
+			hx-target="closest .recipe-card"
+			hx-swap="outerHTML">Reroll</button>
+  </div>
+  {{end}}
   {{end}}
 
   <form method="POST" action="/meal-plans">
