@@ -24,7 +24,7 @@ func NewArticleController(service *blog.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "/articles"}:        getArticles(service, false),
 			{Method: http.MethodGet, Path: "/articles/drafts"}: getArticles(service, true),
 		},
-		Middleware: []web.HandlerProvider{
+		Middleware: []web.Middleware{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 			web.CachingMiddleware(3600),
 		},

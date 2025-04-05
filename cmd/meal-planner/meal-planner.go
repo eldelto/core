@@ -73,6 +73,11 @@ func main() {
 	server.NewMealPlanController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)
 
+	r.Route("/user", func(r chi.Router) {
+		r.Use(auth.Middleware)
+		r.Mount("/recipes", server.NewRecipeController2(service).Handler())
+	})
+
 	http.Handle("/", r)
 
 	log.Printf("Meal-Planner listening on localhost:%d with host %q", port, host)

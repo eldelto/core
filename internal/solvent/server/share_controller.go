@@ -19,7 +19,7 @@ func NewShareController(service *solvent.Service) *web.Controller {
 		Handlers: map[web.Endpoint]web.Handler{
 			{Method: http.MethodGet, Path: "/user/{userID}/list/{listID}"}: receiveShare(service),
 		},
-		Middleware: []web.HandlerProvider{
+		Middleware: []web.Middleware{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {

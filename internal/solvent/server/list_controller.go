@@ -87,7 +87,7 @@ func NewListController(service *solvent.Service) *web.Controller {
 			{Method: http.MethodPost, Path: "{listID}/copy"}:        copyList(service),
 			{Method: http.MethodGet, Path: "{listID}/share"}:        shareList(service),
 		},
-		Middleware: []web.HandlerProvider{
+		Middleware: []web.Middleware{
 			shareTokenAuthMiddleware,
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},

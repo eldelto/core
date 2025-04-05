@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/eldelto/core/internal/boltutil"
+	"github.com/eldelto/core/internal/errs"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
@@ -178,7 +179,7 @@ func (a *Authenticator) Controller() *Controller {
 			{Method: http.MethodGet, Path: "session"}:    a.authenticate(),
 			{Method: http.MethodDelete, Path: "session"}: logout(),
 		},
-		Middleware: []HandlerProvider{
+		Middleware: []Middleware{
 			a.forwardingMiddleware,
 			a.Middleware,
 		},
@@ -417,7 +418,7 @@ func (r *BBoltAuthRepository) FindToken(id TokenID) (Token, error) {
 func (r *BBoltAuthRepository) ResolveUserID(email mail.Address) (UserID, error) {
 	userID, err := boltutil.Find[UserID](r.db, emailMappingBucket, email.String())
 	switch {
-	case errors.Is(err, boltutil.ErrNotFound):
+	case errors.Is(err, &errs.ErrNotFound{}):
 		rawUserID, err := uuid.NewRandom()
 		if err != nil {
 			return UserID{}, fmt.Errorf("failed to generate new user ID: %w", err)

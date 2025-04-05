@@ -19,20 +19,108 @@ import (
 var startupTime = time.Now()
 
 type Endpoint struct {
-	Path   string
 	Method string
+	Path   string
 }
 
 type Handler func(http.ResponseWriter, *http.Request) error
 
-type HandlerProvider func(http.Handler) http.Handler
+type Middleware func(http.Handler) http.Handler
+
+type ErrorHandler2 func(err error, w http.ResponseWriter, r *http.Request) (string, bool)
+
+type ErrorHandlerChain []ErrorHandler2
+
+func (chain *ErrorHandlerChain) AddErrorHandler(handler ErrorHandler2) {
+	*chain = append(*chain, handler)
+}
+
+func (chain ErrorHandlerChain) BuildErrorHandler(errorTemplate *Template) func(Handler) http.Handler {
+	return func(handler Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := handler(w, r)
+			if err == nil {
+				return
+			}
+
+			log.Printf("unhandled error: %s", err.Error())
+			fmt.Println("error handling")
+
+			message := ""
+			for _, errorHandler := range chain {
+				msg, ok := errorHandler(err, w, r)
+				if ok {
+					message = msg
+					break
+				}
+			}
+
+			if message == "" {
+				message = "Something went wrong... Please try again."
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+
+			if err := errorTemplate.Execute(w, message); err != nil {
+				panic(err)
+			}
+		})
+	}
+}
+
+func defaultErrorHandler(handler Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := handler(w, r)
+		if err == nil {
+			return
+		}
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	})
+}
+
+type Controller2 struct {
+	handler      map[Endpoint]Handler
+	middleware   []Middleware
+	ErrorHandler func(handler Handler) http.Handler
+}
+
+func NewController() *Controller2 {
+	return &Controller2{
+		handler:      map[Endpoint]Handler{},
+		middleware:   []Middleware{},
+		ErrorHandler: defaultErrorHandler,
+	}
+}
+
+func (c *Controller2) AddMiddleware(m Middleware) {
+	c.middleware = append(c.middleware, m)
+}
+
+func (c *Controller2) GET(path string, handler Handler) {
+	c.handler[Endpoint{http.MethodGet, path}] = handler
+}
+
+func (c *Controller2) Handler() http.Handler {
+	r := chi.NewRouter()
+
+	for _, m := range c.middleware {
+		r.Use(m)
+	}
+
+	for endpoint, handler := range c.handler {
+		r.Method(endpoint.Method, endpoint.Path, c.ErrorHandler(handler))
+		log.Printf("Registered endpoint %s %s", endpoint.Method, endpoint.Path)
+	}
+
+	return r
+}
 
 type ErrorHandler func(http.ResponseWriter, *http.Request, error) Handler
 
 type Controller struct {
 	BasePath     string
 	Handlers     map[Endpoint]Handler
-	Middleware   []HandlerProvider
+	Middleware   []Middleware
 	ErrorHandler ErrorHandler
 }
 
@@ -52,7 +140,7 @@ func (c *Controller) middleware(handler Handler) http.Handler {
 	return next
 }
 
-func (c *Controller) AddMiddleware(m HandlerProvider) *Controller {
+func (c *Controller) AddMiddleware(m Middleware) *Controller {
 	c.Middleware = append(c.Middleware, m)
 	return c
 }
@@ -71,7 +159,7 @@ func NewAssetController(basePath string, fileSystem fs.FS) *Controller {
 		Handlers: map[Endpoint]Handler{
 			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
 		},
-		Middleware: []HandlerProvider{CachingMiddleware(3600)},
+		Middleware: []Middleware{CachingMiddleware(3600)},
 	}
 
 	if basePath != "" {
@@ -88,7 +176,7 @@ func NewCacheBustingAssetController(basePath string, fileSystem fs.FS) *Controll
 		Handlers: map[Endpoint]Handler{
 			{Method: "GET", Path: "/assets/*"}: getAsset(fileSystem),
 		},
-		Middleware: []HandlerProvider{StaticContentMiddleware},
+		Middleware: []Middleware{StaticContentMiddleware},
 	}
 
 	if basePath != "" {
@@ -100,8 +188,7 @@ func NewCacheBustingAssetController(basePath string, fileSystem fs.FS) *Controll
 }
 
 func getAsset(fileSystem fs.FS) Handler {
-	// TODO: Migrate to http.FileServerFS
-	next := http.FileServer(http.FS(fileSystem))
+	next := http.FileServerFS(fileSystem)
 
 	return func(w http.ResponseWriter, r *http.Request) error {
 		next.ServeHTTP(w, r)

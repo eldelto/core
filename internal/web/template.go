@@ -147,7 +147,7 @@ func (m *TemplateModule) Controller() *Controller {
 			{Method: http.MethodGet, Path: "/"}:                                  m.getTemplate(),
 			{Method: http.MethodGet, Path: "/{" + templatePathUrlParam + ":.*}"}: m.getTemplate(),
 		},
-		Middleware: []HandlerProvider{middleware.Compress(5)},
+		Middleware: []Middleware{middleware.Compress(5)},
 	}
 
 	return &c

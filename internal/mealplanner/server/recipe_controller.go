@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/eldelto/core/internal/errs"
 	"github.com/eldelto/core/internal/mealplanner"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
@@ -21,7 +22,40 @@ var (
 	recipesTemplate   = templater.GetP("recipes.html")
 	recipeTemplate    = templater.GetP("recipe.html")
 	newRecipeTemplate = templater.GetP("new-recipe.html")
+
+	errorTemplate = templater.GetP("error.html")
 )
+
+func NewRecipeController2(service *mealplanner.Service) *web.Controller2 {
+	c := web.NewController()
+
+	c.AddMiddleware(web.ContentTypeMiddleware(web.ContentTypeHTML))
+
+	errChain := web.ErrorHandlerChain{}
+	errChain.AddErrorHandler(func(err error, w http.ResponseWriter, r *http.Request) (string, bool) {
+		var target *errs.ErrNotFound
+		if !errors.As(err, &target) {
+			return "", false
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+		return target.Error(), true
+	})
+	errChain.AddErrorHandler(func(err error, w http.ResponseWriter, r *http.Request) (string, bool) {
+		var target *errs.ErrNotAuthenticated
+		if !errors.As(err, &target) {
+			return "", false
+		}
+
+		w.WriteHeader(http.StatusUnauthorized)
+		return target.Error(), true
+	})
+	c.ErrorHandler = errChain.BuildErrorHandler(errorTemplate)
+
+	c.GET("/{recipeID}", getRecipe(service))
+
+	return c
+}
 
 func NewRecipeController(service *mealplanner.Service) *web.Controller {
 	return &web.Controller{
@@ -35,7 +69,7 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "{recipeID}/edit"}: editRecipe(service),
 			{Method: http.MethodPost, Path: "{recipeID}"}:     updateRecipe(service),
 		},
-		Middleware: []web.HandlerProvider{
+		Middleware: []web.Middleware{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {

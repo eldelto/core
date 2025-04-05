@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/eldelto/core/internal/boltutil"
+	"github.com/eldelto/core/internal/errs"
 	"go.etcd.io/bbolt"
 )
 
@@ -35,7 +36,7 @@ func (cp *ConfigProvider) Get(key string) (string, error) {
 	switch {
 	case err == nil:
 		return value, nil
-	case !errors.Is(err, boltutil.ErrNotFound):
+	case !errors.Is(err, &errs.ErrNotFound{}):
 		return "", fmt.Errorf("config provider get value for %q: %w", key, err)
 	}
 

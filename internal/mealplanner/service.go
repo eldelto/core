@@ -16,6 +16,7 @@ import (
 
 	"github.com/eldelto/core/internal/boltutil"
 	"github.com/eldelto/core/internal/collections"
+	"github.com/eldelto/core/internal/errs"
 	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -119,7 +120,7 @@ func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
 	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
 	switch {
 	case err == nil:
-	case errors.Is(err, boltutil.ErrNotFound):
+	case errors.Is(err, &errs.ErrNotFound{}):
 		log.Printf("warn - could not find user data for user %q", auth.User)
 		return []Recipe{}, nil
 	default:

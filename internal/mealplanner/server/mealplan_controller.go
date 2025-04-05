@@ -22,7 +22,7 @@ func NewMealPlanController(service *mealplanner.Service) *web.Controller {
 			{Method: http.MethodGet, Path: "new"}:         newMealPlan(service),
 			{Method: http.MethodGet, Path: "reroll/{id}"}: rerollRecipe(service),
 		},
-		Middleware: []web.HandlerProvider{
+		Middleware: []web.Middleware{
 			web.ContentTypeMiddleware(web.ContentTypeHTML),
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {

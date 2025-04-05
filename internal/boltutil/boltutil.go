@@ -3,13 +3,11 @@ package boltutil
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 
+	"github.com/eldelto/core/internal/errs"
 	"go.etcd.io/bbolt"
 )
-
-var ErrNotFound = errors.New("element not found")
 
 func EnsureBucketExists(db *bbolt.DB, bucketName string) error {
 	return db.Update(func(tx *bbolt.Tx) error {
@@ -32,7 +30,7 @@ func Find[T any](db *bbolt.DB, bucketName, key string) (T, error) {
 		value := bucket.Get([]byte(key))
 		if value == nil {
 			return fmt.Errorf("get value - bucket=%q, key=%q: %w",
-				bucketName, key, ErrNotFound)
+				bucketName, key, errs.NotFound(key, bucketName))
 		}
 
 		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&result); err != nil {
