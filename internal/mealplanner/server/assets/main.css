@@ -29,6 +29,7 @@
 
 body {
     font-family: 'Chilanka-Regular', sans-serif;
+    font-size: large;
     background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
     color: var(--text-color);
     margin: 0;
@@ -46,6 +47,7 @@ header {
     color: var(--text-color);
     text-align: center;
     font-family: 'Chilanka-Regular', sans-serif;
+    font-size: x-large;
     border-radius: var(--border-radius);
     position: relative; /* Header ist nicht fixiert */
 }
@@ -60,7 +62,7 @@ header a:hover {
 }
 
 main {
-    width: 90%;
+    width: 100%;
     max-width: 800px;
     background-color: white;
     padding: 2em;
@@ -82,14 +84,27 @@ footer {
     position: relative;
 }
 
-button, .primary {
+.primary {
     background-color: var(--button-color);
-    border: none;
+    border: 2px solid #ffd700;
     padding: 0.5em 1em;
     border-radius: var(--border-radius);
     cursor: pointer;
     font-family: 'Chilanka-Regular', sans-serif;
+    font-size: 1em;
+    max-width: 7em;
     transition: background-color 0.3s ease;
+}
+
+button.secondary {
+    background-color: var(--button-color);
+    border: none;
+    padding: 0.5em 1.5em;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: 'Chilanka-Regular', sans-serif;
+    font-size: 0.8em;
+    max-width: 8em;
 }
 
 button:hover, .primary:hover {
@@ -125,4 +140,18 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+#content{
+    width: 80%;
+}
+
+.recipe-card {
+margin: 1em;
+}
+
+.recipe-card button {
+float:right;
+box-shadow: 5px 4px 4px 0px #add8e685;
+border: 1.5px solid #ffd700;
 }
