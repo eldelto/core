@@ -5,9 +5,17 @@ plus a bunch of helper libraries.
 
 It contains the following somewhat finished projects:
 
+## Flake Finder
+
+A CLI tool to identify flaky tests or flaky command behaviour in
+general.
+
+Please see the project's [README](/cmd/flake-finder/README.md) for more
+information.
+
 ## Worklog
 
-CLI tool so automate work time bookings to Jira Tempo and Personio.
+A CLI tool so automate work time bookings to Jira Tempo and Personio.
 
 Please see the project's [README](/cmd/worklog/README.md) for more
 information.
