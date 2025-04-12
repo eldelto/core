@@ -154,13 +154,13 @@ func (s *Service) GetRecipe(ctx context.Context, id uuid.UUID) (Recipe, error) {
 	return recipe, nil
 }
 
-func (s *Service) NewRecipe(ctx context.Context, title, source string, portions, timeToCompleteMin uint, ingredients, steps []string) (Recipe, error) {
+func (s *Service) NewRecipe(ctx context.Context, title, source string, portions, timeToCompleteMin uint, category string, ingredients, steps []string) (Recipe, error) {
 	auth, err := getUserAuth(ctx)
 	if err != nil {
 		return Recipe{}, err
 	}
 
-	recipe, err := NewRecipe(title, source, portions, timeToCompleteMin, ingredients, steps, auth.User)
+	recipe, err := NewRecipe(title, source, portions, timeToCompleteMin, category, ingredients, steps, auth.User)
 	if err != nil {
 		return recipe, err
 	}

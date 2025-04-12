@@ -146,6 +146,7 @@ func postNewRecipe(service *mealplanner.Service) web.Handler {
 			r.PostForm.Get("source"),
 			uint(portions),
 			uint(time),
+			r.PostForm.Get("category"),
 			strings.Split(r.PostForm.Get("ingredients"), "\n"),
 			strings.Split(r.PostForm.Get("steps"), "\n"),
 		)

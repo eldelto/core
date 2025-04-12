@@ -84,6 +84,47 @@ func (s Steps) String() string {
 	return strings.Join(s, "\n\n")
 }
 
+type Category uint
+
+const (
+	CategoryMain = Category(iota)
+	CategoryBreakfast
+	CategorySide
+	CategoryOther
+)
+
+func (c Category) String() string {
+	switch c {
+	case CategoryMain:
+		return "main"
+	case CategoryBreakfast:
+		return "breakfast"
+	case CategorySide:
+		return "side"
+	case CategoryOther:
+		return "other"
+	default:
+		panic(fmt.Sprintf("unknown category: %d", c))
+	}
+}
+
+func (c Category) All() []Category {
+	return []Category{CategoryMain, CategoryBreakfast, CategorySide, CategoryOther}
+}
+
+func ParseCategory(s string) Category {
+	switch s {
+	case "main":
+		return CategoryMain
+	case "breakfast":
+		return CategoryBreakfast
+	case "side":
+		return CategorySide
+	default:
+		return CategoryOther
+	}
+}
+
 type Recipe struct {
 	ID                uuid.UUID
 	UserID            web.UserID
@@ -92,11 +133,12 @@ type Recipe struct {
 	Source            string
 	Portions          uint
 	TimeToCompleteMin uint
+	Category          Category
 	Ingredients       Ingredients
 	Steps             Steps
 }
 
-func NewRecipe(title, source string, portions, timeToCompleteMin uint, ingredients, steps []string, userID web.UserID) (Recipe, error) {
+func NewRecipe(title, source string, portions, timeToCompleteMin uint, category string, ingredients, steps []string, userID web.UserID) (Recipe, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return Recipe{}, fmt.Errorf("generate recipe ID: %w", err)
@@ -108,6 +150,7 @@ func NewRecipe(title, source string, portions, timeToCompleteMin uint, ingredien
 		UserID:            userID,
 		Title:             title,
 		Source:            source,
+		Category:          ParseCategory(category),
 		Ingredients:       ParseIngredients(ingredients),
 		Steps:             steps,
 		Portions:          portions,

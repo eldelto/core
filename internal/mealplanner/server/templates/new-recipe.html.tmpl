@@ -2,7 +2,7 @@
 
 <div class="recipe">
   {{block "form" .}}
-  <form class="form" method="POST" action="/recipes">
+  <form class="form" method="POST" action="/recipes{{if .Data.ID}}/{{.Data.ID}}{{end}}">
 	<div class="form-group">
 	  <label for="source">Source:</label>
 	  <input type="text" id="source" name="source"
@@ -10,22 +10,34 @@
 			 hx-target="closest form"
 			 hx-swap="outerHTML"
 			 hx-trigger="change" value="{{.Data.Source}}"></input>
-	  
+
 	  <label for="title">Title:</label>
 	  <input type="text" id="title" name="title" value="{{.Data.Title}}"></input>
-	  
+
 	  <label for="portions">Portions:</label>
 	  <input type="number" id="portions" name="portions" value="{{.Data.Portions}}"></input>
-	  
+
 	  <label for="time">Time [minutes]:</label>
 	  <input type="number" id="time" name="time" value="{{.Data.TimeToCompleteMin}}"></input>
-	  
+
+	  <!-- TODO: Select proper type -->
+	  <label for="category">Category:</label>
+	  <select id="category" name="category">
+		{{range .Data.Category.All}}
+		<option value="{{.String}}"
+				{{if eq .String
+				$.Data.Category.String}}selected{{end}}>
+		  {{.String}}
+		</option>
+		{{end}}
+	  </select>
+
 	  <label for="ingredients">Ingredients:</label>
 	  <textarea id="ingredients" name="ingredients">{{.Data.Ingredients}}</textarea>
-	  
+
 	  <label for="steps">Steps:</label>
 	  <textarea id="steps" name="steps">{{.Data.Steps}}</textarea>
-	  
+
 	  <input class="primary" type="submit" value="Create"></input>
 	</div>
   </form>
