@@ -28,6 +28,11 @@ func (s *Set[T]) Slice() []T {
 	return result
 }
 
+func (s *Set[T]) Contains(key T) bool {
+	_, ok := s.m[key]
+	return ok
+}
+
 func (s *Set[T]) Difference(other Set[T]) []T {
 	result := []T{}
 	for k := range s.m {

@@ -45,9 +45,13 @@ func NewMealPlanController(service *mealplanner.Service) *web.Controller {
 	}
 }
 
+func recipeFilter(r mealplanner.Recipe) bool {
+	return r.Category == mealplanner.CategoryMain
+}
+
 func newMealPlan(service *mealplanner.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		mealPlan, err := service.GenerateWeeklyMealPlan(r.Context(), time.Now(), 3)
+		mealPlan, err := service.GenerateWeeklyMealPlan(r.Context(), time.Now(), 3, recipeFilter)
 		if err != nil {
 			return err
 		}
@@ -58,7 +62,7 @@ func newMealPlan(service *mealplanner.Service) web.Handler {
 
 func rerollRecipe(service *mealplanner.Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		recipe, err := service.SuggestRecipe(r.Context())
+		recipe, err := service.SuggestRecipe(r.Context(), recipeFilter)
 		if err != nil {
 			return err
 		}

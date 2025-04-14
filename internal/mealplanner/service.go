@@ -187,7 +187,20 @@ func (s *Service) NewRecipe(ctx context.Context, title, source string, portions,
 	return recipe, nil
 }
 
-func (s *Service) SuggestRecipe(ctx context.Context) (Recipe, error) {
+func (s *Service) loadRecipes(ids []uuid.UUID) ([]Recipe, error) {
+	recipes := make([]Recipe, len(ids))
+	for i, id := range ids {
+		recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, id.String())
+		if err != nil {
+			return nil, fmt.Errorf("get recipe %q: %w", id, err)
+		}
+		recipes[i] = recipe
+	}
+
+	return recipes, nil
+}
+
+func (s *Service) SuggestRecipe(ctx context.Context, filter func(Recipe) bool) (Recipe, error) {
 	auth, err := getUserAuth(ctx)
 	if err != nil {
 		return Recipe{}, err
@@ -201,10 +214,20 @@ func (s *Service) SuggestRecipe(ctx context.Context) (Recipe, error) {
 		return Recipe{}, fmt.Errorf("can't suggest recipe as user %q doesn't have any recipes", auth.User)
 	}
 
-	recipes := collections.SetFromSlice(data.Recipes)
 	lastEaten := collections.SetFromSlice(data.LastEaten)
-	possibleRecipes := recipes.Difference(lastEaten)
+	allRecipes, err := s.loadRecipes(data.Recipes)
+	if err != nil {
+		return Recipe{}, err
+	}
 
+	possibleRecipes := make([]Recipe, 0, len(allRecipes))
+	for _, r := range allRecipes {
+		if filter(r) && !lastEaten.Contains(r.ID) {
+			possibleRecipes = append(possibleRecipes, r)
+		}
+	}
+
+	rand := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	i := rand.IntN(len(possibleRecipes))
 	recipeID := data.Recipes[i]
 	recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, recipeID.String())
@@ -226,13 +249,14 @@ func weekOfYear(t time.Time) int {
 	return week
 }
 
-func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint) (MealPlan, error) {
+func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint, filter func(Recipe) bool) (MealPlan, error) {
 	mealPlan := MealPlan{
 		Recipes: make([]Recipe, mealCount),
 		Week:    weekOfYear(date),
 	}
 	for i := uint(0); i < mealCount; i++ {
-		recipe, err := s.SuggestRecipe(ctx)
+		// TODO: Doing single suggestions in a loop is very inefficient.
+		recipe, err := s.SuggestRecipe(ctx, filter)
 		if err != nil {
 			return mealPlan, err
 		}
