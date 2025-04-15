@@ -100,6 +100,10 @@ func (c *Controller2) GET(path string, handler Handler) {
 	c.handler[Endpoint{http.MethodGet, path}] = handler
 }
 
+func (c *Controller2) POST(path string, handler Handler) {
+	c.handler[Endpoint{http.MethodPost, path}] = handler
+}
+
 func (c *Controller2) Handler() http.Handler {
 	r := chi.NewRouter()
 

@@ -2,27 +2,25 @@
 
 <div>
   <h1>Meal plan for week {{.Data.Week}}</h1>
-  
-  {{block "recipe" .}}
-  {{range .Data.Recipes }}
-  <div class="recipe-card">
-	<a href="/recipes/{{.ID}}">
-	  <h3>{{.Title}}</h3>
-	  <span>{{.TimeToCompleteMin}} min</span>
-	</a>
-	
-	<button class="secondary"
-			hx-get="/meal-plans/reroll/{{.ID}}"
-			hx-target="closest .recipe-card"
-			hx-swap="outerHTML">Reroll</button>
-  </div>
-  {{end}}
-  {{end}}
 
-  <form method="POST" action="/meal-plans">
-	<input type="hidden" name="week" value="{{.Data.Week}}"></input>
+  <form method="POST" action="/user/meal-plans">
+	
+	{{block "recipe" .}}
 	{{range .Data.Recipes }}
-	<input type="hidden" name="recipeID" value="{{.ID}}"></input>
+	<div class="recipe-card">
+	  <input type="hidden" name="recipe" value="{{.ID}}"></input>
+	  
+	  <a href="/recipes/{{.ID}}">
+		<h3>{{.Title}}</h3>
+		<span>{{.TimeToCompleteMin}} min</span>
+	  </a>
+	  
+	  <button class="secondary"
+			  hx-get="/user/meal-plans/reroll/{{.ID}}"
+			  hx-target="closest .recipe-card"
+			  hx-swap="outerHTML">Reroll</button>
+	</div>
+	{{end}}
 	{{end}}
 
 	<input class="primary" type="submit" value="Create"></input>

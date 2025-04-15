@@ -70,12 +70,12 @@ func main() {
 	web.NewCacheBustingAssetController("", server.AssetsFS).Register(r)
 	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil).Controller().Register(r)
 	server.NewRecipeController(service).AddMiddleware(auth.Middleware).Register(r)
-	server.NewMealPlanController(service).AddMiddleware(auth.Middleware).Register(r)
 	auth.Controller().Register(r)
 
 	r.Route("/user", func(r chi.Router) {
 		r.Use(auth.Middleware)
 		r.Mount("/recipes", server.NewRecipeController2(service).Handler())
+		r.Mount("/meal-plans", server.NewMealPlanController(service).Handler())
 	})
 
 	http.Handle("/", r)

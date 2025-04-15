@@ -24,13 +24,10 @@ var (
 	newRecipeTemplate = templater.GetP("new-recipe.html")
 
 	errorTemplate = templater.GetP("error.html")
+	errorHandler  = buildErrorHandler()
 )
 
-func NewRecipeController2(service *mealplanner.Service) *web.Controller2 {
-	c := web.NewController()
-
-	c.AddMiddleware(web.ContentTypeMiddleware(web.ContentTypeHTML))
-
+func buildErrorHandler() func(web.Handler) http.Handler {
 	errChain := web.ErrorHandlerChain{}
 	errChain.AddErrorHandler(func(err error, w http.ResponseWriter, r *http.Request) (string, bool) {
 		var target *errs.ErrNotFound
@@ -50,7 +47,14 @@ func NewRecipeController2(service *mealplanner.Service) *web.Controller2 {
 		w.WriteHeader(http.StatusUnauthorized)
 		return target.Error(), true
 	})
-	c.ErrorHandler = errChain.BuildErrorHandler(errorTemplate)
+
+	return errChain.BuildErrorHandler(errorTemplate)
+}
+
+func NewRecipeController2(service *mealplanner.Service) *web.Controller2 {
+	c := web.NewController()
+	c.AddMiddleware(web.ContentTypeMiddleware(web.ContentTypeHTML))
+	c.ErrorHandler = errorHandler
 
 	c.GET("/{recipeID}", getRecipe(service))
 

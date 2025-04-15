@@ -1,48 +1,31 @@
 package server
 
 import (
-	"errors"
-	"io"
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/eldelto/core/internal/mealplanner"
 	"github.com/eldelto/core/internal/web"
+	"github.com/google/uuid"
 )
 
 var (
 	newMealPlanTemplate = templater.GetP("new-meal-plan.html")
+	mealPlansTemplate   = templater.GetP("meal-plans.html")
 )
 
-func NewMealPlanController(service *mealplanner.Service) *web.Controller {
-	return &web.Controller{
-		BasePath: "/meal-plans",
-		Handlers: map[web.Endpoint]web.Handler{
-			{Method: http.MethodGet, Path: "new"}:         newMealPlan(service),
-			{Method: http.MethodGet, Path: "reroll/{id}"}: rerollRecipe(service),
-		},
-		Middleware: []web.Middleware{
-			web.ContentTypeMiddleware(web.ContentTypeHTML),
-		},
-		ErrorHandler: func(w http.ResponseWriter, r *http.Request, outerErr error) web.Handler {
+func NewMealPlanController(service *mealplanner.Service) *web.Controller2 {
+	c := web.NewController()
+	c.AddMiddleware(web.ContentTypeMiddleware(web.ContentTypeHTML))
+	c.ErrorHandler = errorHandler
 
-			return func(w http.ResponseWriter, r *http.Request) error {
-				// TODO: Share this across controllers
-				log.Println(outerErr)
+	c.GET("/new", newMealPlan(service))
+	c.GET("/reroll/{id}", rerollRecipe(service))
+	c.POST("/", createMealPlan(service))
+	c.GET("/", listMealPlans(service))
 
-				if errors.Is(outerErr, web.ErrUnauthenticated) {
-					http.Redirect(w, r, web.LoginPath, http.StatusSeeOther)
-					return nil
-				}
-
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Header().Set(web.ContentTypeHeader, web.ContentTypeHTML)
-				_, err := io.WriteString(w, outerErr.Error())
-				return err
-			}
-		},
-	}
+	return c
 }
 
 func recipeFilter(r mealplanner.Recipe) bool {
@@ -67,10 +50,46 @@ func rerollRecipe(service *mealplanner.Service) web.Handler {
 			return err
 		}
 
-		data := mealplanner.MealPlan{
+		data := mealplanner.MealPlanPreview{
 			Recipes: []mealplanner.Recipe{recipe},
 		}
 
 		return newMealPlanTemplate.ExecuteFragment(w, "recipe", data)
+	}
+}
+
+func createMealPlan(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+
+		rawIDs := r.PostForm["recipe"]
+		recipes := []uuid.UUID{}
+		for _, rawID := range rawIDs {
+			id, err := uuid.Parse(rawID)
+			if err != nil {
+				return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
+			}
+			recipes = append(recipes, id)
+		}
+
+		if err := service.CreateMealPlan(r.Context(), recipes); err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, "/user/meal-plans", http.StatusSeeOther)
+		return nil
+	}
+}
+
+func listMealPlans(service *mealplanner.Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		mealPlans, err := service.ListMyMealPlans(r.Context())
+		if err != nil {
+			return err
+		}
+
+		return mealPlansTemplate.Execute(w, mealPlans)
 	}
 }

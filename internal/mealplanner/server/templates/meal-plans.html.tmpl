@@ -1,0 +1,21 @@
+{{define "content"}}
+
+<div>
+  {{range .Data }}
+  <div class="meal-plan">
+	<h2>Meal plan for week {{.Week}}</h2>
+	
+	{{range .Recipes}}
+	<a href="/recipes/{{.ID}}">
+	  <div class="recipe-card">
+		<h3>{{.Title}}</h3>
+		<span>{{.TimeToCompleteMin}} min</span>
+	  </div>
+	</a>
+	{{end}}
+	
+  </div>
+  {{end}}
+</div>
+
+{{end}}

@@ -109,6 +109,7 @@ type userData struct {
 	ID        web.UserID
 	Recipes   []uuid.UUID
 	LastEaten []uuid.UUID
+	MealPlans []MealPlan
 }
 
 func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
@@ -239,33 +240,6 @@ func (s *Service) SuggestRecipe(ctx context.Context, filter func(Recipe) bool) (
 	return recipe, nil
 }
 
-type MealPlan struct {
-	Recipes []Recipe
-	Week    int
-}
-
-func weekOfYear(t time.Time) int {
-	_, week := t.ISOWeek()
-	return week
-}
-
-func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint, filter func(Recipe) bool) (MealPlan, error) {
-	mealPlan := MealPlan{
-		Recipes: make([]Recipe, mealCount),
-		Week:    weekOfYear(date),
-	}
-	for i := uint(0); i < mealCount; i++ {
-		// TODO: Doing single suggestions in a loop is very inefficient.
-		recipe, err := s.SuggestRecipe(ctx, filter)
-		if err != nil {
-			return mealPlan, err
-		}
-		mealPlan.Recipes[i] = recipe
-	}
-
-	return mealPlan, nil
-}
-
 func (s *Service) NewRecipeFromURL(ctx context.Context, url *url.URL) (Recipe, error) {
 	auth, err := getUserAuth(ctx)
 	if err != nil {
@@ -309,4 +283,105 @@ func (s *Service) UpdateRecipe(ctx context.Context, id uuid.UUID, recipe *Recipe
 	}
 
 	return nil
+}
+
+func week(t time.Time) int {
+	_, week := t.ISOWeek()
+	return week
+}
+
+type MealPlan struct {
+	Recipes   []uuid.UUID
+	CreatedAt time.Time
+}
+
+func (mp *MealPlan) Week() int {
+	return week(mp.CreatedAt)
+}
+
+type MealPlanPreview struct {
+	Recipes []Recipe
+	Week    int
+}
+
+func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, mealCount uint, filter func(Recipe) bool) (MealPlanPreview, error) {
+	mealPlan := MealPlanPreview{
+		Recipes: make([]Recipe, mealCount),
+		Week:    week(date),
+	}
+	for i := uint(0); i < mealCount; i++ {
+		// TODO: Doing single suggestions in a loop is very inefficient.
+		recipe, err := s.SuggestRecipe(ctx, filter)
+		if err != nil {
+			return mealPlan, err
+		}
+		mealPlan.Recipes[i] = recipe
+	}
+
+	return mealPlan, nil
+}
+
+func (s *Service) CreateMealPlan(ctx context.Context, recipes []uuid.UUID) error {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	plan := MealPlan{
+		Recipes:   recipes,
+		CreatedAt: time.Now(),
+	}
+
+	err = boltutil.Update[userData](s.db, userDataBucket, auth.User.String(),
+		func(data userData) userData {
+			data.MealPlans = append(data.MealPlans, plan)
+			return data
+		})
+	if err != nil {
+		return fmt.Errorf("update user data for accepting meal plan: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) ListMyMealPlans(ctx context.Context) ([]MealPlanPreview, error) {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
+	switch {
+	case err == nil:
+	case errors.Is(err, &errs.ErrNotFound{}):
+		log.Printf("warn - could not find user data for user %q", auth.User)
+		return []MealPlanPreview{}, nil
+	default:
+		return nil, fmt.Errorf("get user data for user %q: %w", auth.User, err)
+	}
+
+	recipeCache := map[uuid.UUID]Recipe{}
+	plans := make([]MealPlanPreview, len(data.MealPlans))
+	for i, plan := range data.MealPlans {
+		recipes := make([]Recipe, len(plan.Recipes))
+		for i, id := range plan.Recipes {
+			recipe, ok := recipeCache[id]
+			if !ok {
+				recipe, err = s.GetRecipe(ctx, id)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			recipeCache[id] = recipe
+			recipes[i] = recipe
+		}
+
+		plans[i] = MealPlanPreview{
+			Week:    plan.Week(),
+			Recipes: recipes,
+		}
+	}
+
+	return plans, nil
 }
