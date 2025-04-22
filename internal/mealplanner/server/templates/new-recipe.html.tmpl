@@ -2,7 +2,7 @@
 
 <div class="recipe">
   {{block "form" .}}
-  <form class="form" method="POST" action="/recipes{{if .Data.ID}}/{{.Data.ID}}{{end}}">
+  <form class="form" method="POST" action="/recipes{{if ne .Data.ID.ID 0}}/{{.Data.ID}}{{end}}">
 	<div class="form-group">
 	  <label for="source">Source:</label>
 	  <input type="text" id="source" name="source"

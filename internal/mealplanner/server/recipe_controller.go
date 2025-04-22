@@ -121,6 +121,7 @@ func getRecipe(service *mealplanner.Service) web.Handler {
 			return fmt.Errorf("failed to parse %q as UUID: %w", rawID, err)
 		}
 
+		fmt.Println(uuid.UUID{}.ID())
 		recipe, err := service.GetRecipe(r.Context(), recipeID)
 		if err != nil {
 			return err
