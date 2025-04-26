@@ -70,7 +70,13 @@
 		  </button>
 		</form>
 
-		<span class="ToDoItemTitle">{{.Title}}</span>
+		<span class="ToDoItemTitle">
+		  {{if isURL .Title}}
+		  <a href="{{.Title}}" target="_blank">{{.Title}}</a>
+		  {{else}}
+		  {{.Title}}
+		  {{end}}
+		</span>
 
 		<span class="ToDoItemDragHandle sortHandle" tabindex="0" role="button">
 		  <svg width="24" height="24" viewBox="0 0 24 24">

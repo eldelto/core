@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"path"
 	"time"
 
@@ -59,6 +60,19 @@ func (t *Template) ExecuteFragment(w io.Writer, name string, data any) error {
 	return t.t.ExecuteTemplate(w, name, t.data)
 }
 
+func asset(assetsFS fs.FS) func(string) string {
+	return func(assetPath string) string {
+		assetPath = path.Join("assets", assetPath)
+		hash := getFileHash(assetsFS, assetPath)
+		return path.Join("/", assetPath+"?h="+hash)
+	}
+}
+
+func isURL(s string) bool {
+	url, err := url.Parse(s)
+	return err == nil && url.Scheme != ""
+}
+
 type Templater struct {
 	templateFS fs.FS
 	assetsFS   fs.FS
@@ -70,12 +84,8 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 		templateFS: templateFS,
 		assetsFS:   assetsFS,
 		funcs: template.FuncMap{
-			"asset": func(assetPath string) string {
-				// TODO: This breaks on Windows
-				assetPath = path.Join("assets", assetPath)
-				hash := getFileHash(assetsFS, assetPath)
-				return path.Join("/", assetPath+"?h="+hash)
-			},
+			"asset": asset(assetsFS),
+			"isURL": isURL,
 		},
 	}
 }

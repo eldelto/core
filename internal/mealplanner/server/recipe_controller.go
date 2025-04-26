@@ -226,6 +226,7 @@ func parseRecipeFromForm(r *http.Request) (mealplanner.Recipe, error) {
 		Source:            r.PostForm.Get("source"),
 		Portions:          uint(portions),
 		TimeToCompleteMin: uint(time),
+		Category:          mealplanner.ParseCategory(r.PostForm.Get("category")),
 		Ingredients:       mealplanner.ParseIngredients(strings.Split(r.PostForm.Get("ingredients"), "\n")),
 		Steps:             strings.Split(r.PostForm.Get("steps"), "\n"),
 	}, nil

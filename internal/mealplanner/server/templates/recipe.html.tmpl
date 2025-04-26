@@ -6,7 +6,14 @@
   
   <h1>{{.Title}}</h1>
 
-  <cite>Source: {{.Source}}</cite>
+  <cite>
+    Source:
+	{{if isURL .Source}}
+	<a href="{{.Source}}" target="_blank">{{.Source}}</a>
+	{{else}}
+	{{.Source}}
+	{{end}}
+  </cite>
 
   <h2>Ingredients</h2>
   <ul>
