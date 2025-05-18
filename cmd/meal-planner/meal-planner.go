@@ -51,13 +51,14 @@ func main() {
 	}
 	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
+	authRepository := web.NewBBoltAuthRepository(db)
 	auth := web.NewAuthenticator(
 		host,
 		"/recipes",
-		web.NewBBoltAuthRepository(db),
+	authRepository,
 		server.TemplatesFS, server.AssetsFS)
 
-	service, err := mealplanner.NewService(db, host, smtpHost, smtpAuth, auth)
+	service, err := mealplanner.NewService(db, host, smtpHost, smtpAuth, authRepository)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,6 +77,7 @@ func main() {
 		r.Use(auth.Middleware)
 		r.Mount("/recipes", server.NewRecipeController2(service).Handler())
 		r.Mount("/meal-plans", server.NewMealPlanController(service).Handler())
+		r.Mount("/shares", server.NewShareController(service).Handler())
 	})
 
 	http.Handle("/", r)

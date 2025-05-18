@@ -92,13 +92,28 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 
 // TODO: Don't include base.html per default.
 func (t *Templater) Get(patterns ...string) (*Template, error) {
-	templatePaths := make([]string, len(patterns)+1)
-	templatePaths[0] = "templates/base.html.tmpl"
-	for i := range patterns {
-		templatePaths[i+1] = path.Join("templates", patterns[i]+".tmpl")
+	baseTemplate := "base.html.tmpl"
+	baseTemplatePath := path.Join("templates", baseTemplate)
+	
+	_, err := fs.Stat(t.templateFS, baseTemplatePath)
+	includeBase := err == nil
+
+	templatePaths := make([]string, 0, len(patterns)+1)
+	if includeBase {
+		templatePaths = append(templatePaths, baseTemplatePath)
 	}
 
-	tmpl, err := template.New("base.html.tmpl").
+	for _, pattern := range patterns {
+		templatePaths = append(templatePaths,
+			path.Join("templates", pattern+".tmpl"))
+	}
+
+	rootTemplate := patterns[0]+".tmpl"
+	if includeBase {
+		rootTemplate = baseTemplate
+	}
+	
+	tmpl, err := template.New(rootTemplate).
 		Funcs(t.funcs).
 		ParseFS(t.templateFS, templatePaths...)
 	if err != nil {
@@ -180,5 +195,11 @@ func (m *TemplateModule) getTemplate() Handler {
 		}
 
 		return nil
+	}
+}
+
+func RenderTemplate(template *Template, data any) Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return template.Execute(w, data)
 	}
 }

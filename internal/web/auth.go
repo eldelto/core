@@ -45,9 +45,11 @@ func (t *Token) Expired() bool {
 	return t.ValidUntil < time.Now().Unix()
 }
 
+// TODO: Shouldn't the session expire at one point?
 type Session struct {
 	ID   SessionID
 	User UserID
+	Email mail.Address
 }
 
 type Auth interface {
@@ -56,6 +58,7 @@ type Auth interface {
 
 type UserAuth struct {
 	User UserID
+	Email mail.Address
 }
 
 func (a *UserAuth) UserID() UserID {
@@ -151,7 +154,10 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := SetAuth(r.Context(), &UserAuth{User: session.User})
+		ctx := SetAuth(r.Context(), &UserAuth{
+			User: session.User,
+			Email: session.Email,
+		})
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
@@ -286,6 +292,7 @@ func (a *Authenticator) authenticate() Handler {
 		session := Session{
 			ID:   SessionID(sessionID.String()),
 			User: userID,
+			Email: token.Email,
 		}
 
 		if err := a.repo.StoreSession(session); err != nil {
