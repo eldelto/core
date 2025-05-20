@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -16,11 +17,33 @@ import (
 // given time is UTC even though it isn't. Also Personio expects the
 // given times to be in the user's configured timezone which most
 // probably is the same as the computer they make the API calls from.
-const personioFormat = "2006-01-02T15:04:05Z"
+const personioFormat = "2006-01-02T15:04:05"
+
+type PersonioTime time.Time
+
+func (t *PersonioTime) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), "\"")
+	if s == "null" {
+		*t = PersonioTime(time.Time{})
+		return nil
+	}
+	time, err := time.Parse(personioFormat, s)
+	*t = PersonioTime(time)
+	return err
+}
+
+func (t *PersonioTime) MarshalJSON() ([]byte, error) {
+	time := time.Time(*t)
+	if time.IsZero() {
+		return []byte("null"), nil
+	}
+	return []byte(time.Format(personioFormat)), nil
+}
 
 type EmployeeID int
 
 type Client struct {
+	loginHost           *url.URL
 	host           *url.URL
 	configProvider *cli.ConfigProvider
 	employeeID     EmployeeID
@@ -28,8 +51,9 @@ type Client struct {
 	dayIDs         map[string]string
 }
 
-func NewClient(host *url.URL, configProvider *cli.ConfigProvider) *Client {
+func NewClient(loginHost, host *url.URL, configProvider *cli.ConfigProvider) *Client {
 	return &Client{
+		loginHost: loginHost,
 		host:           host,
 		configProvider: configProvider,
 		dayIDs:         map[string]string{},
@@ -57,11 +81,6 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	if err != nil {
 		return fmt.Errorf("password for microsoft auth: %w", err)
 	}
-	otp, err := cli.ReadInput("\nPlease enter your OTP code:\n")
-	if err != nil {
-		return fmt.Errorf("OTP code for microsoft auth: %w", err)
-	}
-
 	if err := session.Maximize(); err != nil {
 		return fmt.Errorf("microsoft auth: %w", err)
 	}
@@ -85,11 +104,30 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	time.Sleep(2 * time.Second)
 
 	// Enter the user's OTP code.
-	if err := session.WriteTo("input[name='otc']", otp); err != nil {
-		return fmt.Errorf("write OTP for microsoft auth: %w", err)
+	if session.HasElement("input[name='otc']") {
+		if err := session.Minimize(); err != nil {
+			return fmt.Errorf("microsoft auth: %w", err)
+		}
+		otp, err := cli.ReadInput("\nPlease enter your OTP code:\n")
+		if err != nil {
+			return fmt.Errorf("OTP code for microsoft auth: %w", err)
+		}
+		if err := session.Maximize(); err != nil {
+			return fmt.Errorf("microsoft auth: %w", err)
+		}
+
+		if err := session.WriteTo("input[name='otc']", otp); err != nil {
+			return fmt.Errorf("write OTP for microsoft auth: %w", err)
+		}
+		if err := session.Click("input.button_primary"); err != nil {
+			return fmt.Errorf("submit OTP for microsoft auth: %w", err)
+		}
+		time.Sleep(2 * time.Second)
 	}
-	if err := session.Click("input.button_primary"); err != nil {
-		return fmt.Errorf("submit OTP for microsoft auth: %w", err)
+
+	// Click the stay signed in prompt if it exists.
+	if err := session.Click(".sign-in-box input.button_primary"); err == nil {
+		time.Sleep(2 * time.Second)
 	}
 
 	return nil
@@ -106,12 +144,12 @@ func (c *Client) Login() error {
 		return fmt.Errorf("maximise new sessio: %w", err)
 	}
 
-	url := c.host.JoinPath("login", "index")
+	url := c.loginHost.JoinPath("login", "index")
 	if err := session.NavigateTo(url); err != nil {
 		return fmt.Errorf("navigate to personio login %q: %w", url, err)
 	}
 
-	element, err := session.FindElement("a[href='https://firstbird.personio.de/oauth/authorize']")
+	element, err := session.FindElement("button._social-button-oidc")
 	if err != nil {
 		return fmt.Errorf("locate authorize button: %w", err)
 	}
@@ -144,7 +182,7 @@ func (c *Client) Login() error {
 
 	// Wait for the browser to settle after the redirect.
 	time.Sleep(5 * time.Second)
-	if _, err := session.FindElement("a[data-test-id='navsidebar-time_tracking']"); err != nil {
+	if _, err := session.FindElement("a[data-test-id='navsidebar-companyTimeline']"); err != nil {
 		return fmt.Errorf("personio login callback finishing: %w", err)
 
 	}
@@ -193,45 +231,30 @@ func (c *Client) GetEmployeeID() (EmployeeID, error) {
 	return c.employeeID, nil
 }
 
-type AttendanceAttributes struct {
-	Start           time.Time `json:"start"`
-	End             time.Time `json:"end"`
-	Comment         string    `json:"comment"`
-	AttendanceDayID string    `json:"attendance_day_id"`
-	PeriodType      string    `json:"period_type"`
-}
-
 type AttendancePeriode struct {
-	ID         string               `json:"id"`
-	Attributes AttendanceAttributes `json:"attributes"`
+			ID              string      `json:"id"`
+			Start           PersonioTime      `json:"start"`
+			End             PersonioTime      `json:"end"`
+			Comment         string `json:"comment"`
+			Type            string      `json:"type"`
 }
 
-type attendanceDay struct {
-	ID         string `json:"id"`
-	Attributes struct {
-		Day string `json:"day"`
-	} `json:"attributes"`
-}
-
-type getAttendanceResponse struct {
-	Data struct {
-		AttendancePeriods struct {
-			Data []AttendancePeriode `json:"data"`
-		} `json:"attendance_periods"`
-		AttendanceDays struct {
-			Data []attendanceDay `json:"data"`
-		} `json:"attendance_days"`
-	} `json:"data"`
+type getTimeSheetResponse struct {
+	Timecards []struct {
+		DayID                     string `json:"day_id"`
+		Date                      string `json:"date"`
+		Periods                   []AttendancePeriode  `json:"periods"`
+	} `json:"timecards"`
 }
 
 func (c *Client) GetAttendance(employeeID EmployeeID, start, end time.Time) ([]AttendancePeriode, error) {
-	endpoint := c.host.JoinPath(fmt.Sprintf("/svc/attendance-bff/attendance-calendar/%d", employeeID))
+	endpoint := c.host.JoinPath(fmt.Sprintf("/svc/attendance-bff/v1/timesheet/%d", employeeID))
 	query := endpoint.Query()
 	query.Add("start_date", start.Format(time.DateOnly))
 	query.Add("end_date", end.Format(time.DateOnly))
 	endpoint.RawQuery = query.Encode()
 
-	var response getAttendanceResponse
+	var response getTimeSheetResponse
 	if err := rest.GET(endpoint).
 		Cookies(c.cookies).
 		ResponseAs(&response).
@@ -240,12 +263,17 @@ func (c *Client) GetAttendance(employeeID EmployeeID, start, end time.Time) ([]A
 			employeeID, err)
 	}
 
-	// Cache date <-> day ID mapping for other requests.
-	for _, day := range response.Data.AttendanceDays.Data {
-		c.dayIDs[day.Attributes.Day] = day.ID
+		periods := []AttendancePeriode{}
+	for _, timecard := range response.Timecards {
+			// Cache date <-> day ID mapping for other requests.
+		c.dayIDs[timecard.Date] = timecard.DayID
+
+		// This flattens multiple days in a weird way but doesn't
+		// really matter at the moment.
+		periods = append(periods,timecard.Periods...)
 	}
 
-	return response.Data.AttendancePeriods.Data, nil
+	return periods, nil
 }
 
 func (c *Client) resolveDayID(day time.Time) (string, error) {
@@ -319,7 +347,7 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 		return err
 	}
 
-	endpoint := c.host.JoinPath("api/v1/attendances/days", dayID)
+	endpoint := c.host.JoinPath("svc/attendance-api/v1/days", dayID)
 
 	periods := make([]attendancePeriod, len(attendances))
 	for i, attendance := range attendances {
@@ -337,9 +365,9 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 
 	csrfToken := ""
 	for _, c := range c.cookies {
-		if c.Name == "XSRF-TOKEN" {
-			csrfToken = c.Value
-			break
+				if c.Name == "ATHENA-XSRF-TOKEN" {
+					csrfToken = c.Value
+					break
 		}
 	}
 
@@ -347,7 +375,7 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 
 	if err := rest.PUT(endpoint).
 		Cookies(c.cookies).
-		AddHeader("x-csrf-token", csrfToken).
+		AddHeader("x-athena-xsrf-token", csrfToken).
 		RequestBody(request).
 		ResponseAs(&response).
 		Run(); err != nil {
