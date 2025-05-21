@@ -68,7 +68,7 @@ func NewPersonioSink(rawHost string, configProvider *cli.ConfigProvider) (*Perso
 	if err != nil {
 		return nil, fmt.Errorf("init PersonioSink: %w", err)
 	}
-	
+
 	rawAppHost := strings.ReplaceAll(rawHost, "personio.de", "app.personio.com")
 	appHost, err := url.Parse(rawAppHost)
 	if err != nil {

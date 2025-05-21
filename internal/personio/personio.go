@@ -43,7 +43,7 @@ func (t *PersonioTime) MarshalJSON() ([]byte, error) {
 type EmployeeID int
 
 type Client struct {
-	loginHost           *url.URL
+	loginHost      *url.URL
 	host           *url.URL
 	configProvider *cli.ConfigProvider
 	employeeID     EmployeeID
@@ -53,7 +53,7 @@ type Client struct {
 
 func NewClient(loginHost, host *url.URL, configProvider *cli.ConfigProvider) *Client {
 	return &Client{
-		loginHost: loginHost,
+		loginHost:      loginHost,
 		host:           host,
 		configProvider: configProvider,
 		dayIDs:         map[string]string{},
@@ -232,18 +232,18 @@ func (c *Client) GetEmployeeID() (EmployeeID, error) {
 }
 
 type AttendancePeriode struct {
-			ID              string      `json:"id"`
-			Start           PersonioTime      `json:"start"`
-			End             PersonioTime      `json:"end"`
-			Comment         string `json:"comment"`
-			Type            string      `json:"type"`
+	ID      string       `json:"id"`
+	Start   PersonioTime `json:"start"`
+	End     PersonioTime `json:"end"`
+	Comment string       `json:"comment"`
+	Type    string       `json:"type"`
 }
 
 type getTimeSheetResponse struct {
 	Timecards []struct {
-		DayID                     string `json:"day_id"`
-		Date                      string `json:"date"`
-		Periods                   []AttendancePeriode  `json:"periods"`
+		DayID   string              `json:"day_id"`
+		Date    string              `json:"date"`
+		Periods []AttendancePeriode `json:"periods"`
 	} `json:"timecards"`
 }
 
@@ -263,14 +263,18 @@ func (c *Client) GetAttendance(employeeID EmployeeID, start, end time.Time) ([]A
 			employeeID, err)
 	}
 
-		periods := []AttendancePeriode{}
+	periods := []AttendancePeriode{}
 	for _, timecard := range response.Timecards {
-			// Cache date <-> day ID mapping for other requests.
+		if timecard.DayID == "" {
+			continue
+		}
+
+		// Cache date <-> day ID mapping for other requests.
 		c.dayIDs[timecard.Date] = timecard.DayID
 
 		// This flattens multiple days in a weird way but doesn't
 		// really matter at the moment.
-		periods = append(periods,timecard.Periods...)
+		periods = append(periods, timecard.Periods...)
 	}
 
 	return periods, nil
@@ -292,7 +296,6 @@ func (c *Client) resolveDayID(day time.Time) (string, error) {
 
 	dayID, ok = c.dayIDs[date]
 	if !ok {
-		//return "", fmt.Errorf("could not resolve day ID for date %q, cache=%v", date, c.dayIDs)
 		newId, err := uuid.NewRandom()
 		if err != nil {
 			return "", fmt.Errorf("resolve day ID: %w", err)
@@ -304,19 +307,17 @@ func (c *Client) resolveDayID(day time.Time) (string, error) {
 }
 
 type attendancePeriod struct {
-	ID             string  `json:"id"`
-	ProjectID      *string `json:"project_id"`
-	PeriodType     string  `json:"period_type"`
-	LegacyBreakMin int     `json:"legacy_break_min"`
-	Comment        *string `json:"comment"`
-	Start          string  `json:"start"`
-	End            string  `json:"end"`
+	ID         string  `json:"id"`
+	ProjectID  *string `json:"project_id"`
+	PeriodType string  `json:"period_type"`
+	Comment    *string `json:"comment"`
+	Start      string  `json:"start"`
+	End        string  `json:"end"`
 }
 
 type createAttendanceRequest struct {
-	EmployeeID           EmployeeID         `json:"employee_id"`
-	Periods              []attendancePeriod `json:"periods"`
-	RulesViolationReason *string            `json:"rules_violation_reason"`
+	EmployeeID EmployeeID         `json:"employee_id"`
+	Periods    []attendancePeriod `json:"periods"`
 }
 
 type Attendance struct {
@@ -365,9 +366,9 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 
 	csrfToken := ""
 	for _, c := range c.cookies {
-				if c.Name == "ATHENA-XSRF-TOKEN" {
-					csrfToken = c.Value
-					break
+		if c.Name == "ATHENA-XSRF-TOKEN" {
+			csrfToken = c.Value
+			break
 		}
 	}
 
