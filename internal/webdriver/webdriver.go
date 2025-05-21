@@ -25,7 +25,7 @@ const (
 // TODO: Look into session timeouts instead.
 func withRetry(f func() error) error {
 	var err error
-	for i := 0; i < 10; i++ {
+	for range 3 {
 		err = f()
 		if err == nil {
 			return nil
@@ -422,6 +422,11 @@ func (s *Session) FindElement(cssSelector string) (Element, error) {
 	})
 
 	return element, err
+}
+
+func (s *Session) HasElement(cssSelector string) bool {
+	_, err := s.findElement(cssSelector)
+	return err == nil
 }
 
 func (s *Session) ClickElement(element Element) error {

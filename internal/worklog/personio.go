@@ -13,16 +13,16 @@ import (
 
 func attendanceToEntry(a personio.AttendancePeriode) Entry {
 	entryType := EntryTypeWork
-	if a.Attributes.PeriodType == "break" {
+	if a.Type == "break" {
 		entryType = EntryTypeBreak
 	}
 
 	return Entry{
-		Ticket:     a.Attributes.Comment,
+		Ticket:     a.Comment,
 		ExternalID: a.ID,
 		Type:       entryType,
-		From:       util.SetLocation(a.Attributes.Start, time.Local),
-		To:         util.SetLocation(a.Attributes.End, time.Local),
+		From:       util.SetLocation(time.Time(a.Start), time.Local),
+		To:         util.SetLocation(time.Time(a.End), time.Local),
 	}
 }
 
@@ -64,12 +64,18 @@ type PersonioSink struct {
 }
 
 func NewPersonioSink(rawHost string, configProvider *cli.ConfigProvider) (*PersonioSink, error) {
-	host, err := url.Parse(rawHost)
+	loginHost, err := url.Parse(rawHost)
 	if err != nil {
 		return nil, fmt.Errorf("init PersonioSink: %w", err)
 	}
 
-	client := personio.NewClient(host, configProvider)
+	rawAppHost := strings.ReplaceAll(rawHost, "personio.de", "app.personio.com")
+	appHost, err := url.Parse(rawAppHost)
+	if err != nil {
+		return nil, fmt.Errorf("init PersonioSink: %w", err)
+	}
+
+	client := personio.NewClient(loginHost, appHost, configProvider)
 
 	return &PersonioSink{
 		client: client,
