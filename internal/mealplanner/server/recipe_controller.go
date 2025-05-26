@@ -68,7 +68,7 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 			{Method: http.MethodGet, Path: ""}:                getRecipes(service),
 			{Method: http.MethodPost, Path: ""}:               postNewRecipe(service),
 			{Method: http.MethodPost, Path: "/from-url"}:      parseRecipeFromURL(service),
-			{Method: http.MethodGet, Path: "new"}:             renderTemplate(newRecipeTemplate, &mealplanner.Recipe{}),
+			{Method: http.MethodGet, Path: "new"}:             web.RenderTemplate(newRecipeTemplate, &mealplanner.Recipe{}),
 			{Method: http.MethodGet, Path: "{recipeID}"}:      getRecipe(service),
 			{Method: http.MethodGet, Path: "{recipeID}/edit"}: editRecipe(service),
 			{Method: http.MethodPost, Path: "{recipeID}"}:     updateRecipe(service),
@@ -93,12 +93,6 @@ func NewRecipeController(service *mealplanner.Service) *web.Controller {
 				return err
 			}
 		},
-	}
-}
-
-func renderTemplate(template *web.Template, data any) web.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return template.Execute(w, data)
 	}
 }
 

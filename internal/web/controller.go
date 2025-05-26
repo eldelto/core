@@ -44,7 +44,6 @@ func (chain ErrorHandlerChain) BuildErrorHandler(errorTemplate *Template) func(H
 			}
 
 			log.Printf("unhandled error: %s", err.Error())
-			fmt.Println("error handling")
 
 			message := ""
 			for _, errorHandler := range chain {

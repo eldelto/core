@@ -3,7 +3,7 @@ package mealplanner
 import (
 	"bytes"
 	"context"
-	_ "embed"
+	"embed"
 	"errors"
 	"fmt"
 	"html/template"
@@ -31,6 +31,11 @@ var (
 	//go:embed login.tmpl
 	rawLoginTemplate string
 	loginTemplate    = template.New("login")
+
+	//go:embed templates
+	emailFS       embed.FS
+	templater     = web.NewTemplater(emailFS, nil)
+	shareTemplate = templater.GetP("share.html")
 )
 
 func init() {
@@ -45,14 +50,14 @@ type Service struct {
 	host     string
 	smtpHost string
 	smtpAuth smtp.Auth
-	auth     *web.Authenticator
+	auth     web.AuthRepository
 }
 
 func NewService(db *bbolt.DB,
 	host string,
 	smtpHost string,
 	smtpAuth smtp.Auth,
-	auth *web.Authenticator) (*Service, error) {
+	auth web.AuthRepository) (*Service, error) {
 	if err := boltutil.EnsureBucketExists(db, recipeBucket); err != nil {
 		panic(err)
 	}
@@ -88,6 +93,23 @@ type loginData struct {
 	Token web.TokenID
 }
 
+// TODO: Move to E-mail service
+func (s *Service) sendEmail(recipient mail.Address, template *web.Template, data any) error {
+
+	content := bytes.Buffer{}
+	if err := template.Execute(&content, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	if s.smtpAuth == nil {
+		log.Println(content.String())
+		return nil
+	}
+
+	return smtp.SendMail(s.smtpHost, s.smtpAuth, "no-reply@eldelto.net",
+		[]string{recipient.Address}, content.Bytes())
+}
+
 func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 	data := loginData{Host: s.host, Token: token}
 
@@ -105,11 +127,63 @@ func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
 		[]string{email.Address}, content.Bytes())
 }
 
+type ShareType uint
+
+const (
+	PendingShare = ShareType(iota)
+	FullShare
+)
+
 type userData struct {
 	ID        web.UserID
 	Recipes   []uuid.UUID
 	LastEaten []uuid.UUID
 	MealPlans []MealPlan
+	ShareMap  map[web.UserID]ShareType
+}
+
+func newUserData(id web.UserID) userData {
+	return userData{
+		ID:        id,
+		Recipes:   []uuid.UUID{},
+		LastEaten: []uuid.UUID{},
+		MealPlans: []MealPlan{},
+		ShareMap:  map[web.UserID]ShareType{},
+	}
+}
+
+// TODO: Use this everywhere?
+// func (s *Service) findUserData(ctx context.Context) (userData, error) {
+// 		auth, err := getUserAuth(ctx)
+// 	if err != nil {
+// 		return userData{}, err
+// 	}
+
+// 	return boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
+// }
+
+// TODO: Does this pay off?
+func (s *Service) updateUserData(id web.UserID, f func(data userData) userData) error {
+	return boltutil.Update(s.db, userDataBucket, id.String(), func(data userData) userData {
+		if data.ShareMap == nil {
+			data.ShareMap = map[web.UserID]ShareType{}
+		}
+		return f(data)
+	})
+}
+
+func (s *Service) listUserRecipes(userID web.UserID) ([]uuid.UUID, error) {
+	data, err := boltutil.Find[userData](s.db, userDataBucket, userID.String())
+	switch {
+	case err == nil:
+	case errors.Is(err, &errs.ErrNotFound{}):
+		log.Printf("warn - could not find user data for user %q", userID)
+		return []uuid.UUID{}, nil
+	default:
+		return nil, fmt.Errorf("list recipe IDs for user %q: %w", userID, err)
+	}
+
+	return data.Recipes, nil
 }
 
 func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
@@ -128,8 +202,27 @@ func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
 		return nil, fmt.Errorf("get user data for user %q: %w", auth.User, err)
 	}
 
+	recipeIDs, err := s.listUserRecipes(auth.User)
+	if err != nil {
+		return nil, err
+	}
+
+	for otherUserID, shareType := range data.ShareMap {
+		if shareType != FullShare {
+			continue
+		}
+
+		otherRecipesIDs, err := s.listUserRecipes(otherUserID)
+		if err != nil {
+			log.Printf("warn - could not load shared recipes of user %q: %v", otherUserID, err)
+			continue
+		}
+
+		recipeIDs = append(recipeIDs, otherRecipesIDs...)
+	}
+
 	recipes := []Recipe{}
-	for _, id := range data.Recipes {
+	for _, id := range recipeIDs {
 		recipe, err := s.GetRecipe(ctx, id)
 		if err != nil {
 			return recipes, err
@@ -174,7 +267,8 @@ func (s *Service) NewRecipe(ctx context.Context, title, source string, portions,
 
 	err = boltutil.Update(s.db, userDataBucket, auth.User.String(), func(data *userData) *userData {
 		if data == nil {
-			data = &userData{ID: auth.User}
+			d := newUserData(auth.User)
+			data = &d
 		}
 
 		data.Recipes = append(data.Recipes, recipe.ID)
@@ -332,7 +426,7 @@ func (s *Service) CreateMealPlan(ctx context.Context, recipes []uuid.UUID) error
 		CreatedAt: time.Now(),
 	}
 
-	err = boltutil.Update[userData](s.db, userDataBucket, auth.User.String(),
+	err = boltutil.Update(s.db, userDataBucket, auth.User.String(),
 		func(data userData) userData {
 			data.MealPlans = append(data.MealPlans, plan)
 			return data
@@ -384,4 +478,87 @@ func (s *Service) ListMyMealPlans(ctx context.Context) ([]MealPlanPreview, error
 	}
 
 	return plans, nil
+}
+
+type shareData struct {
+	Host      string
+	UserID    string
+	UserEmail string
+}
+
+func (s *Service) InviteUserToShare(ctx context.Context, otherEmail mail.Address) error {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	otherID, err := s.auth.ResolveUserID(otherEmail)
+	if err != nil {
+		log.Printf("warn - could not find user with E-mail %q", otherEmail)
+		return nil
+	}
+
+	err = s.updateUserData(auth.User, func(data userData) userData {
+		_, ok := data.ShareMap[otherID]
+		if ok {
+			// A share for this user already exists.
+			return data
+		}
+
+		data.ShareMap[otherID] = PendingShare
+		return data
+	})
+	if err != nil {
+		return fmt.Errorf("create pending user share: %w", err)
+	}
+
+	data := shareData{
+		Host:      s.host,
+		UserID:    auth.User.String(),
+		UserEmail: auth.Email.String(),
+	}
+
+	if err := s.sendEmail(otherEmail, shareTemplate, data); err != nil {
+		return fmt.Errorf("send share invite E-mail: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) AcceptShareInvite(ctx context.Context, otherID web.UserID) error {
+	auth, err := getUserAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Make transactional
+	otherData := userData{}
+	err = s.updateUserData(otherID, func(data userData) userData {
+		_, ok := data.ShareMap[auth.User]
+		if !ok {
+			return data
+		}
+
+		data.ShareMap[auth.User] = FullShare
+		otherData = data
+
+		return data
+	})
+	if err != nil {
+		return fmt.Errorf("accept share invite update other user: %w", err)
+	}
+
+	shareType := otherData.ShareMap[auth.User]
+	if shareType == PendingShare {
+		return fmt.Errorf("could not create a full share for user %q to user %q", otherID, auth.User)
+	}
+
+	err = s.updateUserData(auth.User, func(data userData) userData {
+		data.ShareMap[otherID] = FullShare
+		return data
+	})
+	if err != nil {
+		return fmt.Errorf("accept share invite update current user: %w", err)
+	}
+
+	return nil
 }

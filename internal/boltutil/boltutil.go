@@ -48,6 +48,42 @@ func Find[T any](db *bbolt.DB, bucketName, key string) (T, error) {
 	return result, nil
 }
 
+func FindFirst[T any](db *bbolt.DB, bucketName string, f func(T) bool) (T, error) {
+	var result T
+
+	err := db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("get bucket %q", bucketName)
+		}
+
+		found := false
+		cursor := bucket.Cursor()
+		for key, value := cursor.Next(); key != nil; key, value = cursor.Next() {
+			if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&result); err != nil {
+				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
+					bucketName, key, err)
+			}
+
+			if f(result) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return errs.NotFound("lookup function", bucketName)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return result, fmt.Errorf("find first - bucket=%q: %w", bucketName, err)
+	}
+
+	return result, nil
+}
+
 func List[T any](db *bbolt.DB, bucketName string) (map[string]T, error) {
 	props := map[string]T{}
 
