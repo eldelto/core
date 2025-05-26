@@ -94,7 +94,7 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 func (t *Templater) Get(patterns ...string) (*Template, error) {
 	baseTemplate := "base.html.tmpl"
 	baseTemplatePath := path.Join("templates", baseTemplate)
-	
+
 	_, err := fs.Stat(t.templateFS, baseTemplatePath)
 	includeBase := err == nil
 
@@ -108,11 +108,11 @@ func (t *Templater) Get(patterns ...string) (*Template, error) {
 			path.Join("templates", pattern+".tmpl"))
 	}
 
-	rootTemplate := patterns[0]+".tmpl"
+	rootTemplate := patterns[0] + ".tmpl"
 	if includeBase {
 		rootTemplate = baseTemplate
 	}
-	
+
 	tmpl, err := template.New(rootTemplate).
 		Funcs(t.funcs).
 		ParseFS(t.templateFS, templatePaths...)
