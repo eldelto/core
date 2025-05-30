@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/eldelto/core/internal/boltutil"
-	"github.com/eldelto/core/internal/collections"
 	"github.com/eldelto/core/internal/errs"
 	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
@@ -179,18 +178,13 @@ func (s *Service) ListMyRecipes(ctx context.Context) ([]Recipe, error) {
 		return nil, err
 	}
 
-	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
-	switch {
-	case err == nil:
-	case errors.Is(err, &errs.ErrNotFound{}):
-		log.Printf("warn - could not find user data for user %q", auth.User)
-		return []Recipe{}, nil
-	default:
-		return nil, fmt.Errorf("get user data for user %q: %w", auth.User, err)
+	recipeIDs, err := s.listUserVisibleRecipes(auth.User)
+	if err != nil {
+		return nil, err
 	}
 
 	recipes := []Recipe{}
-	for _, id := range data.Recipes {
+	for _, id := range recipeIDs {
 		recipe, err := s.GetRecipe(ctx, id)
 		if err != nil {
 			return recipes, err
@@ -250,18 +244,18 @@ func (s *Service) NewRecipe(ctx context.Context, title, source string, portions,
 	return recipe, nil
 }
 
-func (s *Service) loadRecipes(ids []uuid.UUID) ([]Recipe, error) {
-	recipes := make([]Recipe, len(ids))
-	for i, id := range ids {
-		recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, id.String())
-		if err != nil {
-			return nil, fmt.Errorf("get recipe %q: %w", id, err)
-		}
-		recipes[i] = recipe
-	}
+// func (s *Service) loadRecipes(ids []uuid.UUID) ([]Recipe, error) {
+// 	recipes := make([]Recipe, len(ids))
+// 	for i, id := range ids {
+// 		recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, id.String())
+// 		if err != nil {
+// 			return nil, fmt.Errorf("get recipe %q: %w", id, err)
+// 		}
+// 		recipes[i] = recipe
+// 	}
 
-	return recipes, nil
-}
+// 	return recipes, nil
+// }
 
 func (s *Service) SuggestRecipe(ctx context.Context, filter func(Recipe) bool) (Recipe, error) {
 	auth, err := getUserAuth(ctx)
@@ -269,30 +263,30 @@ func (s *Service) SuggestRecipe(ctx context.Context, filter func(Recipe) bool) (
 		return Recipe{}, err
 	}
 
-	data, err := boltutil.Find[userData](s.db, userDataBucket, auth.User.String())
+	recipeIDs, err := s.listUserVisibleRecipes(auth.User)
 	if err != nil {
-		return Recipe{}, fmt.Errorf("find user data for recipe suggestion: %w", err)
+		return Recipe{}, fmt.Errorf("suggest recipe: %w", err)
 	}
-	if len(data.Recipes) <= 0 {
+
+	if len(recipeIDs) <= 0 {
 		return Recipe{}, fmt.Errorf("can't suggest recipe as user %q doesn't have any recipes", auth.User)
 	}
 
-	lastEaten := collections.SetFromSlice(data.LastEaten)
-	allRecipes, err := s.loadRecipes(data.Recipes)
-	if err != nil {
-		return Recipe{}, err
-	}
+	// lastEaten := collections.SetFromSlice(data.LastEaten)
+	// allRecipes, err := s.loadRecipes(data.Recipes)
+	// if err != nil {
+	// 	return Recipe{}, err
+	// }
 
-	possibleRecipes := make([]Recipe, 0, len(allRecipes))
-	for _, r := range allRecipes {
-		if filter(r) && !lastEaten.Contains(r.ID) {
-			possibleRecipes = append(possibleRecipes, r)
-		}
-	}
+	// possibleRecipes := make([]Recipe, 0, len(allRecipes))
+	// for _, r := range allRecipes {
+	// 	if filter(r) && !lastEaten.Contains(r.ID) {
+	// 		possibleRecipes = append(possibleRecipes, r)
+	// 	}
+	// }
 
-	rand := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	i := rand.IntN(len(possibleRecipes))
-	recipeID := data.Recipes[i]
+	i := rand.IntN(len(recipeIDs))
+	recipeID := recipeIDs[i]
 	recipe, err := boltutil.Find[Recipe](s.db, recipeBucket, recipeID.String())
 	if err != nil {
 		return recipe, fmt.Errorf("find suggested recipe %q for user %q: %w",
@@ -394,7 +388,7 @@ func (s *Service) CreateMealPlan(ctx context.Context, recipes []uuid.UUID) error
 		CreatedAt: time.Now(),
 	}
 
-	err = boltutil.Update[userData](s.db, userDataBucket, auth.User.String(),
+	err = boltutil.Update(s.db, userDataBucket, auth.User.String(),
 		func(data userData) userData {
 			data.MealPlans = append(data.MealPlans, plan)
 			return data
