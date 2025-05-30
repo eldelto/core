@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	shareInviteTemplate        = templater.GetP("share-invite.html")
-	shareInviteSuccessTemplate = templater.GetP("share-invite-success.html")
+	shareInviteTemplate         = templater.GetP("share-invite.html")
+	shareInviteSuccessTemplate  = templater.GetP("share-invite-success.html")
 	shareInviteAcceptedTemplate = templater.GetP("share-invite-accepted.html")
 )
 
@@ -61,7 +61,7 @@ func acceptShareInvite(service *mealplanner.Service) web.Handler {
 			return err
 		}
 
-		http.Redirect(w, r, "./invite/accepted", http.StatusSeeOther)
+		http.Redirect(w, r, "./accepted", http.StatusSeeOther)
 		return nil
 	}
 }

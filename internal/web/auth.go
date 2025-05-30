@@ -47,8 +47,8 @@ func (t *Token) Expired() bool {
 
 // TODO: Shouldn't the session expire at one point?
 type Session struct {
-	ID   SessionID
-	User UserID
+	ID    SessionID
+	User  UserID
 	Email mail.Address
 }
 
@@ -57,7 +57,7 @@ type Auth interface {
 }
 
 type UserAuth struct {
-	User UserID
+	User  UserID
 	Email mail.Address
 }
 
@@ -155,7 +155,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		}
 
 		ctx := SetAuth(r.Context(), &UserAuth{
-			User: session.User,
+			User:  session.User,
 			Email: session.Email,
 		})
 		r = r.WithContext(ctx)
@@ -290,8 +290,8 @@ func (a *Authenticator) authenticate() Handler {
 			return fmt.Errorf("failed to generate random session ID: %w", err)
 		}
 		session := Session{
-			ID:   SessionID(sessionID.String()),
-			User: userID,
+			ID:    SessionID(sessionID.String()),
+			User:  userID,
 			Email: token.Email,
 		}
 

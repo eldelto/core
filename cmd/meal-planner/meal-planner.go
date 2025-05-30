@@ -55,7 +55,7 @@ func main() {
 	auth := web.NewAuthenticator(
 		host,
 		"/recipes",
-	authRepository,
+		authRepository,
 		server.TemplatesFS, server.AssetsFS)
 
 	service, err := mealplanner.NewService(db, host, smtpHost, smtpAuth, authRepository)
