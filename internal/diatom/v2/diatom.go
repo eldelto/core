@@ -96,24 +96,24 @@ const (
 )
 
 var instructions map[string]byte = map[string]byte{
-	"abort": ABORT,
-	"exit": EXIT,
-	"ret": RET,
-	"jmp": JMP,
-	"cjmp": CJMP,
-	"call": CALL,
+	"abort":  ABORT,
+	"exit":   EXIT,
+	"ret":    RET,
+	"jmp":    JMP,
+	"cjmp":   CJMP,
+	"call":   CALL,
 	"excall": EXCALL,
 
 	"const": CONST,
-	"dup": DUP,
-	"drop": DROP,
-	"swap": SWAP,
-	"over": OVER,
-	"rpop": RPOP,
+	"dup":   DUP,
+	"drop":  DROP,
+	"swap":  SWAP,
+	"over":  OVER,
+	"rpop":  RPOP,
 	"rpush": RPUSH,
 
-	"!": STORE,
-	"@": FETCH,
+	"!":  STORE,
+	"@":  FETCH,
 	"b!": BSTORE,
 	"b@": BFETCH,
 
@@ -130,7 +130,7 @@ var instructions map[string]byte = map[string]byte{
 	"<": LT,
 	">": GT,
 
-	"key": KEY,
+	"key":  KEY,
 	"emit": EMIT,
 	"dump": DUMP,
 }

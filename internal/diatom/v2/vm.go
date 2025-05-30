@@ -302,9 +302,9 @@ func (vm *VM) execute() error {
 		case JMP:
 			vm.programCounter++
 			addr, err := vm.fetchWord(vm.programCounter)
-				if err != nil {
-					return err
-				}
+			if err != nil {
+				return err
+			}
 			vm.programCounter = addr
 			continue
 		case CJMP:
@@ -347,7 +347,6 @@ func (vm *VM) execute() error {
 			}
 			extFunc(vm)
 
-			
 		case CONST:
 			vm.programCounter++
 			w, err := vm.fetchWord(vm.programCounter)
@@ -422,7 +421,7 @@ func (vm *VM) execute() error {
 			if err := vm.returnStack.Push(a); err != nil {
 				return err
 			}
-			
+
 		case STORE:
 			addr, err := vm.dataStack.Pop()
 			if err != nil {
@@ -602,7 +601,7 @@ func (vm *VM) execute() error {
 				return err
 			}
 
-					case KEY:
+		case KEY:
 			b, err := vm.key()
 			if err != nil {
 				if errors.Is(err, io.EOF) {
