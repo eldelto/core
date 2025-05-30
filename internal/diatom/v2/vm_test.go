@@ -25,7 +25,7 @@ func TestVM(t *testing.T) {
 		wantReturnStack []Word
 		expectError     bool
 	}{
-				{"abort", []Word{}, []Word{}, true},
+		{"abort", []Word{}, []Word{}, true},
 		{"exit", []Word{}, []Word{}, false},
 		{"const @x rpush ret exit :x const 11", []Word{11}, []Word{}, false},
 		{"const 11", []Word{11}, []Word{}, false},

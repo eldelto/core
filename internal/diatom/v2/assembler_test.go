@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/eldelto/core/internal/diatom"
+	"github.com/eldelto/core/internal/diatom/v2"
 
 	. "github.com/eldelto/core/internal/testutils"
 )
@@ -18,18 +18,13 @@ func TestExpandMacros(t *testing.T) {
 	}{
 		{"remove comment", "const ( this will be gone ) 10", "const\n0 0 0 10\n", false},
 		{"invalid comment", "const ( no end", "", true},
-		{"word call", "!double", "call @_dictdouble\n", false},
 		{"codeword macro",
 			".codeword exit exit .end",
-			":exit\n0 0 0 0\n4 101 120 105 116\n:_dictexit\nexit\nret\n",
+			":_dict-exit\n0 0 0 0\n4 101 120 105 116\n:exit\nexit\nret\n",
 			false},
 		{"consecutive codewords",
 			"nop .codeword exit exit .end .codeword exit2 exit .end",
-			"nop\n:exit\n0 0 0 0\n4 101 120 105 116\n:_dictexit\nexit\nret\n:exit2\n@exit\n5 101 120 105 116 50\n:_dictexit2\nexit\nret\n",
-			false},
-		{"codeword with call",
-			".codeword exit !quit .end",
-			":exit\n0 0 0 0\n4 101 120 105 116\n:_dictexit\ncall @_dictquit\nret\n",
+			"nop\n:_dict-exit\n0 0 0 0\n4 101 120 105 116\n:exit\nexit\nret\n:_dict-exit2\n@_dict-exit\n5 101 120 105 116 50\n:exit2\nexit\nret\n",
 			false},
 		{"invalid codeword", ".codeword .test exit .end", "", true},
 		{"codeword without end", ".codeword test exit", "", true},
@@ -40,17 +35,17 @@ func TestExpandMacros(t *testing.T) {
 
 		{"codeword with number",
 			"577 .codeword test const -77 .end",
-			"0 0 2 65\n:test\n0 0 0 0\n4 116 101 115 116\n:_dicttest\nconst\n255 255 255 179\nret\n",
+			"0 0 2 65\n:_dict-test\n0 0 0 0\n4 116 101 115 116\n:test\nconst\n255 255 255 179\nret\n",
 			false},
 		{"var macro",
 			".var test 3 .end",
-			":test\n0 0 0 0\n4 116 101 115 116\n:_dicttest\nconst\n@_vartest\nret\n:_vartest\n0\n0\n0\n",
+			":_dict-test\n0 0 0 0\n4 116 101 115 116\n:test\nconst\n@_var-test\nret\n:_var-test\n0\n0\n0\n",
 			false},
 		{"var invalid size", ".var test -2 .end", "", true},
 		{"var without end", ".var test 2", "", true},
 		{"immediate-codeword macro",
 			".immediate-codeword exit exit .end",
-			":exit\n0 0 0 0\n132 101 120 105 116\n:_dictexit\nexit\nret\n",
+			":_dict-exit\n0 0 0 0\n132 101 120 105 116\n:exit\nexit\nret\n",
 			false},
 	}
 
@@ -109,7 +104,7 @@ func TestGenerateMachineCode(t *testing.T) {
 		expectError bool
 	}{
 		{"valid instructions", "const 0 0 0 10 ( jump ) dup * exit",
-			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
+			[]byte{7, 0, 0, 0, 10, 8, 20, 1},
 			false},
 		{"invalid instructions", "const invalid ret", []byte{}, true},
 		{"invalid number", "const 0 0 0 -2 ret", []byte{}, true},
@@ -140,14 +135,14 @@ func TestAssemble(t *testing.T) {
 		expectError bool
 	}{
 		{"valid instructions", "const 10 ( jump ) dup * exit",
-			[]byte{3, 0, 0, 0, 10, 11, 8, 0},
+			[]byte{7,0,0,0,10,8,20,1},
 			false},
 		{"valid program",
-			"const -1 cjmp @start .codeword double dup dup + .end :start const 11 call @_dictdouble exit",
+			"const -1 cjmp @start .codeword double dup dup + .end :start const 11 call @double exit",
 			[]byte{3, 255, 255, 255, 255, 15, 0, 0, 0, 25, 0, 0, 0, 0, 6, 100, 111, 117, 98, 108, 101, 11, 11, 6, 2, 3, 0, 0, 0, 11, 16, 0, 0, 0, 21, 0},
 			false},
 		{"mixed assembly and calls",
-			"nop .codeword rput rput .end .codeword main const 5 !rput exit .end",
+			"nop .codeword rput rput .end .codeword main const 5 call @rput exit .end",
 			[]byte{1, 0, 0, 0, 0, 4, 114, 112, 117, 116, 27, 2, 0, 0, 0, 1, 4, 109, 97, 105, 110, 3, 0, 0, 0, 5, 16, 0, 0, 0, 10, 0, 2},
 			false},
 	}

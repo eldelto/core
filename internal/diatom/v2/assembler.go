@@ -247,20 +247,17 @@ func expandNumber(asm *assembler) error {
 
 func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
 	// Label of the dictionary entry.
-	if _, err := fmt.Fprintln(asm.writer, ":"+name); err != nil {
+	if _, err := fmt.Fprintln(asm.writer, ":_dict-"+name); err != nil {
 		return err
 	}
 
-	// TODO: Make this only a single byte and enforce that a word can
-	// only be 100 words long.
-	
 	// The pointer to the previous word.
 	if asm.lastWordName == "" {
 		if err := writeAsBytes(asm.writer, 0); err != nil {
 			return err
 		}
 	} else {
-		if _, err := fmt.Fprintln(asm.writer, "r@_dict-"+asm.lastWordName); err != nil {
+		if _, err := fmt.Fprintln(asm.writer, "@_dict-"+asm.lastWordName); err != nil {
 			return err
 		}
 	}
