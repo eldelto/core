@@ -135,15 +135,15 @@ func TestAssemble(t *testing.T) {
 		expectError bool
 	}{
 		{"valid instructions", "const 10 ( jump ) dup * exit",
-			[]byte{7,0,0,0,10,8,20,1},
+			[]byte{7, 0, 0, 0, 10, 8, 20, 1},
 			false},
 		{"valid program",
 			"const -1 cjmp @start .codeword double dup dup + .end :start const 11 call @double exit",
-			[]byte{3, 255, 255, 255, 255, 15, 0, 0, 0, 25, 0, 0, 0, 0, 6, 100, 111, 117, 98, 108, 101, 11, 11, 6, 2, 3, 0, 0, 0, 11, 16, 0, 0, 0, 21, 0},
+			[]byte{7, 255, 255, 255, 255, 4, 0, 0, 0, 25, 0, 0, 0, 0, 6, 100, 111, 117, 98, 108, 101, 8, 8, 18, 2, 7, 0, 0, 0, 11, 5, 0, 0, 0, 21, 1},
 			false},
 		{"mixed assembly and calls",
-			"nop .codeword rput rput .end .codeword main const 5 call @rput exit .end",
-			[]byte{1, 0, 0, 0, 0, 4, 114, 112, 117, 116, 27, 2, 0, 0, 0, 1, 4, 109, 97, 105, 110, 3, 0, 0, 0, 5, 16, 0, 0, 0, 10, 0, 2},
+			"const 0 .codeword rpush rpush .end .codeword main const 5 call @rpush exit .end",
+			[]byte{7, 0, 0, 0, 0, 0, 0, 0, 0, 5, 114, 112, 117, 115, 104, 13, 2, 0, 0, 0, 5, 4, 109, 97, 105, 110, 7, 0, 0, 0, 5, 5, 0, 0, 0, 15, 1, 2},
 			false},
 	}
 
