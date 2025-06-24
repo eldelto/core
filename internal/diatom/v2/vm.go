@@ -289,7 +289,7 @@ func (vm *VM) execute() error {
 
 		switch instruction {
 		case ABORT:
-			return fmt.Errorf("tried to execute uninitialized memory address at %d - aborting", vm.programCounter)
+			return fmt.Errorf("tried to execute uninitialized memory at address %d - aborting", vm.programCounter)
 		case EXIT:
 			return nil
 		case RET:
