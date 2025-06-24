@@ -1,0 +1,27 @@
+jmp
+@main
+
+( Instructions )
+.codeword @ @ .end
+.codeword ! ! .end
+.codeword + + .end
+.codeword - - .end
+.codeword * * .end
+.codeword / / .end
+.codeword % % .end
+.codeword dup dup .end
+.codeword drop drop .end
+.codeword swap swap .end
+.codeword over over .end
+.codeword key key .end
+.codeword emit emit .end
+.codeword = = .end
+.codeword ~ ~ .end
+.codeword & & .end
+.codeword | | .end
+.codeword < < .end
+.codeword > > .end
+.codeword rpop rpop rpop swap rpush .end
+.codeword rpush rpop swap rpush rpush .end
+.codeword b@ b@ .end
+.codeword b! b! .end

@@ -19,8 +19,8 @@ const (
 	MainTemplate = "{main}"
 )
 
-// //go:embed preamble.dasm
-// var Preamble string
+//go:embed preamble.dasm
+var Preamble string
 
 // //go:embed stdlib.dia
 // var Stdlib string
