@@ -17,7 +17,7 @@ func TestPreamble(t *testing.T) {
 		wantOutput      string
 	}{
 		// Instructions
-		// {"!exit", []Word{}, []Word{2418, 2379}, "", ""}, // Tests VM abortion
+		// {"!exit", []Word{}, []Word{2418, 2379}, "", ""}, // tests VM abortion
 		{"const 5 const -3 call @+", []Word{2}, []Word{}, "", ""},
 		{"const 5 const -3 call @-", []Word{8}, []Word{}, "", ""},
 		{"const 5 const -3 call @*", []Word{-15}, []Word{}, "", ""},
@@ -42,17 +42,12 @@ func TestPreamble(t *testing.T) {
 		{"const 7 call @rpush call @rpop", []Word{7}, []Word{}, "", ""},
 
 		// // Utilities
-		// {"!word-max", []Word{WordMax}, []Word{}, "", ""},
-		// {"!word-min", []Word{WordMin}, []Word{}, "", ""},
+		{"call @int-max", []Word{WordMax}, []Word{}, "", ""},
+		{"call @int-min", []Word{WordMin}, []Word{}, "", ""},
 		// {"!constw", []Word{4}, []Word{}, "", ""},
-		// {"const 5 !w+", []Word{9}, []Word{}, "", ""},
-		// {"const 5 !1+", []Word{6}, []Word{}, "", ""},
-		// {"const 5 !1-", []Word{4}, []Word{}, "", ""},
-		// {"const 0 dup dup dup ! !!1+ @", []Word{1}, []Word{}, "", ""},
-		// {"const 2 const 3 !2dup", []Word{2, 3, 2, 3}, []Word{}, "", ""},
-		// {"const 1 const 2 const 3 !2drop", []Word{1}, []Word{}, "", ""},
-		// {"!true", []Word{-1}, []Word{}, "", ""},
-		// {"!false", []Word{0}, []Word{}, "", ""},
+		{"const 5 call @w+", []Word{9}, []Word{}, "", ""},
+		{"call @true", []Word{-1}, []Word{}, "", ""},
+		{"call @false", []Word{0}, []Word{}, "", ""},
 		// {"!newline", []Word{}, []Word{}, "", "\n"},
 		// {"!spc", []Word{}, []Word{}, "", " "},
 

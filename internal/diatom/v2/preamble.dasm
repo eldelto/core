@@ -1,7 +1,9 @@
 jmp
 @main
 
+
 ( Instructions )
+
 .codeword @ @ .end
 .codeword ! ! .end
 .codeword + + .end
@@ -25,3 +27,71 @@ jmp
 .codeword rpush rpop swap rpush rpush .end
 .codeword b@ b@ .end
 .codeword b! b! .end
+
+
+( Utilities )
+
+.codeword int-max const 2147483647 .end
+.codeword int-min const -2147483648 .end
+.codeword w+ const 4 + .end
+.codeword true const -1 .end
+.codeword false const 0 .end
+
+( int int -- int )
+:max
+  over over < cmp @max-else
+  drop
+  ret
+:max-else
+  swap drop
+  ret
+
+( Arrays )
+
+( ptr capacity -- )
+:array.init
+  over const 1 + !
+  dup const 0 swap !
+
+( ptr -- int )
+:array.length @ ret
+
+( ptr -- int )
+:array.capacity const 1 + @ ret
+
+( ptr x -- )
+:array.append swap dup @ + const 2 + ! ret
+
+( ptr int -- x )
+:array.get over @ mod + const 2 + @ ret
+
+( ptr int -- x )
+:array.set over @ mod + const 2 + ! ret
+
+( from to -- )
+:array.copy
+  over call @array.length
+  over call @array.length
+  call @max
+:array.copy-loop
+( TODO )
+
+( ptr -- )
+:array.clear const 0 !
+
+( Chars )
+:char.blank?
+
+( Strings )
+( TODO: Implement string handling functions. )
+( TODO: How should a string even look like in memory? )
+:str.len
+:str.clear
+:str.append
+
+( Word Handling )
+.var word-buf 32 .end
+
+.codeword word
+( TODO: Reads the next word from stdin )
+.end
