@@ -405,14 +405,6 @@ func (vm *VM) execute() error {
 			if err := vm.dataStack.Push(b); err != nil {
 				return err
 			}
-		case RPOP:
-			a, err := vm.returnStack.Pop()
-			if err != nil {
-				return err
-			}
-			if err := vm.dataStack.Push(a); err != nil {
-				return err
-			}
 		case RPUSH:
 			a, err := vm.dataStack.Pop()
 			if err != nil {
@@ -421,7 +413,22 @@ func (vm *VM) execute() error {
 			if err := vm.returnStack.Push(a); err != nil {
 				return err
 			}
-
+		case RPOP:
+			a, err := vm.returnStack.Pop()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
+		case RPEEK:
+			a, err := vm.returnStack.Peek()
+			if err != nil {
+				return err
+			}
+			if err := vm.dataStack.Push(a); err != nil {
+				return err
+			}
 		case STORE:
 			addr, err := vm.dataStack.Pop()
 			if err != nil {

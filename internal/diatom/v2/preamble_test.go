@@ -41,7 +41,7 @@ func TestPreamble(t *testing.T) {
 		{"const 7 rpush call @rpop", []Word{7}, []Word{}, "", ""},
 		{"const 7 call @rpush call @rpop", []Word{7}, []Word{}, "", ""},
 
-		// // Utilities
+		// Utilities
 		{"call @int-max", []Word{WordMax}, []Word{}, "", ""},
 		{"call @int-min", []Word{WordMin}, []Word{}, "", ""},
 		// {"!constw", []Word{4}, []Word{}, "", ""},
@@ -50,6 +50,25 @@ func TestPreamble(t *testing.T) {
 		{"call @false", []Word{0}, []Word{}, "", ""},
 		// {"!newline", []Word{}, []Word{}, "", "\n"},
 		// {"!spc", []Word{}, []Word{}, "", " "},
+
+		// Arrays
+		{"const @_var-x const 10 call @array.init dup b@ swap const 1 + b@ exit .var x 12 .end", []Word{0, 10}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init call @array.length exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init call @array.capacity exit .var x 12 .end", []Word{10}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init const 3 over call @array.append dup b@ swap const 2 + b@ exit .var x 12 .end", []Word{1, 3}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init rpush " +
+			"const 3 rpeek call @array.append " +
+			"const 5 rpeek call @array.append " +
+			"const 0 rpeek call @array.get " +
+			"const 1 rpop call @array.get " +
+			"exit .var x 12 .end", []Word{3, 5}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init rpush " +
+			"const 3 rpeek call @array.append " +
+			"const 3 rpeek call @array.append " +
+			"const 5 const 1 rpeek call @array.set " +
+			"const 0 rpeek call @array.get " +
+			"const 1 rpop call @array.get " +
+			"exit .var x 12 .end", []Word{3, 5}, []Word{}, "", ""},
 
 		// // Word Handling
 		// {"!word-cursor @", []Word{0}, []Word{}, "", ""},

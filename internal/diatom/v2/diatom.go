@@ -69,8 +69,9 @@ const (
 	DROP
 	SWAP
 	OVER
-	RPOP
 	RPUSH
+	RPOP
+	RPEEK
 
 	STORE
 	FETCH
@@ -109,8 +110,9 @@ var instructions map[string]byte = map[string]byte{
 	"drop":  DROP,
 	"swap":  SWAP,
 	"over":  OVER,
-	"rpop":  RPOP,
 	"rpush": RPUSH,
+	"rpop":  RPOP,
+	"rpeek": RPEEK,
 
 	"!":  STORE,
 	"@":  FETCH,

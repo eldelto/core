@@ -56,6 +56,7 @@ func TestVM(t *testing.T) {
 		{"const 5 const 4 >", []Word{-1}, []Word{}, false},
 		{"const 5 rpush", []Word{}, []Word{5}, false},
 		{"const 5 rpush rpop", []Word{5}, []Word{}, false},
+		{"const 5 rpush rpeek", []Word{5}, []Word{5}, false},
 		{"const 10 b@ exit 5", []Word{5}, []Word{}, false},
 		{"const 7 const 20 b! const 20 b@ exit 5", []Word{7}, []Word{}, false},
 		{"const 777 const 20 ! const 20 @ exit 5", []Word{777}, []Word{}, false},

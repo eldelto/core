@@ -33,13 +33,14 @@ jmp
 
 .codeword int-max const 2147483647 .end
 .codeword int-min const -2147483648 .end
+.codeword word-size const 4 .end
 .codeword w+ const 4 + .end
 .codeword true const -1 .end
 .codeword false const 0 .end
 
 ( int int -- int )
 :max
-  over over < cmp @max-else
+  over over < jmp @max-else
   drop
   ret
 :max-else
@@ -50,23 +51,35 @@ jmp
 
 ( ptr capacity -- )
 :array.init
-  over const 1 + !
-  dup const 0 swap !
+  over const 1 + b!
+  dup const 0 swap b!
+  ret
 
 ( ptr -- int )
-:array.length @ ret
+:array.length b@ ret
 
 ( ptr -- int )
-:array.capacity const 1 + @ ret
+:array.capacity const 1 + b@ ret
 
-( ptr x -- )
-:array.append swap dup @ + const 2 + ! ret
+( x ptr -- )
+:array.append
+  dup b@ const 1 +
+  over const 1 + b@
+  % over over swap b!
+  + const 1 + b!
+  ret
 
-( ptr int -- x )
-:array.get over @ mod + const 2 + @ ret
+( int ptr -- ptr )
+:array.indexed
+  swap over b@ %
+  + const 2 +
+  ret
 
-( ptr int -- x )
-:array.set over @ mod + const 2 + ! ret
+( int ptr -- x )
+:array.get call @array.indexed b@ ret
+
+( x int ptr -- )
+:array.set call @array.indexed b! ret
 
 ( from to -- )
 :array.copy
@@ -75,6 +88,9 @@ jmp
   call @max
 :array.copy-loop
 ( TODO )
+
+( ptr ptr -- bool )
+:array.compare
 
 ( ptr -- )
 :array.clear const 0 !

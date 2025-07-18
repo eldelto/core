@@ -76,7 +76,7 @@ func AssertNoError(t testing.TB, err error, title string) {
 	t.Helper()
 
 	if err != nil {
-		t.Errorf("%s should not return an error but returned '%v'", title, err)
+		t.Fatalf("%s should not return an error but returned '%v'", title, err)
 	}
 }
 
