@@ -69,6 +69,11 @@ func TestPreamble(t *testing.T) {
 			"const 0 rpeek call @array.get " +
 			"const 1 rpop call @array.get " +
 			"exit .var x 12 .end", []Word{3, 5}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init rpush " +
+			"const 3 rpeek call @array.append " +
+			"rpeek call @array.clear " +
+			"rpop call @array.length " +
+			"exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
 
 		// // Word Handling
 		// {"!word-cursor @", []Word{0}, []Word{}, "", ""},

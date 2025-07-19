@@ -47,6 +47,7 @@ jmp
   swap drop
   ret
 
+
 ( Arrays )
 
 ( ptr capacity -- )
@@ -81,33 +82,44 @@ jmp
 ( x int ptr -- )
 :array.set call @array.indexed b! ret
 
+( ptr -- )
+:array.clear const 0 swap b! ret
+
 ( from to -- )
 :array.copy
   over call @array.length
   over call @array.length
   call @max
 :array.copy-loop
-( TODO )
+  ret
+( TODO: Implement when needed )
 
 ( ptr ptr -- bool )
 :array.compare
+( TODO: Implement when needed )
 
-( ptr -- )
-:array.clear const 0 !
 
-( Chars )
-:char.blank?
+( Char )
 
-( Strings )
-( TODO: Implement string handling functions. )
-( TODO: How should a string even look like in memory? )
-:str.len
-:str.clear
-:str.append
+( char -- bool )
+:char.blank? const 33 < ret
 
 ( Word Handling )
-.var word-buf 32 .end
+
+.var word-buf 34 .end
+@_var-word-buf const 32 call @array.init
+
+:non-blank-key
+  key dup call @char.blank? ~ cjmp @non-blank-key-end
+  drop jmp @non-blank-key
+:non-blank-key-end
+  ret
 
 .codeword word
-( TODO: Reads the next word from stdin )
+  @_var-word-buf call @array.clear
+  call @non-blank-key
+:word-loop
+  @_var-word-buf call @array.append
+  key dup call @char.blank? ~ cjmp @word-loop
+  drop
 .end
