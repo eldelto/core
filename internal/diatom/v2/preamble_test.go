@@ -42,14 +42,21 @@ func TestPreamble(t *testing.T) {
 		{"const 7 call @rpush call @rpop", []Word{7}, []Word{}, "", ""},
 
 		// Utilities
-		{"call @int-max", []Word{WordMax}, []Word{}, "", ""},
-		{"call @int-min", []Word{WordMin}, []Word{}, "", ""},
 		// {"!constw", []Word{4}, []Word{}, "", ""},
 		{"const 5 call @w+", []Word{9}, []Word{}, "", ""},
 		{"call @true", []Word{-1}, []Word{}, "", ""},
 		{"call @false", []Word{0}, []Word{}, "", ""},
 		// {"!newline", []Word{}, []Word{}, "", "\n"},
 		// {"!spc", []Word{}, []Word{}, "", " "},
+
+		// Math
+		{"call @math.int-max", []Word{WordMax}, []Word{}, "", ""},
+		{"call @math.int-min", []Word{WordMin}, []Word{}, "", ""},
+		{"const 10 call @math.saturated?", []Word{0}, []Word{}, "", ""},
+		{"const -10 call @math.saturated?", []Word{0}, []Word{}, "", ""},
+		{"const 2147483646 call @math.saturated?", []Word{0}, []Word{}, "", ""},
+		{"const 2147483647 call @math.saturated?", []Word{-1}, []Word{}, "", ""},
+		{"const -2147483648 call @math.saturated?", []Word{-1}, []Word{}, "", ""},
 
 		// Arrays
 		{"const @_var-x const 10 call @array.init dup b@ swap const 1 + b@ exit .var x 12 .end", []Word{0, 10}, []Word{}, "", ""},
@@ -67,7 +74,7 @@ func TestPreamble(t *testing.T) {
 			"const 3 rpeek call @array.append " +
 			"const 5 const 1 rpeek call @array.set " +
 			"const 0 rpeek call @array.get " +
-			"const 1 rpop call @array.get " +
+			"const -11 rpop call @array.get " +
 			"exit .var x 12 .end", []Word{3, 5}, []Word{}, "", ""},
 		{"const @_var-x const 10 call @array.init rpush " +
 			"const 3 rpeek call @array.append " +
@@ -75,28 +82,17 @@ func TestPreamble(t *testing.T) {
 			"rpop call @array.length " +
 			"exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
 
-		// // Word Handling
-		// {"!word-cursor @", []Word{0}, []Word{}, "", ""},
-		// {"const 5 !word-cursor ! !reset-word-cursor !word-cursor @", []Word{0}, []Word{}, "", ""},
-		// {"const 5 !is-blank? const 65 !is-blank?", []Word{-1, 0}, []Word{}, "", ""},
-		// {"!non-blank-key", []Word{'A'}, []Word{}, " \nA B", ""},
-		// {"const 65 !store-in-word !word-buffer !w+ b@ !word-cursor @", []Word{'A', 1}, []Word{}, "", ""},
-		// {"const 65 !store-in-word !finish-word !word-buffer @ !word-cursor @", []Word{1, 0}, []Word{}, "", ""},
-		// {"!word dup @ swap !w+ b@", []Word{4, 116}, []Word{}, " test ", ""},
-		// {"!emit-word-cursor @", []Word{0}, []Word{}, "", ""},
+		// Chars
+		{"key call @char.number? key call @char.number?", []Word{0, -1}, []Word{}, "A9", ""},
+		{"key call @char.minus? key call @char.minus?", []Word{0, -1}, []Word{}, "+-", ""},
+
+		// Word Handling
+		{"call @word call @word-buf rpush " +
+			"rpeek call @array.length " +
+			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		// {"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
 
-		// // Number Parsing
-		// {"const 10 !saturated?", []Word{0}, []Word{}, "", ""},
-		// {"const -10 !saturated?", []Word{0}, []Word{}, "", ""},
-		// {"const 2147483646 !saturated?", []Word{0}, []Word{}, "", ""},
-		// {"const 2147483647 !saturated?", []Word{-1}, []Word{}, "", ""},
-		// {"const -2147483648 !saturated?", []Word{-1}, []Word{}, "", ""},
-		// {"const 10 const 2 !pow", []Word{100}, []Word{}, "", ""},
-		// {"const -3 const 3 !pow", []Word{-27}, []Word{}, "", ""},
-		// {"const 3 const -2 !pow", []Word{3}, []Word{}, "", ""},
-		// {"key !number? key !number?", []Word{0, -1}, []Word{}, "A9", ""},
-		// {"key !minus? key !minus?", []Word{0, -1}, []Word{}, "+-", ""},
+		// Number Parsing
 		// {"!word drop !negative-number? !word drop !negative-number?", []Word{0, -1}, []Word{}, "5 -5 ", ""},
 		// {"const 3 !unit const -3 !unit", []Word{1, -1}, []Word{}, "", ""},
 		// {"const 3 !negative? const -3 !negative?", []Word{0, -1}, []Word{}, "", ""},

@@ -31,27 +31,47 @@ jmp
 
 ( Utilities )
 
-.codeword int-max const 2147483647 .end
-.codeword int-min const -2147483648 .end
 .codeword word-size const 4 .end
 .codeword w+ const 4 + .end
 .codeword true const -1 .end
 .codeword false const 0 .end
 
+
+( Math )
+
 ( int int -- int )
-:max
-  over over < jmp @max-else
+:math.max
+  over over < jmp @math.max-else
   drop
   ret
-:max-else
+:math.max-else
   swap drop
   ret
 
+( int -- int )
+:math.abs
+  dup const 0 < cjmp @math.abs-invert
+  ret
+:math.abs-invert
+  const -1 * ret
+  
+( -- int )
+:math.int-max const 2147483647 ret
+
+( -- int )
+:math.int-min const -2147483648 ret
+
+( int -- bool )
+:math.saturated?
+  dup call @math.int-max =
+  swap call @math.int-min = |
+  ret
 
 ( Arrays )
 
 ( ptr capacity -- )
 :array.init
+  call @math.abs
   over const 1 + b!
   dup const 0 swap b!
   ret
@@ -73,7 +93,8 @@ jmp
 ( int ptr -- ptr )
 :array.indexed
   swap over b@ %
-  + const 2 +
+  call @math.abs +
+  const 2 +
   ret
 
 ( int ptr -- x )
@@ -85,29 +106,25 @@ jmp
 ( ptr -- )
 :array.clear const 0 swap b! ret
 
-( from to -- )
-:array.copy
-  over call @array.length
-  over call @array.length
-  call @max
-:array.copy-loop
-  ret
-( TODO: Implement when needed )
-
-( ptr ptr -- bool )
-:array.compare
-( TODO: Implement when needed )
-
 
 ( Char )
 
 ( char -- bool )
 :char.blank? const 33 < ret
 
+( char -- bool )
+:char.number?
+  dup const 47 >
+  swap const 58 < &
+  ret
+
+( char -- bool )
+:char.minus? const 45 = ret
+
+
 ( Word Handling )
 
 .var word-buf 34 .end
-@_var-word-buf const 32 call @array.init
 
 :non-blank-key
   key dup call @char.blank? ~ cjmp @non-blank-key-end
@@ -115,11 +132,12 @@ jmp
 :non-blank-key-end
   ret
 
+( -- )
 .codeword word
-  @_var-word-buf call @array.clear
+  const @_var-word-buf const 32 call @array.init rpush
   call @non-blank-key
 :word-loop
-  @_var-word-buf call @array.append
+  rpeek call @array.append
   key dup call @char.blank? ~ cjmp @word-loop
-  drop
+  drop rpop drop
 .end
