@@ -118,9 +118,40 @@ jmp
   swap const 58 < &
   ret
 
-( char -- bool )
-:char.minus? const 45 = ret
 
+( String )
+
+( ptr -- int )
+:string.sign
+  const 0 swap call @array.get
+  const 45 = cjmp @string.sign-negative
+  const 1
+  ret
+:string.sign-negative
+  const -1
+  ret
+  
+( ptr -- int )
+:string.parse-number
+  dup call @string.sign swap
+  const 0 rpush const 0
+:string.parse-number-loop
+  over call @array.length rpeek > ~ cjmp @string.parse-number-end
+  const 10 *
+  over rpeek swap call @array.get
+  dup const 45 = cjmp @string.parse-number-skip
+  dup call @char.number? ~ cjmp @string.parse-number-error
+  const 48 - +
+  rpop const 1 + rpush
+  jmp @string.parse-number-loop
+:string.parse-number-skip
+  drop
+  rpop const 1 + rpush
+  jmp @string.parse-number-loop
+:string.parse-number-error
+  drop drop call @math.int-min
+:string.parse-number-end
+  rpop drop swap drop * ret
 
 ( Word Handling )
 

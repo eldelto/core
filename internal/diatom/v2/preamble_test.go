@@ -84,21 +84,18 @@ func TestPreamble(t *testing.T) {
 
 		// Chars
 		{"key call @char.number? key call @char.number?", []Word{0, -1}, []Word{}, "A9", ""},
-		{"key call @char.minus? key call @char.minus?", []Word{0, -1}, []Word{}, "+-", ""},
+
+		// Strings
+		{"call @word const @_var-word-buf call @string.parse-number", []Word{99}, []Word{}, "99 ", ""},
+		{"call @word const @_var-word-buf call @string.parse-number", []Word{-99}, []Word{}, "-99 ", ""},
+		{"call @word const @_var-word-buf call @string.parse-number", []Word{WordMax}, []Word{}, "3147483647 ", ""},
+		{"call @word const @_var-word-buf call @string.parse-number", []Word{WordMin}, []Word{}, "123a45 ", ""},
 
 		// Word Handling
 		{"call @word call @word-buf rpush " +
 			"rpeek call @array.length " +
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		// {"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
-
-		// Number Parsing
-		// {"!word drop !negative-number? !word drop !negative-number?", []Word{0, -1}, []Word{}, "5 -5 ", ""},
-		// {"const 3 !unit const -3 !unit", []Word{1, -1}, []Word{}, "", ""},
-		// {"const 3 !negative? const -3 !negative?", []Word{0, -1}, []Word{}, "", ""},
-		// {"!word drop !number", []Word{99, 0}, []Word{}, "99 ", ""},
-		// {"!word drop !number", []Word{-99, 0}, []Word{}, "-99 ", ""},
-		// {"!word drop !number", []Word{WordMax, -1}, []Word{}, "3147483647 ", ""},
 
 		// // Number Printing
 		// {"const 13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
