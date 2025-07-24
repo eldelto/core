@@ -84,18 +84,18 @@ func TestPreamble(t *testing.T) {
 
 		// Chars
 		{"key call @char.number? key call @char.number?", []Word{0, -1}, []Word{}, "A9", ""},
-
 		// Strings
-		{"call @word const @_var-word-buf call @string.parse-number", []Word{99}, []Word{}, "99 ", ""},
-		{"call @word const @_var-word-buf call @string.parse-number", []Word{-99}, []Word{}, "-99 ", ""},
-		{"call @word const @_var-word-buf call @string.parse-number", []Word{WordMax}, []Word{}, "3147483647 ", ""},
-		{"call @word const @_var-word-buf call @string.parse-number", []Word{WordMin}, []Word{}, "123a45 ", ""},
+		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{99}, []Word{}, "99 ", ""},
+		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{-99}, []Word{}, "-99 ", ""},
+		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMax}, []Word{}, "3147483647 ", ""},
+		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMin}, []Word{}, "123a45 ", ""},
 
 		// Word Handling
-		{"call @word call @word-buf rpush " +
+		{"call @word.read call @word.buffer rpush " +
 			"rpeek call @array.length " +
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
-		// {"!word drop !emit-word", []Word{}, []Word{}, " test ", "test"},
+		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
+
 
 		// // Number Printing
 		// {"const 13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},

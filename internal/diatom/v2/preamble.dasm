@@ -54,7 +54,7 @@ jmp
   ret
 :math.abs-invert
   const -1 * ret
-  
+
 ( -- int )
 :math.int-max const 2147483647 ret
 
@@ -130,7 +130,7 @@ jmp
 :string.sign-negative
   const -1
   ret
-  
+
 ( ptr -- int )
 :string.parse-number
   dup call @string.sign swap
@@ -153,9 +153,20 @@ jmp
 :string.parse-number-end
   rpop drop swap drop * ret
 
+( ptr -- int )
+:string.print
+  const 0 rpush
+:string.print-loop
+  dup call @array.length rpeek > ~ cjmp @string.print-end
+  rpeek over call @array.get emit
+  rpop const 1 + rpush
+  jmp @string.print-loop
+:string.print-end
+  rpop drop drop ret
+
 ( Word Handling )
 
-.var word-buf 34 .end
+.var word.buffer 34 .end
 
 :non-blank-key
   key dup call @char.blank? ~ cjmp @non-blank-key-end
@@ -164,11 +175,16 @@ jmp
   ret
 
 ( -- )
-.codeword word
-  const @_var-word-buf const 32 call @array.init rpush
+.codeword word.read
+  const @_var-word.buffer const 32 call @array.init rpush
   call @non-blank-key
-:word-loop
+:word.read-loop
   rpeek call @array.append
-  key dup call @char.blank? ~ cjmp @word-loop
+  key dup call @char.blank? ~ cjmp @word.read-loop
   drop rpop drop
+.end
+
+( -- )
+.codeword word.print
+  const @_var-word.buffer call @string.print
 .end
