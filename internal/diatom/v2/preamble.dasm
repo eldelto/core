@@ -37,6 +37,21 @@ jmp
 .codeword false const 0 .end
 
 
+( Integer )
+
+( int -- int )
+( Returns the count of digits of the given number. The count will
+  include the minus sign of negative numbers. )
+:int.digit-count
+  dup const -1 > const 1 +
+  swap
+:int.digit-count-loop
+  swap const 1 + swap
+  const 10 /
+  dup const 0 = ~ cjmp @int.digit-count-loop
+  drop ret
+  
+
 ( Math )
 
 ( int int -- int )
@@ -66,6 +81,14 @@ jmp
   dup call @math.int-max =
   swap call @math.int-min = |
   ret
+
+( int -- int )
+:math.absolute
+  dup const 0 < cjmp @math.absolute-negative
+  ret
+:math.absolute-negative
+  const -1 * ret
+  
 
 ( Arrays )
 
@@ -163,6 +186,35 @@ jmp
   jmp @string.print-loop
 :string.print-end
   rpop drop drop ret
+
+( int -- char )
+:last-digit-to-char
+  call @math.absolute
+  const 10 %
+  const 48 +
+  ret
+
+( int len ptr -- )
+:store-digit
+  rpush rpush
+  call @last-digit-to-char
+  rpop rpop call @array.set
+  ret
+  
+( int ptr -- )
+:string.from-number
+  rpush
+  dup call @int.digit-count
+  dup rpeek b!
+:string.from-number-loop
+  const 1 -
+  over over rpeek call @store-digit
+  dup const 0 = cjmp @string.from-number-end
+  swap const 10 / swap
+  jmp @string.from-number-loop
+:string.from-number-end
+  rpop drop drop drop ret
+  
 
 ( Word Handling )
 

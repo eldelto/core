@@ -49,6 +49,10 @@ func TestPreamble(t *testing.T) {
 		// {"!newline", []Word{}, []Word{}, "", "\n"},
 		// {"!spc", []Word{}, []Word{}, "", " "},
 
+		// Integer
+		{"const 1234 call @int.digit-count", []Word{4}, []Word{}, "", ""},
+		{"const -1234 call @int.digit-count", []Word{5}, []Word{}, "", ""},
+
 		// Math
 		{"call @math.int-max", []Word{WordMax}, []Word{}, "", ""},
 		{"call @math.int-min", []Word{WordMin}, []Word{}, "", ""},
@@ -57,6 +61,8 @@ func TestPreamble(t *testing.T) {
 		{"const 2147483646 call @math.saturated?", []Word{0}, []Word{}, "", ""},
 		{"const 2147483647 call @math.saturated?", []Word{-1}, []Word{}, "", ""},
 		{"const -2147483648 call @math.saturated?", []Word{-1}, []Word{}, "", ""},
+		{"const -5 call @math.absolute", []Word{5}, []Word{}, "", ""},
+		{"const 5 call @math.absolute", []Word{5}, []Word{}, "", ""},
 
 		// Arrays
 		{"const @_var-x const 10 call @array.init dup b@ swap const 1 + b@ exit .var x 12 .end", []Word{0, 10}, []Word{}, "", ""},
@@ -89,13 +95,16 @@ func TestPreamble(t *testing.T) {
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{-99}, []Word{}, "-99 ", ""},
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMax}, []Word{}, "3147483647 ", ""},
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMin}, []Word{}, "123a45 ", ""},
+		{"call @word.read const 123 call @word.buffer call @string.from-number call @word.print", []Word{}, []Word{}, " test ", "123"},
+
+		// TODO
+		// {"call @word.read const -123 call @word.buffer call @string.from-number call @word.print", []Word{}, []Word{}, " test ", "-123"},
 
 		// Word Handling
 		{"call @word.read call @word.buffer rpush " +
 			"rpeek call @array.length " +
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
-
 
 		// // Number Printing
 		// {"const 13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
