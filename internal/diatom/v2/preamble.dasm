@@ -129,6 +129,27 @@ jmp
 ( ptr -- )
 :array.clear const 0 swap b! ret
 
+( ptr ptr -- bool )
+:array.equal?
+  over call @array.length
+  over call @array.length
+  dup const 1 - rpush
+  = ~ cjmp @array.equal?-false
+
+:array.equal?-loop
+  over rpeek swap call @array.get
+  over rpeek swap call @array.get
+  = ~ cjmp @array.equal?-false
+  rpop const 1 - rpush
+  rpeek const -1 > cjmp @array.equal?-loop
+  rpop drop drop drop
+  call @true
+  ret
+:array.equal?-false
+  rpop drop drop drop
+  call @false
+  ret
+
 
 ( Char )
 

@@ -42,12 +42,9 @@ func TestPreamble(t *testing.T) {
 		{"const 7 call @rpush call @rpop", []Word{7}, []Word{}, "", ""},
 
 		// Utilities
-		// {"!constw", []Word{4}, []Word{}, "", ""},
 		{"const 5 call @w+", []Word{9}, []Word{}, "", ""},
 		{"call @true", []Word{-1}, []Word{}, "", ""},
 		{"call @false", []Word{0}, []Word{}, "", ""},
-		// {"!newline", []Word{}, []Word{}, "", "\n"},
-		// {"!spc", []Word{}, []Word{}, "", " "},
 
 		// Integer
 		{"const 1234 call @int.digit-count", []Word{4}, []Word{}, "", ""},
@@ -87,9 +84,19 @@ func TestPreamble(t *testing.T) {
 			"rpeek call @array.clear " +
 			"rpop call @array.length " +
 			"exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init rpush " +
+			"const 3 rpeek call @array.append " +
+			"const 4 rpeek call @array.append " +
+			"rpeek rpop call @array.equal? " +
+			"exit .var x 12 .end", []Word{-1}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init rpush " +
+			"const 3 rpeek call @array.append " +
+			"rpeek rpop const 1 + call @array.equal? " +
+			"exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
 
 		// Chars
 		{"key call @char.number? key call @char.number?", []Word{0, -1}, []Word{}, "A9", ""},
+
 		// Strings
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{99}, []Word{}, "99 ", ""},
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{-99}, []Word{}, "-99 ", ""},
@@ -104,22 +111,9 @@ func TestPreamble(t *testing.T) {
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
 
-		// // Number Printing
-		// {"const 13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
-		// {"const -13 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
-		// {"const -3 !digit-to-char", []Word{'3'}, []Word{}, "", ""},
-		// {"const 13 !digit-count", []Word{2}, []Word{}, "", ""},
-		// {"const -13 !digit-count", []Word{3}, []Word{}, "", ""},
-		// {"const 0 !digit-count", []Word{1}, []Word{}, "", ""},
-		// {"const 23 !last-digit-to-word !word-buffer !w+ const 1 + b@", []Word{2, '3'}, []Word{}, "", ""},
-		// {"const -23 !last-digit-to-word !word-buffer !w+ const 2 + b@", []Word{-2, '3'}, []Word{}, "", ""},
-		// {"const -3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '-'}, []Word{}, "", ""},
-		// {"const 3 !last-digit-to-word !word-buffer !w+ b@", []Word{WordMin, '3'}, []Word{}, "", ""},
-		// {"const 13 !number-to-word", []Word{}, []Word{}, "", ""},
-		// {"const 13 !number-to-word !emit-word", []Word{}, []Word{}, "", "13"},
-		// {"const -13 !number-to-word !emit-word", []Word{}, []Word{}, "", "-13"},
-		// {"const 13 !.", []Word{}, []Word{}, "", "13"},
-		// {"const -13 !.", []Word{}, []Word{}, "", "-13"},
+		// TODO:
+		// - [ ] array.equal?
+		// - [ ] array.copy
 
 		// // Memory Operations
 		// {"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},
