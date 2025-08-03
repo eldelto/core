@@ -50,7 +50,7 @@ jmp
   const 10 /
   dup const 0 = ~ cjmp @int.digit-count-loop
   drop ret
-  
+
 
 ( Math )
 
@@ -88,7 +88,7 @@ jmp
   ret
 :math.absolute-negative
   const -1 * ret
-  
+
 
 ( Arrays )
 
@@ -200,7 +200,7 @@ jmp
   call @last-digit-to-char
   rpop rpop call @array.set
   ret
-  
+
 ( int ptr -- )
 :string.from-number
   rpush
@@ -213,8 +213,15 @@ jmp
   swap const 10 / swap
   jmp @string.from-number-loop
 :string.from-number-end
-  rpop drop drop drop ret
-  
+  drop drop
+  const 0 rpeek call @array.get const 48 =
+  rpeek call @array.length const 1 >
+  & cjmp @string.from-number-minus
+  rpop drop ret
+:string.from-number-minus
+  const 45 const 0 rpop call @array.set
+  ret
+
 
 ( Word Handling )
 

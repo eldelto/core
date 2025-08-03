@@ -96,9 +96,7 @@ func TestPreamble(t *testing.T) {
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMax}, []Word{}, "3147483647 ", ""},
 		{"call @word.read const @_var-word.buffer call @string.parse-number", []Word{WordMin}, []Word{}, "123a45 ", ""},
 		{"call @word.read const 123 call @word.buffer call @string.from-number call @word.print", []Word{}, []Word{}, " test ", "123"},
-
-		// TODO
-		// {"call @word.read const -123 call @word.buffer call @string.from-number call @word.print", []Word{}, []Word{}, " test ", "-123"},
+		{"call @word.read const -123 call @word.buffer call @string.from-number call @word.print", []Word{}, []Word{}, " test ", "-123"},
 
 		// Word Handling
 		{"call @word.read call @word.buffer rpush " +
