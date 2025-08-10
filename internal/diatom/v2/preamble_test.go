@@ -60,6 +60,10 @@ func TestPreamble(t *testing.T) {
 		{"const -2147483648 call @math.saturated?", []Word{-1}, []Word{}, "", ""},
 		{"const -5 call @math.absolute", []Word{5}, []Word{}, "", ""},
 		{"const 5 call @math.absolute", []Word{5}, []Word{}, "", ""},
+		{"const 5 const 4 call @math.max", []Word{5}, []Word{}, "", ""},
+		{"const 4 const 5 call @math.max", []Word{5}, []Word{}, "", ""},
+		{"const 5 const 4 call @math.min", []Word{4}, []Word{}, "", ""},
+		{"const 4 const 5 call @math.min", []Word{4}, []Word{}, "", ""},
 
 		// Arrays
 		{"const @_var-x const 10 call @array.init dup b@ swap const 1 + b@ exit .var x 12 .end", []Word{0, 10}, []Word{}, "", ""},
@@ -93,6 +97,20 @@ func TestPreamble(t *testing.T) {
 			"const 3 rpeek call @array.append " +
 			"rpeek rpop const 1 + call @array.equal? " +
 			"exit .var x 12 .end", []Word{0}, []Word{}, "", ""},
+		{"const @_var-x const 10 call @array.init " +
+			"const 1 over call @array.append " +
+			"const 2 over call @array.append " +
+			"const 3 over call @array.append " +
+			"const 4 over call @array.append " +
+			"const @_var-y const 8 call @array.init rpush " +
+			"rpeek call @array.copy " +
+			"rpeek call @array.length " +
+			"rpeek call @array.capacity " +
+			"const 0 rpeek call @array.get " +
+			"const 1 rpeek call @array.get " +
+			"const 2 rpeek call @array.get " +
+			"const 3 rpeek call @array.get " +
+			"exit .var x 12 .end .var y 12 .end", []Word{4, 8, 1, 2, 3, 4}, []Word{}, "", ""},
 
 		// Chars
 		{"key call @char.number? key call @char.number?", []Word{0, -1}, []Word{}, "A9", ""},
@@ -111,9 +129,9 @@ func TestPreamble(t *testing.T) {
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
 
-		// TODO:
-		// - [ ] array.equal?
-		// - [ ] array.copy
+		// TODO
+		// {"const 255 call @word.not-immediate", []Word{127}, []Word{}, "", ""},
+		// {"const 255 call @word.not-hidden", []Word{191}, []Word{}, "", ""},
 
 		// // Memory Operations
 		// {"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},

@@ -1,9 +1,8 @@
 module github.com/eldelto/core
 
-go 1.23.6
+go 1.23.12
 
 require (
-	github.com/cespare/reflex v0.3.1
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-co-op/gocron v1.37.0
 	github.com/google/uuid v1.6.0
@@ -21,12 +20,8 @@ require (
 require (
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/creack/goselect v0.1.2 // indirect
-	github.com/creack/pty v1.1.21 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
-	github.com/ogier/pflag v0.0.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect

@@ -56,10 +56,19 @@ jmp
 
 ( int int -- int )
 :math.max
-  over over < jmp @math.max-else
+  over over < cjmp @math.max-else
   drop
   ret
 :math.max-else
+  swap drop
+  ret
+
+( int int -- int )
+:math.min
+  over over > cjmp @math.max-else
+  drop
+  ret
+:math.min-else
   swap drop
   ret
 
@@ -135,7 +144,6 @@ jmp
   over call @array.length
   dup const 1 - rpush
   = ~ cjmp @array.equal?-false
-
 :array.equal?-loop
   over rpeek swap call @array.get
   over rpeek swap call @array.get
@@ -150,6 +158,27 @@ jmp
   call @false
   ret
 
+( src dest -- )
+:array.copy
+  over call @array.capacity
+  over call @array.capacity
+  call @math.min rpush
+  
+  over call @array.length
+  over call @array.length
+  call @math.max
+  rpeek call @math.min
+
+  over b!
+:array.copy-loop
+  rpeek const 1 < cjmp @array.copy-end
+
+  over rpeek swap call @array.get
+  over rpeek swap call @array.set
+
+  rpop const 1 - rpush jmp @array.copy-loop
+:array.copy-end
+  rpop drop drop drop ret
 
 ( Char )
 
@@ -268,3 +297,7 @@ jmp
 .codeword word.print
   const @_var-word.buffer call @string.print
 .end
+
+:word.not-immediate
+  const 127 &
+  ret
