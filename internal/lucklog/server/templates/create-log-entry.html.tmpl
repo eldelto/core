@@ -1,0 +1,12 @@
+{{define "content"}}
+
+<div>
+  <h1>What are you grateful for today?</h1>
+
+  <form method="POST" action="./log-entries">
+	<input type="text" id="content" name="content"></input>
+	<button>Create</button>
+  </form>
+</div>
+
+{{end}}

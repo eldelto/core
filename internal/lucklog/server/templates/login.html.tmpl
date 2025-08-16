@@ -1,0 +1,26 @@
+{{define "content"}}
+
+<div class="FakeTodoList">
+  <div id="TodoListBody">
+	<h1 class="ToDoListTitle">Login - Step 1</h1>
+
+	<p>
+	  After you press <cite>Login</cite> an E-mail containing a one-time-password
+	  will be sent to you to complete the login/signup process.
+	</p>
+
+	<form method="POST" action="/auth/token">
+	  <label for="email">E-mail:</label>
+	  <input type="email" name="email"
+			 id="email"
+			 placeholder="solvent@eldelto.net" />
+
+	  <div id="ToDoListFooter">
+		<a href="/" class="secondary cancel">Cancel</a>
+		<button class="primary confirm">Login</button>
+	  </div>
+	</form>
+  </div>
+</div>
+
+{{end}}

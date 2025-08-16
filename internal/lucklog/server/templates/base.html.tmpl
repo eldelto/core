@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+	<meta charset="utf-8">
+	<title>Luck-Log</title>
+	<meta http-equiv="Content-Type" charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Meal-Planner - Free without fuss">
+
+	<link rel="stylesheet" href='{{asset "main.css"}}'>
+	<link rel="icon" type="image/svg" href='{{asset "favicon.ico"}}'>
+	<script defer src='{{asset "htmx-2.0.4.min.js"}}'></script>
+  </head>
+
+  <body>
+	<dialog id="error-dialog">
+	  <form method="dialog" class="FakeTodoList flexCol">
+		<h2>Error</h2>
+		<p id="error-content">
+		  {{.Msg}}
+		</p>
+		<button class="primary confirm">OK</button>
+	  </form>
+	</dialog>
+
+	{{if .Msg}}
+	<script>
+	  document.querySelector("#error-dialog").showModal();
+	</script>
+	{{end}}
+
+	<div id="content">
+	  {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
+	</div>
+  </body>
+
+</html>
