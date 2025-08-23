@@ -263,11 +263,17 @@ func writeDictionaryHeader(asm *assembler, name string, immediate bool) error {
 	}
 	asm.lastWordName = name
 
+	// Flags byte
+	flags := 0
+	if immediate {
+		flags |= 2
+	}
+	if _, err := fmt.Fprintf(asm.writer, "%d\n", flags); err != nil {
+		return err
+	}
+
 	// Lenght and characters of the current word's name.
 	nameLen := len(name)
-	if immediate {
-		nameLen |= 128
-	}
 	if _, err := fmt.Fprintf(asm.writer, "%d", nameLen); err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 jmp
-@main
+@init
 
 
 ( Instructions )
@@ -298,6 +298,62 @@ jmp
   const @_var-word.buffer call @string.print
 .end
 
-:word.not-immediate
-  const 127 &
-  ret
+( ptr -- ptr )
+.codeword word.flags
+  call @w+
+.end
+
+( ptr -- ptr )
+.codeword word.name
+  call @w+ const 1 +
+.end
+
+( -- )
+.codeword word.immediate
+  call @word.latest @ call @word.flags dup b@
+  const 2 | swap b!
+.end
+
+( -- )
+.codeword word.hide
+  call @word.latest @ call @word.flags dup b@
+  const 1 | swap b!
+.end
+
+( -- )
+.codeword word.unhide
+  call @word.latest @ call @word.flags dup b@
+  const 254 & swap b!
+.end
+
+( ptr -- bool )
+.codeword word.hidden?
+  call @word.flags b@
+  const 1 &
+  const 1 =
+.end
+
+( -- ptr )
+.codeword word.find
+( TODO: Handle no match found. )
+  call @word.latest rpush
+  
+:word.find-loop
+  rpeek call @word.name
+  call @word.buffer call @array.equal?
+  rpeek call @word.hidden? ~
+  & cjmp @word.find-match
+  rpop @ rpush jmp @word.find-loop
+  
+:word.find-match
+.end
+
+
+( THIS MUST BE THE LAST WORD DECLARATION OTHERWHISE NEW WORD
+DEFINITIONS OVERWRITE EXISTING ONES. )
+.var word.latest 4 .end
+
+:init
+  const @_dict-word.latest const @_var-word.latest !
+  jmp @main
+  

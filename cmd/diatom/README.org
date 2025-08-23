@@ -38,6 +38,14 @@ A stack VM & Forth-like language implementation.
 
    TBD
 
+*** Booleans
+
+	For proper booleans ~false~ is equal to the decimal value zero,
+	~true~ to the decimal value -1. This has the advantage that a
+	binary not can toggle between the two states.
+
+	Improper booleans (a.k.a. everything else) are treated as ~true~.
+	
 *** Charrays
 
 	Char arrays have the following memory-layout:
@@ -61,3 +69,17 @@ A stack VM & Forth-like language implementation.
 
 	This wastes some space but makes the implementation easier as one
 	can use regular array functions to manipulate the word names.
+
+	The flags byte contains the following bits:
+
+    | Bit | Description |
+    |-----+-------------|
+    |   0 | Hidden      |
+    |   1 | Immediate   |
+    |   2 | Reserved    |
+    |   3 | Reserved    |
+    |   4 | Reserved    |
+    |   5 | Reserved    |
+    |   6 | Reserved    |
+    |   7 | Reserved    |
+	

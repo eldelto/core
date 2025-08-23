@@ -128,10 +128,12 @@ func TestPreamble(t *testing.T) {
 			"rpeek call @array.length " +
 			"const 0 rpeek call @array.get", []Word{4, 116}, []Word{}, " test ", ""},
 		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
-
-		// TODO
-		// {"const 255 call @word.not-immediate", []Word{127}, []Word{}, "", ""},
-		// {"const 255 call @word.not-hidden", []Word{191}, []Word{}, "", ""},
+		{"call @word.immediate call @word.latest @ call @word.flags b@", []Word{2}, []Word{}, "", ""},
+		{"call @word.hide call @word.latest @ call @word.flags b@", []Word{1}, []Word{}, "", ""},
+		{"call @word.hide call @word.unhide call @word.latest @ call @word.flags b@", []Word{0}, []Word{}, "", ""},
+		{"call @word.latest @ call @word.hidden?", []Word{0}, []Word{}, "", ""},
+		{"call @word.hide call @word.latest @ call @word.hidden?", []Word{-1}, []Word{}, "", ""},
+		// {"call @word.read call @word.find", []Word{77}, []Word{}, "dup", ""},
 
 		// // Memory Operations
 		// {"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},

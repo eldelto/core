@@ -314,13 +314,13 @@ func (vm *VM) execute() error {
 				return err
 			}
 
-			if conditional == -1 {
+			if conditional == 0 {
+				vm.programCounter += WordSize
+			} else {
 				vm.programCounter, err = vm.fetchWord(vm.programCounter)
 				if err != nil {
 					return err
 				}
-			} else {
-				vm.programCounter += WordSize
 			}
 			continue
 		case CALL:
