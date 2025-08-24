@@ -298,6 +298,15 @@ jmp
   const @_var-word.buffer call @string.print
 .end
 
+( -- )
+.codeword .
+  dup
+  call @word.buffer
+  call @string.from-number
+  call @word.print
+  const 10 emit
+.end
+
 ( ptr -- ptr )
 .codeword word.flags
   call @w+
@@ -334,18 +343,21 @@ jmp
 .end
 
 ( -- ptr )
+( Returns a pointer to the matching word or 0 if no match could be
+found. )
 .codeword word.find
 ( TODO: Handle no match found. )
-  call @word.latest rpush
+  call @word.latest @ rpush
   
 :word.find-loop
-  rpeek call @word.name
-  call @word.buffer call @array.equal?
+  rpeek const 0 = cjmp @word.find-exit
+  rpeek call @word.name call @word.buffer call @array.equal?
   rpeek call @word.hidden? ~
-  & cjmp @word.find-match
+  & cjmp @word.find-exit
   rpop @ rpush jmp @word.find-loop
   
-:word.find-match
+:word.find-exit
+  rpop
 .end
 
 
