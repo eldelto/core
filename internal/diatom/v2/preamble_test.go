@@ -138,6 +138,11 @@ func TestPreamble(t *testing.T) {
 			[]Word{-1}, []Word{}, "word.latest ", ""},
 		{"call @word.read call @word.find", []Word{0}, []Word{}, "asdf", ""},
 		{"call @word.read call @word.find", []Word{75}, []Word{}, "dup", ""},
+		{"call @word.interpret", []Word{10}, []Word{}, "10 ", ""},
+		{"call @word.interpret", []Word{20}, []Word{}, "10 dup + ", ""},
+
+		// TODO: Test sub-steps of the compilation flow.
+		// {"call @word.interpret", []Word{20}, []Word{}, ": quad dup dup + + ; 5 quad ", ""},
 
 		// // Memory Operations
 		// {"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},
@@ -146,18 +151,6 @@ func TestPreamble(t *testing.T) {
 		// {"const 0 const 5 !mem-view", []Word{}, []Word{}, "", "0: 3\n1: 255\n2: 255\n3: 255\n4: 255\n5: 15\n"},
 
 		// // Dictionary Operations
-		// {"const 255 !unset-immediate", []Word{127}, []Word{}, "", ""},
-		// {"const 255 !unset-hidden", []Word{191}, []Word{}, "", ""},
-		// {"const 777 !latest ! !latest @", []Word{777}, []Word{}, "", ""},
-		// {"!word drop const @mem-view !w+ !word=", []Word{-1}, []Word{}, "mem-view ", ""},
-		// {"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "asdf ", ""},
-		// {"!word drop const @mem-view !w+ !word=", []Word{0}, []Word{}, "mem-viewX ", ""},
-		// {"!word drop const @1- !w+ !word=", []Word{0}, []Word{}, "10 ", ""},
-		// {"!word drop const @immediate !w+ !word=", []Word{-1}, []Word{}, "immediate ", ""},
-		// {"!word drop !latest @ !w+ !word=", []Word{-1}, []Word{}, "latest ", ""},
-		// {"!word drop !find", []Word{87}, []Word{}, "drop ", ""},
-		// {"!word drop !find", []Word{0}, []Word{}, "asdf ", ""},
-		// {"const @dup dup !codeword swap -", []Word{8}, []Word{}, "asdf ", ""},
 		// {"!interpret", []Word{10}, []Word{}, "10 ", ""},
 		// {"!interpret", []Word{20}, []Word{}, "10 dup + ", ""},
 

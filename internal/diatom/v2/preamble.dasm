@@ -35,6 +35,16 @@ jmp
 .codeword w+ const 4 + .end
 .codeword true const -1 .end
 .codeword false const 0 .end
+:'call' const 5 ret
+:'const' const 7 ret
+:'ret' const 2 ret
+
+( Unsafe )
+
+( ptr -- )
+.codeword unsafe.stack-call
+  rpush
+.end
 
 
 ( Integer )
@@ -317,10 +327,23 @@ jmp
   call @w+ const 1 +
 .end
 
+( ptr -- ptr )
+.codeword word.code
+  call @word.name dup b@
+  const 2 + +
+.end
+
 ( -- )
 .codeword word.immediate
   call @word.latest @ call @word.flags dup b@
   const 2 | swap b!
+.end
+
+( ptr -- bool )
+.codeword word.immediate?
+  call @word.flags b@
+  const 2 &
+  const 1 =
 .end
 
 ( -- )
@@ -346,7 +369,6 @@ jmp
 ( Returns a pointer to the matching word or 0 if no match could be
 found. )
 .codeword word.find
-( TODO: Handle no match found. )
   call @word.latest @ rpush
   
 :word.find-loop
@@ -360,6 +382,100 @@ found. )
   rpop
 .end
 
+.var word.compile-state 4 .end
+.var word.here 4 .end
+
+( -- )
+.codeword word.create-header
+  call @word.latest @ call @word.here @ !
+  call @word.here @ call @word.latest !
+
+  call @word.buffer
+  call @word.here @ call @w+
+  over call @array.length
+  call @array.init
+  call @array.copy
+
+  call @word.buffer call @array.length
+  call @word.here dup @ call @w+ + const 1 + swap !
+.end
+
+( ptr -- )
+:word.append
+  call @word.here @ !
+  call @word.here dup @ call @w+ swap !
+  ret
+  
+( ptr -- )
+:word.append-byte
+  call @word.here @ b!
+  call @word.here dup @ const 1 + swap !
+  ret
+
+( -- )
+( Disables compilation mode. )
+.immediate-codeword [
+  call @false call @word.compile-state !
+.end
+
+( -- )
+( Enables compilation mode. )
+.immediate-codeword ]
+  call @true call @word.compile-state !
+.end
+
+( -- )
+( Reads words from stdin and switches into compilation mode. )
+.codeword :
+  call @word.read
+  call @word.create-header
+  call @word.hide
+  call @]
+.end
+
+.immediate-codeword ;
+  call @'ret' call @word.append-byte
+  call @word.unhide
+  call @[
+.end
+
+( -- )
+.codeword word.interpret
+  call @word.read call @word.find
+  dup const 0 = cjmp @word.interpret-number
+  dup call @word.code
+  
+  swap call @word.immediate? ~
+  call @word.compile-state @
+  & cjmp @word.interpret-compile
+
+  call @unsafe.stack-call
+  jmp @word.interpret
+
+:word.interpret-compile
+  call @'call' call @word.append-byte
+  call @word.append
+  jmp @word.interpret
+
+:word.interpret-number
+  drop call @word.buffer call @string.parse-number
+  dup call @math.int-min = cjmp @word.interpret-error
+  call @word.compile-state @ cjmp @word.interpret-compile-number
+  jmp @word.interpret
+
+:word.interpret-compile-number
+  call @'const' call @word.append-byte
+  call @word.append
+  jmp @word.interpret
+  
+:word.interpret-error
+  const 69 emit
+  const 114 emit
+  const 114 emit
+  const 111 emit
+  const 114 emit
+.end
+
 
 ( THIS MUST BE THE LAST WORD DECLARATION OTHERWHISE NEW WORD
 DEFINITIONS OVERWRITE EXISTING ONES. )
@@ -367,5 +483,7 @@ DEFINITIONS OVERWRITE EXISTING ONES. )
 
 :init
   const @_dict-word.latest const @_var-word.latest !
+  const @here-address const @_var-word.here !
   jmp @main
-  
+
+:here-address
