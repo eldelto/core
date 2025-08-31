@@ -3,6 +3,7 @@ package diatom
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	. "github.com/eldelto/core/internal/testutils"
@@ -130,6 +131,7 @@ func TestPreamble(t *testing.T) {
 		{"call @word.read call @word.print", []Word{}, []Word{}, " test ", "test"},
 		{"const 1234 call @.", []Word{1234}, []Word{}, "", "1234\n"},
 		{"call @word.immediate call @word.latest @ call @word.flags b@", []Word{2}, []Word{}, "", ""},
+		{"call @word.read call @word.find call @word.immediate?", []Word{-1}, []Word{}, "]", ""},
 		{"call @word.hide call @word.latest @ call @word.flags b@", []Word{1}, []Word{}, "", ""},
 		{"call @word.hide call @word.unhide call @word.latest @ call @word.flags b@", []Word{0}, []Word{}, "", ""},
 		{"call @word.latest @ call @word.hidden?", []Word{0}, []Word{}, "", ""},
@@ -138,11 +140,16 @@ func TestPreamble(t *testing.T) {
 			[]Word{-1}, []Word{}, "word.latest ", ""},
 		{"call @word.read call @word.find", []Word{0}, []Word{}, "asdf", ""},
 		{"call @word.read call @word.find", []Word{75}, []Word{}, "dup", ""},
-		{"call @word.interpret", []Word{10}, []Word{}, "10 ", ""},
+		{"call @word.interpret", []Word{10}, []Word{}, "10", ""},
 		{"call @word.interpret", []Word{20}, []Word{}, "10 dup + ", ""},
-
-		// TODO: Test sub-steps of the compilation flow.
-		// {"call @word.interpret", []Word{20}, []Word{}, ": quad dup dup + + ; 5 quad ", ""},
+		{"call @word.read call @word.create-header call @word.find call @word.latest @ =",
+			[]Word{-1}, []Word{}, "test", ""},
+		{"call @word.read call @word.create-header call @word.read call @word.find",
+			[]Word{75}, []Word{}, "test dup", ""},
+		{"call @word.interpret", []Word{-1}, []Word{}, ": quad ; word.latest @ word.here @ <", ""},
+		{"call @word.interpret", []Word{5}, []Word{}, ": quad dup + dup + ; 5", ""},
+		{"call @word.interpret", []Word{20}, []Word{}, ": quad dup + dup + ; 5 quad", ""},
+		{"call @word.interpret", []Word{7}, []Word{}, ": add2 2 + ; 5 add2", ""},
 
 		// // Memory Operations
 		// {"const 0 dup const 12 !mem=", []Word{-1}, []Word{}, "", ""},
@@ -199,7 +206,7 @@ func TestPreamble(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.assembly, func(t *testing.T) {
-			assembly := Preamble + "\n:main\n" + tt.assembly + "\nexit"
+			assembly := strings.Replace(Preamble, "( {{main}} )", "\n:main\n"+tt.assembly+"\nexit", 1)
 
 			_, dins, program, err := Assemble(bytes.NewBufferString(assembly))
 			AssertNoError(t, err, "Assemble")
@@ -221,6 +228,9 @@ func TestPreamble(t *testing.T) {
 			if t.Failed() {
 				err = os.WriteFile("preamble.dins", []byte(dins), 0666)
 				AssertNoError(t, err, "write .dins file")
+
+				err = vm.CoreDump()
+				AssertNoError(t, err, "write core dump file")
 			}
 		})
 	}

@@ -111,7 +111,7 @@ jmp
 
 ( Arrays )
 
-( ptr capacity -- )
+( ptr capacity -- ptr )
 :array.init
   call @math.abs
   over const 1 + b!
@@ -343,7 +343,7 @@ jmp
 .codeword word.immediate?
   call @word.flags b@
   const 2 &
-  const 1 =
+  const 2 =
 .end
 
 ( -- )
@@ -385,21 +385,6 @@ found. )
 .var word.compile-state 4 .end
 .var word.here 4 .end
 
-( -- )
-.codeword word.create-header
-  call @word.latest @ call @word.here @ !
-  call @word.here @ call @word.latest !
-
-  call @word.buffer
-  call @word.here @ call @w+
-  over call @array.length
-  call @array.init
-  call @array.copy
-
-  call @word.buffer call @array.length
-  call @word.here dup @ call @w+ + const 1 + swap !
-.end
-
 ( ptr -- )
 :word.append
   call @word.here @ !
@@ -410,6 +395,23 @@ found. )
 :word.append-byte
   call @word.here @ b!
   call @word.here dup @ const 1 + swap !
+  ret
+
+( -- )
+:word.create-header
+  call @word.here @
+  call @word.latest @ call @word.append
+  call @word.latest !
+  const 0 call @word.append-byte
+
+  call @word.buffer
+  call @word.here @
+  over call @array.length
+  call @array.init
+  call @array.copy
+
+  call @word.latest @ call @word.code
+  call @word.here !
   ret
 
 ( -- )
@@ -475,6 +477,10 @@ found. )
   const 111 emit
   const 114 emit
 .end
+
+
+( This line is used to inject test code. )
+( {{main}} )
 
 
 ( THIS MUST BE THE LAST WORD DECLARATION OTHERWHISE NEW WORD

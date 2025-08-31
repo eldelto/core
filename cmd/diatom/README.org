@@ -60,7 +60,7 @@ A stack VM & Forth-like language implementation.
 	
     | Size    | Description              |
     |---------+--------------------------|
-    | 1 Byte  | Pointer to previous word |
+    | 4 Bytes | Pointer to previous word |
     | 1 Byte  | Flags                    |
     | 1 Byte  | Length                   |
     | 1 Byte  | Capacity                 |

@@ -672,6 +672,10 @@ func (vm *VM) StackTrace() string {
 	return b.String()
 }
 
+func (vm *VM) CoreDump() error {
+	return vm.dumpMemory("core-dump.dopc", MemorySize-1)
+}
+
 func (vm *VM) Execute() error {
 	if err := vm.execute(); err != nil {
 		return fmt.Errorf("%w:\n\n%s", err, vm.StackTrace())
