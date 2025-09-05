@@ -29,7 +29,7 @@ func AssertEquals(t testing.TB, expected, actual any, title string) {
 	t.Helper()
 
 	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("%s should be\n'%v'\nbut was\n'%v'", title, expected, actual)
+		t.Errorf("%s should be\n'%#v'\nbut was\n'%#v'", title, expected, actual)
 	}
 }
 
@@ -37,7 +37,7 @@ func AssertNotEquals(t testing.TB, expected, actual any, title string) {
 	t.Helper()
 
 	if reflect.DeepEqual(expected, actual) {
-		t.Errorf("%s should not be\n'%v'\nbut was\n'%v'", title, expected, actual)
+		t.Errorf("%s should not be\n'%#v'\nbut was\n'%#v'", title, expected, actual)
 	}
 }
 
@@ -50,7 +50,7 @@ func AssertContains[T comparable](t testing.TB, expected T, testee []T, title st
 		}
 	}
 
-	t.Errorf("%s did not contain a value '%v': %v", title, expected, testee)
+	t.Errorf("%s did not contain a value '%#v': %#v", title, expected, testee)
 }
 
 func AssertContainsAll[T comparable](t testing.TB, expected []T, testee []T, title string) {
@@ -68,7 +68,7 @@ func AssertStringContains(t testing.TB, expected, testee, title string) {
 	t.Helper()
 
 	if !strings.Contains(testee, expected) {
-		t.Errorf("%s did not contain the substring '%v': %v", title, expected, testee)
+		t.Errorf("%s did not contain the substring '%#v': %#v", title, expected, testee)
 	}
 }
 
@@ -76,7 +76,7 @@ func AssertNoError(t testing.TB, err error, title string) {
 	t.Helper()
 
 	if err != nil {
-		t.Fatalf("%s should not return an error but returned '%v'", title, err)
+		t.Fatalf("%s should not return an error but returned '%#v'", title, err)
 	}
 }
 
@@ -92,7 +92,7 @@ func AssertNotNil(t testing.TB, actual any, title string) {
 	t.Helper()
 
 	if actual == nil {
-		t.Errorf("%s should not be\n'nil'\nbut was\n'%v'", title, actual)
+		t.Errorf("%s should not be\n'nil'\nbut was\n'%#v'", title, actual)
 	}
 }
 
@@ -118,7 +118,7 @@ func (r *Response) Body() map[string]interface{} {
 
 		err := json.NewDecoder(r.response.Body).Decode(&r.mapBody)
 		if err != nil && !errors.Is(err, io.EOF) {
-			r.T.Fatalf("json.Decode error: %v", err)
+			r.T.Fatalf("json.Decode error: %#v", err)
 		}
 	}
 
@@ -168,14 +168,14 @@ func (ts *TestServer) request(verb, path string, body string) Response {
 
 	req, err := http.NewRequest(verb, url, bodyData)
 	if err != nil {
-		ts.T.Fatalf("http.NewRequest error: %v", err)
+		ts.T.Fatalf("http.NewRequest error: %#v", err)
 	}
 
 	req.Header.Set(web.ContentTypeHeader, web.ContentTypeJSON)
 
 	response, err := ts.Client.Do(req)
 	if err != nil {
-		ts.T.Fatalf("ts.Client.Do error: %v", err)
+		ts.T.Fatalf("ts.Client.Do error: %#v", err)
 	}
 
 	return NewResponse(ts.T, response)

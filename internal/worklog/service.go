@@ -16,11 +16,11 @@ const (
 )
 
 type Entry struct {
-	Ticket     string
-	ExternalID string
-	Type       EntryType
-	From       time.Time
-	To         time.Time
+	Ticket     string    `json:"ticket"`
+	ExternalID string    `json:"externalID"`
+	Type       EntryType `json:"type"`
+	From       time.Time `json:"from"`
+	To         time.Time `json:"to"`
 }
 
 func (e *Entry) Duration() time.Duration {
