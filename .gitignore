@@ -5,3 +5,4 @@ tmp/
 *.dexp
 *.dins
 dump.dopc
+core-dump.dopc

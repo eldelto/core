@@ -142,6 +142,7 @@ func TestPreamble(t *testing.T) {
 		{"call @word.read call @word.find", []Word{75}, []Word{}, "dup", ""},
 		{"call @word.interpret", []Word{10}, []Word{}, "10", ""},
 		{"call @word.interpret", []Word{20}, []Word{}, "10 dup + ", ""},
+		{"call @word.interpret", []Word{WordMin}, []Word{}, "not-found ", "Word not found."},
 		{"call @word.read call @word.create-header call @word.find call @word.latest @ =",
 			[]Word{-1}, []Word{}, "test", ""},
 		{"call @word.read call @word.create-header call @word.read call @word.find",

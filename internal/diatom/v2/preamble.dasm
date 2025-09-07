@@ -471,11 +471,8 @@ found. )
   jmp @word.interpret
   
 :word.interpret-error
-  const 69 emit
-  const 114 emit
-  const 114 emit
-  const 111 emit
-  const 114 emit
+  .string Word not found. .end
+  call @string.print
 .end
 
 

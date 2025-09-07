@@ -47,6 +47,10 @@ func TestExpandMacros(t *testing.T) {
 			".immediate-codeword exit exit .end",
 			":_dict-exit\n0 0 0 0\n2\n4 4 101 120 105 116\n:exit\nexit\nret\n",
 			false},
+		{"string",
+			".string test me .end",
+			"const @string-1\njmp @string-1-end\n:string-1\n7 7\n116\n101\n115\n116\n32\n109\n101\n:string-1-end\n",
+			false},
 	}
 
 	for _, tt := range tests {

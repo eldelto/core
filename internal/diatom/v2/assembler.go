@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"strings"
 )
 
 type pos struct {
@@ -77,6 +78,7 @@ type assembler struct {
 	writer       io.Writer
 	lastWordName string
 	labels       map[string]Word
+	stringCount  uint
 }
 
 func newAssembler(r io.Reader, w io.Writer) *assembler {
@@ -88,6 +90,11 @@ func newAssembler(r io.Reader, w io.Writer) *assembler {
 		writer: w,
 		labels: map[string]Word{},
 	}
+}
+
+func (asm *assembler) NextStringLabel() string {
+	asm.stringCount++
+	return fmt.Sprintf("string-%d", asm.stringCount)
 }
 
 func scanError(asm *assembler, err error) error {
@@ -320,6 +327,7 @@ func expandCodeWord(asm *assembler) error {
 
 	if err := doUntil(asm, ".end", expectEither(asm,
 		expandNumber,
+		expandString,
 		passTokenThrough,
 	)); err != nil {
 		return err
@@ -382,12 +390,60 @@ func expandVar(asm *assembler) error {
 	return nil
 }
 
+func expandString(asm *assembler) error {
+	token, err := asm.scanner.Token()
+	if err != nil {
+		return err
+	}
+
+	if token != ".string" {
+		return nil
+	}
+	asm.scanner.Consume()
+
+	text := ""
+	if err := doUntil(asm, ".end", func(asm *assembler) error {
+		token, err := asm.scanner.Token()
+		if err != nil {
+			return err
+		}
+		asm.scanner.Consume()
+
+		text = text + " " + token
+		return nil
+	}); err != nil {
+		return err
+	}
+	text = strings.TrimSpace(text)
+
+	label := asm.NextStringLabel()
+
+	length := len(text)
+	if _, err := fmt.Fprintf(asm.writer, "const @%s\njmp @%s-end\n:%s\n%d %d\n",
+		label, label, label, length, length); err != nil {
+		return err
+	}
+
+	for i := range text {
+		if _, err := fmt.Fprintf(asm.writer, "%d\n", text[i]); err != nil {
+			return fmt.Errorf("write string byte for %q: %w", text, err)
+		}
+	}
+
+	if _, err := fmt.Fprintf(asm.writer, ":%s-end\n", label); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func expandMacros(asm *assembler) error {
 	pos := asm.scanner.pos
 	if err := anyOf(asm,
 		expandComment,
 		expandCodeWord,
 		expandVar,
+		expandString,
 		expandNumber,
 	); err != nil {
 		return err
