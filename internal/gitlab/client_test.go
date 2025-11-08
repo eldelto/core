@@ -31,7 +31,7 @@ func TestClientCalls(t *testing.T) {
 		{
 			url: "GET /api/v4/projects/:id/issues/:id",
 			call: func(c *gitlab.Client) (any, error) {
-				return c.ListProjectIssues("49", time.Now(), time.Now())
+				return c.ListProjectIssues(49, time.Now(), time.Now())
 			},
 			want: []gitlab.Issue{{ID: 3935, ProjectID: 46}, {ID: 3894, ProjectID: 46}, {ID: 3841, ProjectID: 46}, {ID: 3840, ProjectID: 46}, {ID: 3834, ProjectID: 46}, {ID: 3832, ProjectID: 46}, {ID: 3693, ProjectID: 46}},
 		},

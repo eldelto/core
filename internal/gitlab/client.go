@@ -26,8 +26,8 @@ type Issue struct {
 	ProjectID int `json:"project_id"`
 }
 
-func (c *Client) ListProjectIssues(projectID string, start, end time.Time) ([]Issue, error) {
-	endpoint := c.host.JoinPath("api/v4/projects", projectID, "issues")
+func (c *Client) ListProjectIssues(projectID int, start, end time.Time) ([]Issue, error) {
+	endpoint := c.host.JoinPath("api/v4/projects", strconv.Itoa(projectID), "issues")
 
 	query := endpoint.Query()
 	query.Add("updated_after", start.Format(time.RFC3339))

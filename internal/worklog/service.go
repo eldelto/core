@@ -38,12 +38,32 @@ func groupActionsByDay(actions []Action) map[time.Time][]Action {
 	return groups
 }
 
+func groupActionsByTicket(actions []Action) map[string][]Action {
+	groups := map[string][]Action{}
+	for _, a := range actions {
+		key := a.Entry.Ticket
+		groups[key] = append(groups[key], a)
+	}
+
+	return groups
+}
+
 func groupEntriesByDay(entries []Entry) map[time.Time][]Entry {
 	groups := map[time.Time][]Entry{}
 	for _, e := range entries {
 		y, m, d := e.From.Date()
 		day := time.Date(y, m, d, 0, 0, 0, 0, time.Local)
 		groups[day] = append(groups[day], e)
+	}
+
+	return groups
+}
+
+func groupEntriesByTicket(entries []Entry) map[string][]Entry {
+	groups := map[string][]Entry{}
+	for _, e := range entries {
+		key := e.Ticket
+		groups[key] = append(groups[key], e)
 	}
 
 	return groups

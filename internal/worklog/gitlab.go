@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +15,7 @@ import (
 
 type GitlabSink struct {
 	client    *gitlab.Client
-	projectID string
+	projectID int
 }
 
 func (s GitlabSink) ValidIdentifier(identifier string) bool {
@@ -78,7 +80,86 @@ func (s *GitlabSink) IsApplicable(e Entry) bool {
 	return e.Type == EntryTypeWork && e.Ticket != ""
 }
 
+func calculateTimeToAdd(actions []Action) int {
+	timeToAdd := 0
+	for _, a := range actions {
+		durationSec := int(math.Round(a.Entry.Duration().Seconds()))
+
+		switch a.Operation {
+		case Add:
+			timeToAdd += durationSec
+		case Remove:
+			timeToAdd -= durationSec
+		default:
+			panic("unknown operation type for ticket " + a.Entry.Ticket)
+		}
+	}
+
+	return timeToAdd
+}
+
+func (s *GitlabSink) entryToIssue(entry Entry) (gitlab.Issue, error) {
+	id, err := strconv.ParseInt(entry.Ticket, 10, 64)
+	if err != nil {
+		return gitlab.Issue{}, err
+	}
+
+	return gitlab.Issue{
+		ID:        int(id),
+		ProjectID: s.projectID,
+	}, nil
+}
+
+func (s *GitlabSink) updateWorklogComment(issue gitlab.Issue, entries []Entry) error {
+	note, err := s.findWorklogComment(issue)
+	if err != nil {
+		return err
+	}
+
+	buff := bytes.Buffer{}
+	if err := json.NewEncoder(&buff).Encode(entries); err != nil {
+		return fmt.Errorf("encode worklog entries for ticket %q: %w", issue.ID, err)
+	}
+
+	if note == nil {
+		if _, err := s.client.CreateNote(issue, buff.String()); err != nil {
+			return fmt.Errorf("create worklog comment for ticket %q: %w", issue.ID, err)
+		}
+	} else {
+		if _, err := s.client.UpdateNote(*note, buff.String()); err != nil {
+			return fmt.Errorf("update worklog comment for ticket %q: %w", issue.ID, err)
+		}
+	}
+
+	return nil
+}
+
+func (s *GitlabSink) updateTicket(actions []Action, localEntries []Entry) error {
+	issue, err := s.entryToIssue(actions[0].Entry)
+	if err != nil {
+		return err
+	}
+
+	timeToAdd := calculateTimeToAdd(actions)
+	if timeToAdd != 0 {
+		if _, err := s.client.AddTimeSpent(issue, timeToAdd); err != nil {
+			return fmt.Errorf("failed to update time spent for ticket %q: %w", issue.ID, err)
+		}
+	}
+
+	return s.updateWorklogComment(issue, localEntries)
+}
+
 func (s *GitlabSink) ProcessActions(actions []Action, localEntries []Entry) error {
-	// TODO: Implement
+	groupedActions := groupActionsByTicket(actions)
+	groupedEntries := groupEntriesByTicket(localEntries)
+
+	for ticketID, actions := range groupedActions {
+		entries := groupedEntries[ticketID]
+		if err := s.updateTicket(actions, entries); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
