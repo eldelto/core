@@ -10,12 +10,51 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/gitlab"
+	"github.com/eldelto/core/internal/rest"
 )
 
 type GitlabSink struct {
 	client    *gitlab.Client
 	projectID int
+}
+
+func NewGitlabSink(rawHost string, configProvider *cli.ConfigProvider) (*GitlabSink, error) {
+	host, err := url.Parse(rawHost)
+	if err != nil {
+		return nil, fmt.Errorf("init GitlabSink: %w", err)
+	}
+
+	rawProjectID, err := configProvider.Get("gitlab.project-id")
+	if err != nil {
+		return nil, fmt.Errorf("init GitlabSink: %w", err)
+	}
+
+	projectID, err := strconv.Atoi(rawProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("init GitlabSink: %w", err)
+	}
+
+	token, err := configProvider.Get("gitlab.api-key")
+	if err != nil {
+		return nil, fmt.Errorf("init GitlabSink: %w", err)
+	}
+
+	auth := &rest.HeaderAuth{
+		Name:  "PRIVATE-TOKEN",
+		Value: token,
+	}
+	client := gitlab.NewClient(host, auth)
+
+	return &GitlabSink{
+		client:    client,
+		projectID: projectID,
+	}, nil
+}
+
+func (s *GitlabSink) Name() string {
+	return "Gitlab"
 }
 
 func (s GitlabSink) ValidIdentifier(identifier string) bool {
@@ -30,7 +69,7 @@ func (s GitlabSink) ValidIdentifier(identifier string) bool {
 func (s *GitlabSink) findWorklogComment(issue gitlab.Issue) (*gitlab.Note, error) {
 	notes, err := s.client.ListNotes(issue)
 	if err != nil {
-		return nil, fmt.Errorf("find worklog comment for issue %q: %w",
+		return nil, fmt.Errorf("find worklog comment for issue '%d': %w",
 			issue.IID, err)
 	}
 
@@ -47,11 +86,14 @@ func (s *GitlabSink) gitlabIssueToEntries(issue gitlab.Issue) ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
+	if comment == nil {
+		return []Entry{}, nil
+	}
 
 	buff := bytes.NewBufferString(comment.Body)
 	var entries []Entry
 	if err := json.NewDecoder(buff).Decode(&entries); err != nil {
-		return entries, fmt.Errorf("decode entries for Gitlab issue %q: %w",
+		return entries, fmt.Errorf("decode entries for Gitlab issue '%d': %w",
 			issue.IID, err)
 	}
 
@@ -59,6 +101,8 @@ func (s *GitlabSink) gitlabIssueToEntries(issue gitlab.Issue) ([]Entry, error) {
 }
 
 func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
+	fmt.Println(start.Format(time.RFC3339))
+	fmt.Println(end.Format(time.RFC3339))
 	issues, err := s.client.ListProjectIssues(s.projectID, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("fetch Gitlab entries: %w", err)
@@ -66,6 +110,7 @@ func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 
 	entries := []Entry{}
 	for _, issue := range issues {
+		fmt.Println(issue.IID)
 		newEntries, err := s.gitlabIssueToEntries(issue)
 		if err != nil {
 			return nil, err
@@ -99,13 +144,13 @@ func calculateTimeToAdd(actions []Action) int {
 }
 
 func (s *GitlabSink) entryToIssue(entry Entry) (gitlab.Issue, error) {
-	id, err := strconv.ParseInt(entry.Ticket, 10, 64)
+	id, err := strconv.Atoi(entry.Ticket)
 	if err != nil {
 		return gitlab.Issue{}, err
 	}
 
 	return gitlab.Issue{
-		ID:        int(id),
+		IID:       id,
 		ProjectID: s.projectID,
 	}, nil
 }

@@ -53,6 +53,8 @@ func detectSource(sourcePath string, configProvider *cli.ConfigProvider) (worklo
 		source, err = worklog.NewJiraSink(sourcePath, configProvider)
 	case worklog.PersonioSink{}.ValidIdentifier(sourcePath):
 		source, err = worklog.NewPersonioSink(sourcePath, configProvider)
+	case worklog.GitlabSink{}.ValidIdentifier(sourcePath):
+		source, err = worklog.NewPersonioSink(sourcePath, configProvider)
 	default:
 		source = worklog.NewFileSource(sourcePath)
 	}
@@ -72,6 +74,8 @@ func detectSink(rawSink string, configProvider *cli.ConfigProvider) (worklog.Sin
 		sink, err = worklog.NewJiraSink(rawSink, configProvider)
 	case worklog.PersonioSink{}.ValidIdentifier(rawSink):
 		sink, err = worklog.NewPersonioSink(rawSink, configProvider)
+	case worklog.GitlabSink{}.ValidIdentifier(rawSink):
+		sink, err = worklog.NewGitlabSink(rawSink, configProvider)
 	default:
 		return nil, fmt.Errorf("%q is not a supported sink", rawSink)
 	}

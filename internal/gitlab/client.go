@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -32,8 +33,10 @@ func (c *Client) ListProjectIssues(projectID int, start, end time.Time) ([]Issue
 	query := endpoint.Query()
 	query.Add("updated_after", start.Format(time.RFC3339))
 	query.Add("updated_before", end.Format(time.RFC3339))
+	query.Add("per_page", "100")
 	endpoint.RawQuery = query.Encode()
 
+	fmt.Println(endpoint.String())
 	response := []Issue{}
 
 	if err := rest.GET(endpoint).
@@ -57,7 +60,7 @@ func (c *Client) ListNotes(issue Issue) ([]Note, error) {
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(issue.ProjectID),
 		"issues",
-		strconv.Itoa(issue.ID),
+		strconv.Itoa(issue.IID),
 		"notes")
 	response := []Note{}
 
@@ -79,7 +82,7 @@ func (c *Client) CreateNote(issue Issue, text string) (Note, error) {
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(issue.ProjectID),
 		"issues",
-		strconv.Itoa(issue.ID),
+		strconv.Itoa(issue.IID),
 		"notes")
 	request := noteRequest{Body: text}
 	response := Note{}
@@ -99,7 +102,7 @@ func (c *Client) UpdateNote(note Note, text string) (Note, error) {
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(note.ProjectID),
 		"issues",
-		strconv.Itoa(note.IssueID),
+		strconv.Itoa(note.IssueID), // TODO: This needs to be the issue.ID
 		"notes",
 		strconv.Itoa(note.ID))
 	request := noteRequest{Body: text}
@@ -128,7 +131,7 @@ func (c *Client) AddTimeSpent(issue Issue, durationSec int) (TimeSpent, error) {
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(issue.ProjectID),
 		"issues",
-		strconv.Itoa(issue.ID),
+		strconv.Itoa(issue.IID),
 		"add_spent_time")
 	request := spentTimeRequest{Duration: strconv.Itoa(durationSec) + "s"}
 	response := TimeSpent{}
@@ -148,7 +151,7 @@ func (c *Client) ResetTimeSpent(issue Issue, durationSec int) (TimeSpent, error)
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(issue.ProjectID),
 		"issues",
-		strconv.Itoa(issue.ID),
+		strconv.Itoa(issue.IID),
 		"reset_spent_time")
 	response := TimeSpent{}
 
