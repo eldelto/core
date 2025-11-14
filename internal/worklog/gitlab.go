@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/eldelto/core/internal/cli"
@@ -124,26 +125,23 @@ func (s *GitlabSink) gitlabIssueToFilteredEntries(issue gitlab.Issue, start, end
 }
 
 func parallel[I any, O any](values []I, f func(I) ([]O, error)) ([]O, error) {
-	resultChan := make(chan O, 10)
 	result := []O{}
-
-	go func() {
-		for r := range resultChan {
-			result = append(result, r)
-		}
-	}()
+	mutex := sync.Mutex{}
 
 	group := errgroup.Group{}
 	group.SetLimit(10)
 	for _, v := range values {
 		group.Go(func() error {
-			results, err := f(v)
-			if err == nil {
-				for _, r := range results {
-					resultChan <- r
-				}
+			res, err := f(v)
+			if err != nil {
+				return err
 			}
-			return err
+
+			mutex.Lock()
+			defer mutex.Unlock()
+			result = append(result, res...)
+
+			return nil
 		})
 	}
 
