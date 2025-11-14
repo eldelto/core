@@ -59,16 +59,6 @@ func groupEntriesByDay(entries []Entry) map[time.Time][]Entry {
 	return groups
 }
 
-func groupEntriesByTicket(entries []Entry) map[string][]Entry {
-	groups := map[string][]Entry{}
-	for _, e := range entries {
-		key := e.Ticket
-		groups[key] = append(groups[key], e)
-	}
-
-	return groups
-}
-
 type Operation uint
 
 const (

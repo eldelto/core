@@ -13,6 +13,7 @@ import (
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/gitlab"
 	"github.com/eldelto/core/internal/rest"
+	"golang.org/x/sync/errgroup"
 )
 
 type GitlabSink struct {
@@ -81,44 +82,83 @@ func (s *GitlabSink) findWorklogComment(issue gitlab.Issue) (*gitlab.Note, error
 	return nil, nil
 }
 
-func (s *GitlabSink) gitlabIssueToEntries(issue gitlab.Issue) ([]Entry, error) {
-	comment, err := s.findWorklogComment(issue)
-	if err != nil {
-		return nil, err
-	}
-	if comment == nil {
+func noteToEntries(note *gitlab.Note) ([]Entry, error) {
+	if note == nil {
 		return []Entry{}, nil
 	}
 
-	buff := bytes.NewBufferString(comment.Body)
+	buff := bytes.NewBufferString(note.Body)
 	var entries []Entry
 	if err := json.NewDecoder(buff).Decode(&entries); err != nil {
 		return entries, fmt.Errorf("decode entries for Gitlab issue '%d': %w",
-			issue.IID, err)
+			note.IssueIID, err)
 	}
 
 	return entries, nil
 }
 
+func (s *GitlabSink) gitlabIssueToEntries(issue gitlab.Issue) ([]Entry, error) {
+	note, err := s.findWorklogComment(issue)
+	if err != nil {
+		return nil, err
+	}
+
+	return noteToEntries(note)
+}
+
+func (s *GitlabSink) gitlabIssueToFilteredEntries(issue gitlab.Issue, start, end time.Time) ([]Entry, error) {
+	entries, err := s.gitlabIssueToEntries(issue)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredEntries := make([]Entry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.To.Before(start) || entry.From.After(end) {
+			continue
+		}
+		filteredEntries = append(filteredEntries, entry)
+	}
+
+	return filteredEntries, nil
+}
+
+func parallel[I any, O any](values []I, f func(I) ([]O, error)) ([]O, error) {
+	resultChan := make(chan O, 10)
+	result := []O{}
+
+	go func() {
+		for r := range resultChan {
+			result = append(result, r)
+		}
+	}()
+
+	group := errgroup.Group{}
+	group.SetLimit(10)
+	for _, v := range values {
+		group.Go(func() error {
+			results, err := f(v)
+			if err == nil {
+				for _, r := range results {
+					resultChan <- r
+				}
+			}
+			return err
+		})
+	}
+
+	return result, group.Wait()
+}
+
 func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
-	fmt.Println(start.Format(time.RFC3339))
-	fmt.Println(end.Format(time.RFC3339))
 	issues, err := s.client.ListProjectIssues(s.projectID, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("fetch Gitlab entries: %w", err)
 	}
 
-	entries := []Entry{}
-	for _, issue := range issues {
-		fmt.Println(issue.IID)
-		newEntries, err := s.gitlabIssueToEntries(issue)
-		if err != nil {
-			return nil, err
-		}
-		entries = append(entries, newEntries...)
-	}
-
-	return entries, nil
+	return parallel(issues, func(issue gitlab.Issue) ([]Entry, error) {
+		return s.gitlabIssueToFilteredEntries(issue, start, end)
+	})
 }
 
 func (s *GitlabSink) IsApplicable(e Entry) bool {
@@ -155,14 +195,37 @@ func (s *GitlabSink) entryToIssue(entry Entry) (gitlab.Issue, error) {
 	}, nil
 }
 
-func (s *GitlabSink) updateWorklogComment(issue gitlab.Issue, entries []Entry) error {
+func (s *GitlabSink) updateWorklogComment(issue gitlab.Issue, actions []Action) error {
 	note, err := s.findWorklogComment(issue)
 	if err != nil {
 		return err
 	}
 
+	entries, err := noteToEntries(note)
+	if err != nil {
+		return err
+	}
+
+	newEntries := make([]Entry, 0, len(entries))
+outer:
+	for _, entry := range entries {
+		for _, a := range actions {
+			if a.Operation == Remove && entryEqual(a.Entry)(entry) {
+				continue outer
+			}
+		}
+
+		newEntries = append(newEntries, entry)
+	}
+
+	for _, a := range actions {
+		if a.Operation == Add {
+			newEntries = append(newEntries, a.Entry)
+		}
+	}
+
 	buff := bytes.Buffer{}
-	if err := json.NewEncoder(&buff).Encode(entries); err != nil {
+	if err := json.NewEncoder(&buff).Encode(newEntries); err != nil {
 		return fmt.Errorf("encode worklog entries for ticket %q: %w", issue.ID, err)
 	}
 
@@ -179,7 +242,7 @@ func (s *GitlabSink) updateWorklogComment(issue gitlab.Issue, entries []Entry) e
 	return nil
 }
 
-func (s *GitlabSink) updateTicket(actions []Action, localEntries []Entry) error {
+func (s *GitlabSink) updateTicket(actions []Action) error {
 	issue, err := s.entryToIssue(actions[0].Entry)
 	if err != nil {
 		return err
@@ -192,16 +255,14 @@ func (s *GitlabSink) updateTicket(actions []Action, localEntries []Entry) error 
 		}
 	}
 
-	return s.updateWorklogComment(issue, localEntries)
+	return s.updateWorklogComment(issue, actions)
 }
 
 func (s *GitlabSink) ProcessActions(actions []Action, localEntries []Entry) error {
 	groupedActions := groupActionsByTicket(actions)
-	groupedEntries := groupEntriesByTicket(localEntries)
 
-	for ticketID, actions := range groupedActions {
-		entries := groupedEntries[ticketID]
-		if err := s.updateTicket(actions, entries); err != nil {
+	for _, actions := range groupedActions {
+		if err := s.updateTicket(actions); err != nil {
 			return err
 		}
 	}

@@ -22,7 +22,7 @@ func TestClientCalls(t *testing.T) {
 	}
 	client := gitlab.NewClient(host, auth)
 
-	// Note: Commented tests work but change their data to frequently.
+	// Note: Commented tests work but change their data too frequently.
 	tests := []struct {
 		url  string
 		call func(c *gitlab.Client) (any, error)
@@ -52,9 +52,9 @@ func TestClientCalls(t *testing.T) {
 		{
 			url: "PUT /api/v4/projects/:id/issues/:iid/notes/:id",
 			call: func(c *gitlab.Client) (any, error) {
-				return c.UpdateNote(gitlab.Note{ID: 35228, ProjectID: 46, IssueID: 419}, "API note update")
+				return c.UpdateNote(gitlab.Note{ID: 35228, ProjectID: 46, IssueIID: 419}, "API note update")
 			},
-			want: gitlab.Note{ID: 35228, ProjectID: 46, IssueID: 419, Body: "API note update"},
+			want: gitlab.Note{ID: 35228, ProjectID: 46, IssueIID: 419, Body: "API note update"},
 		},
 		// {
 		// 			url: "POST /api/v4/projects/:id/issues/:iid/add_spent_time",

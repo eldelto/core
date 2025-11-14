@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -36,7 +35,6 @@ func (c *Client) ListProjectIssues(projectID int, start, end time.Time) ([]Issue
 	query.Add("per_page", "100")
 	endpoint.RawQuery = query.Encode()
 
-	fmt.Println(endpoint.String())
 	response := []Issue{}
 
 	if err := rest.GET(endpoint).
@@ -52,7 +50,7 @@ func (c *Client) ListProjectIssues(projectID int, start, end time.Time) ([]Issue
 type Note struct {
 	ID        int    `json:"id"`
 	ProjectID int    `json:"project_id"`
-	IssueID   int    `json:"noteable_id"`
+	IssueIID  int    `json:"noteable_iid"`
 	Body      string `json:"body"`
 }
 
@@ -102,7 +100,7 @@ func (c *Client) UpdateNote(note Note, text string) (Note, error) {
 	endpoint := c.host.JoinPath("api/v4/projects",
 		strconv.Itoa(note.ProjectID),
 		"issues",
-		strconv.Itoa(note.IssueID), // TODO: This needs to be the issue.ID
+		strconv.Itoa(note.IssueIID), // TODO: This needs to be the issue.ID
 		"notes",
 		strconv.Itoa(note.ID))
 	request := noteRequest{Body: text}
