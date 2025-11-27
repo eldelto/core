@@ -230,12 +230,15 @@ func (r *RequestBuilder) Auth(auth Authenticator) *RequestBuilder {
 }
 
 func (r *RequestBuilder) Run() error {
-	payload := bytes.Buffer{}
-	if err := json.NewEncoder(&payload).Encode(r.requestBody); err != nil {
-		return fmt.Errorf("failed to encode request data for %q: %w", r.url, err)
+	var payload io.ReadWriter = nil
+	if r.method != http.MethodGet {
+		payload = &bytes.Buffer{}
+		if err := json.NewEncoder(payload).Encode(r.requestBody); err != nil {
+			return fmt.Errorf("failed to encode request data for %q: %w", r.url, err)
+		}
 	}
 
-	response, err := jsonRequest(r.method, r.url.String(), r.auth, &payload, r.headers, r.cookies)
+	response, err := jsonRequest(r.method, r.url.String(), r.auth, payload, r.headers, r.cookies)
 	if err != nil {
 		return err
 	}
