@@ -1,6 +1,14 @@
 {{define "content"}}
 
-<div>
+<input id="listViewSearch"
+	   type="search"
+	   placeholder="Search"
+	   autofocus />
+
+<div id="listViewSearchResult" class="hidden">
+</div>
+
+<div id="listViewOverview">
   <span class="ListViewToDoListsTitle">Open</span>
 
   <form method="POST" action="/lists">
@@ -13,23 +21,20 @@
 
   {{range .Data.Open }}
   <a href="/lists/{{.ID}}">
-	<button class="ListViewToDoList">
+	<button class="ListViewToDoList" tabindex="-1">
 	  <span class="ListViewToDoListTitle">{{.Title}}</span>
 	</button>
   </a>
   {{end}}
-</div>
 
-<div>
   <span class="ListViewToDoListsTitle">Done</span>
 
   {{range .Data.Completed }}
   <a href="/lists/{{.ID}}">
-	<button class="ListViewToDoList checked">
+	<button class="ListViewToDoList checked" tabindex="-1">
 	  <span class="ListViewToDoListTitle">{{.Title}}</span>
 	</button>
   </a>
   {{end}}
 </div>
-
 {{end}}

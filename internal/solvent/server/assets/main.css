@@ -30,19 +30,17 @@
 	src: url(/assets/Pattaya-Regular.ttf?h=1);
 }
 
-/*
 html {
-    background: linear-gradient(120deg, rgba(20,188,168,1) 0%, rgba(33,137,126,1) 100%);
+    background: linear-gradient(120deg, var(--light-brand-color) 0%,
+								var(--dark-brand-color) 100%);
     min-height: 100%;
 }
-*/
 
 body {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	font-family: 'Cabin', sans-serif;
-	background-color: var(--light-brand-color);
 }
 
 #content {
@@ -63,11 +61,12 @@ textarea,
 	font-size: 1em;
 }
 
-input[type=text] {
+input[type=text], input[type=search]{
 	height: 100%;
 }
 
 input[type=text]::placeholder,
+input[type=search]::placeholder,
 textarea::placeholder {
 	color: var(--text-color);
 	opacity: var(--inactive-opacity-light-bg);
@@ -179,6 +178,18 @@ svg {
 .ListViewAddListButton>svg {
 	height: 70%;
 	fill: var(--light-background-color);
+}
+
+#listViewSearch {
+    font-family: 'Merriweather Sans', sans-serif;
+    font-size: 1em;
+    width: 100%;
+    display: block;
+    margin: 1em 0;
+    padding: 0 1em;
+    min-height: 3.5em;
+    text-align: left;
+    background-color: var(--light-background-color);
 }
 
 button {
@@ -296,6 +307,10 @@ button:disabled:hover,
 
 .delete::before {
 	background-image: url("/assets/icons/delete.svg?h=1");
+}
+
+.hidden {
+	display: none;
 }
 
 #editLink {

@@ -46,6 +46,35 @@ function copyToClipboard(e) {
 	e.preventDefault();
 }
 
+function searchLists(e) {
+	const query = e.currentTarget.value.toLowerCase();
+	const searchResult = document.querySelector("#listViewSearchResult");
+	const listView = document.querySelector("#listViewOverview");
+	if (query == "") {
+		searchResult.classList.add("hidden");
+		listView.classList.remove("hidden");
+		return;
+	}
+
+	searchResult.classList.remove("hidden");
+	listView.classList.add("hidden");
+
+	searchResult.innerHTML = "";
+	Array.from(document.querySelectorAll("#listViewOverview > a"))
+		.forEach(element => {
+			const titleParts = element.querySelector(".ListViewToDoListTitle")
+				  .textContent
+			      .toLowerCase()
+				  .split(" ");
+			
+			
+			const isMatch = titleParts.some(part => part.startsWith(query))
+			if (isMatch) {
+				searchResult.appendChild(element.cloneNode(true));
+			}
+		});
+}
+
 function init() {
 	document.querySelectorAll(".AddItemBar")
 		.forEach(e => {
@@ -76,6 +105,12 @@ function init() {
 
 	document.querySelectorAll("[data-copy]")
 		.forEach(e => e.addEventListener("click", copyToClipboard));
+
+	document.querySelectorAll("#listViewSearch")
+		.forEach(e => {
+			e.addEventListener("keyup", searchLists)
+			e.addEventListener("search", searchLists)
+		});
 }
 
 htmx.onLoad(function(content) {
