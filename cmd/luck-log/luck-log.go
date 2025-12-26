@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/smtp"
 	"strconv"
+	"time"
 
 	"github.com/eldelto/core/internal/conf"
 	"github.com/eldelto/core/internal/lucklog"
 	"github.com/eldelto/core/internal/lucklog/server"
 	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-co-op/gocron/v2"
 	"go.etcd.io/bbolt"
 )
 
@@ -43,13 +44,12 @@ func main() {
 	}
 	defer db.Close()
 
-	var smtpAuth smtp.Auth
+	mailer := web.NewStubMailer()
 	if smtpUser != "" && smtpPassword != "" {
-		smtpAuth = smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+		mailer = web.NewSMTPMailer(host, smtpHost, int(smtpPort), smtpUser, smtpPassword)
 	} else {
 		log.Println("No SMTP config found - running without E-mailing")
 	}
-	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
 	authRepository := web.NewBBoltAuthRepository(db)
 	auth := web.NewAuthenticator(
@@ -58,12 +58,26 @@ func main() {
 		authRepository,
 		server.TemplatesFS, server.AssetsFS)
 
-	service, err := lucklog.NewService(db, host, smtpHost, smtpAuth, authRepository)
+	service, err := lucklog.NewService(db, host, mailer, authRepository)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	auth.TokenCallback = service.SendLoginEmail
+
+	// Schedulers
+	scheduler, err := gocron.NewScheduler(gocron.WithLocation(time.UTC))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer scheduler.Shutdown()
+
+	_, err = scheduler.NewJob(gocron.CronJob("59 23 31 12 *", false),
+		gocron.NewTask(service.SendAllEndOfYearEmails))
+	if err != nil {
+		log.Fatal(err)
+	}
+	scheduler.Start()
 
 	r := chi.NewRouter()
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

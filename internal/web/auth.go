@@ -130,6 +130,17 @@ func NewAuthenticator(domain string,
 	}
 }
 
+func removeCookie(w http.ResponseWriter, name string) {
+	cookie := http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+}
+
 func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(cookieName)
@@ -150,6 +161,8 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		if err != nil {
 			log.Printf("failed to fetch session while accessing %q: %v",
 				r.URL.String(), err)
+
+			removeCookie(w, cookieName)
 			http.Redirect(w, r, LoginPath, http.StatusSeeOther)
 			return
 		}

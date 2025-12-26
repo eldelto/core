@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/mail"
-	"net/smtp"
 	"time"
 
 	"github.com/eldelto/core/internal/boltutil"
@@ -22,23 +22,22 @@ const (
 
 var (
 	//go:embed templates
-	emailFS       embed.FS
-	templater     = web.NewTemplater(emailFS, nil)
-	loginTemplate = templater.GetP("login.html")
+	emailFS           embed.FS
+	templater         = web.NewTemplater(emailFS, nil)
+	loginTemplate     = templater.GetP("login.html")
+	endOfYearTemplate = templater.GetP("end-of-year.html")
 )
 
 type Service struct {
-	db       *bbolt.DB
-	host     string
-	smtpHost string
-	smtpAuth smtp.Auth
-	auth     web.AuthRepository
+	db     *bbolt.DB
+	host   string
+	mailer web.Mailer
+	auth   web.AuthRepository
 }
 
 func NewService(db *bbolt.DB,
 	host string,
-	smtpHost string,
-	smtpAuth smtp.Auth,
+	mailer web.Mailer,
 	auth web.AuthRepository) (*Service, error) {
 	if err := boltutil.EnsureBucketExists(db, logbookBucket); err != nil {
 		panic(err)
@@ -48,11 +47,10 @@ func NewService(db *bbolt.DB,
 	}
 
 	return &Service{
-		db:       db,
-		host:     host,
-		smtpHost: smtpHost,
-		smtpAuth: smtpAuth,
-		auth:     auth,
+		db:     db,
+		host:   host,
+		mailer: mailer,
+		auth:   auth,
 	}, nil
 }
 
@@ -75,27 +73,11 @@ type loginData struct {
 	Token web.TokenID
 }
 
-// TODO: Move to E-mail service
-func (s *Service) sendEmail(recipient mail.Address, template *web.Template, data any) error {
-
-	content := bytes.Buffer{}
-	if err := template.Execute(&content, data); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	if s.smtpAuth == nil {
-		log.Println(content.String())
-		return nil
-	}
-
-	return smtp.SendMail(s.smtpHost, s.smtpAuth, "no-reply@eldelto.net",
-		[]string{recipient.Address}, content.Bytes())
-}
-
-func (s Service) SendLoginEmail(email mail.Address, token web.TokenID) error {
+func (s Service) SendLoginEmail(recipient mail.Address, token web.TokenID) error {
 	data := loginData{Host: s.host, Token: token}
+	sender := mail.Address{Address: "no-reply@" + s.host}
 
-	return s.sendEmail(email, loginTemplate, data)
+	return s.mailer.Send(sender, recipient, loginTemplate, data)
 }
 
 type Location struct {
@@ -143,4 +125,54 @@ func (s *Service) CreateLogEntry(ctx context.Context, content string, location *
 	}
 
 	return entry, nil
+}
+
+func (s *Service) getLogBook(userID web.UserID) (Logbook, error) {
+	return boltutil.Find[Logbook](s.db, logbookBucket, userID.String())
+}
+
+func (s *Service) sendEndOfYearEmail(recipient mail.Address, userID web.UserID) error {
+	logbook, err := s.getLogBook(userID)
+	if err != nil {
+		return fmt.Errorf("send end of year E-mail: %w", err)
+	}
+
+	sender := mail.Address{Address: "no-reply@" + s.host}
+
+	return s.mailer.Send(sender, recipient, endOfYearTemplate, logbook)
+}
+
+func (s *Service) SendAllEndOfYearEmails() {
+	bucketName := "auth.emailMapping"
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("get bucket %q", bucketName)
+		}
+
+		c := bucket.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			email, err := mail.ParseAddress(string(k))
+			if err != nil {
+				return err
+			}
+
+			var userID web.UserID
+			if err := gob.NewDecoder(bytes.NewBuffer(v)).Decode(&userID); err != nil {
+				return fmt.Errorf("decode user ID: %w", err)
+			}
+
+			fmt.Println(email.String())
+			fmt.Println(userID.String())
+			if err := s.sendEndOfYearEmail(*email, userID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Printf("send all end of year E-mails: %v", err)
+	}
 }
