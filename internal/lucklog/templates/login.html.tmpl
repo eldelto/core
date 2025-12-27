@@ -1,5 +1,5 @@
 Subject: Luck-Log Login
-From: eldelto.net <no-reply@eldelto.net>
+From: {{.Data.sender}}
 Content-Type: text/html; charset="UTF-8"
 
 <!DOCTYPE html>
@@ -11,10 +11,10 @@ Content-Type: text/html; charset="UTF-8"
 <h1>Luck-Log Login</h1>
 
 <p style="margin-bottom: 20px;">Click the following link to complete the login procedure:</p>
-<a style="background-color: #14bca8; border-radius: 6px; border-bottom: solid 2px #21897e; color: #f6f7eb; padding: 7px 15px; text-decoration: none;" href='{{.Data.Host}}/auth/session?token={{.Data.Token}}'>Login</a>
+<a style="background-color: #14bca8; border-radius: 6px; border-bottom: solid 2px #21897e; color: #f6f7eb; padding: 7px 15px; text-decoration: none;" href='{{.Data.host}}/auth/session?token={{.Data.data.Token}}'>Login</a>
 
 <p style="margin-bottom: 20px; margin-top: 2em;">When logging in on another device, please enter the digits below into the Solvent website:</p>
-<h2>{{.Data.Token}}</h2>
+<h2>{{.Data.data.Token}}</h2>
 
 <p style="opacity: .5; margin-top: 30px;">If you did not try to login into your account you can safely ignore this E-mail.</p>
 

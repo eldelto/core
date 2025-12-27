@@ -44,7 +44,7 @@ type SMTPMailer struct {
 }
 
 func NewSMTPMailer(host, smtpHost string, smtpPort int, user, password string) Mailer {
-	auth := smtp.PlainAuth("", user, password, host)
+	auth := smtp.PlainAuth("", user, password, smtpHost)
 	smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
 	return &SMTPMailer{host: host, smtpHost: smtpHost, auth: auth}
@@ -54,8 +54,8 @@ func (m *SMTPMailer) Send(sender, recipient mail.Address, template *Template, da
 
 	templateData := map[string]any{
 		"host":      m.host,
-		"sender":    sender,
-		"recipient": recipient,
+		"sender":    sender.Address,
+		"recipient": recipient.Address,
 		"data":      data,
 	}
 
@@ -64,6 +64,6 @@ func (m *SMTPMailer) Send(sender, recipient mail.Address, template *Template, da
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return smtp.SendMail(m.host, m.auth, sender.String(),
-		[]string{recipient.String()}, content.Bytes())
+	return smtp.SendMail(m.smtpHost, m.auth, sender.Address,
+		[]string{recipient.Address}, content.Bytes())
 }

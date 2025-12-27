@@ -75,9 +75,12 @@ type loginData struct {
 
 func (s Service) SendLoginEmail(recipient mail.Address, token web.TokenID) error {
 	data := loginData{Host: s.host, Token: token}
-	sender := mail.Address{Address: "no-reply@" + s.host}
+	sender, err := mail.ParseAddress("no-reply@eldelto.net")
+	if err != nil {
+		return fmt.Errorf("send login E-mail: %w", err)
+	}
 
-	return s.mailer.Send(sender, recipient, loginTemplate, data)
+	return s.mailer.Send(*sender, recipient, loginTemplate, data)
 }
 
 type Location struct {
@@ -137,9 +140,12 @@ func (s *Service) sendEndOfYearEmail(recipient mail.Address, userID web.UserID) 
 		return fmt.Errorf("send end of year E-mail: %w", err)
 	}
 
-	sender := mail.Address{Address: "no-reply@" + s.host}
+	sender, err := mail.ParseAddress("no-reply@eldelto.net")
+	if err != nil {
+		return fmt.Errorf("send end of year E-mail: %w", err)
+	}
 
-	return s.mailer.Send(sender, recipient, endOfYearTemplate, logbook)
+	return s.mailer.Send(*sender, recipient, endOfYearTemplate, logbook)
 }
 
 func (s *Service) SendAllEndOfYearEmails() {
@@ -163,11 +169,10 @@ func (s *Service) SendAllEndOfYearEmails() {
 				return fmt.Errorf("decode user ID: %w", err)
 			}
 
-			fmt.Println(email.String())
-			fmt.Println(userID.String())
 			if err := s.sendEndOfYearEmail(*email, userID); err != nil {
 				return err
 			}
+			log.Println("Sent end of year E-mail!")
 		}
 
 		return nil
