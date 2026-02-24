@@ -466,17 +466,21 @@ func parseUnorderedList(t *tokenizer) (*UnorderedList, error) {
 	list.Children = append(list.Children, node)
 	t.consume()
 
+	t.returnEmptyLines = true
+	defer func() { t.returnEmptyLines = false }()
+
+	previousEmptyLine := false
 	for {
 		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected unordered list content: %w", line, err)
 		}
 
-		if !isText(token) || t.sawEmptyLine() {
+		trimmedToken := strings.TrimSpace(token)
+		if isHeadline(token) || (previousEmptyLine && trimmedToken == "") {
 			return list, nil
 		}
-
-		trimmedToken := strings.TrimSpace(token)
+		previousEmptyLine = trimmedToken == ""
 
 		if isUnorderedList(token) {
 			node = NewParagraph(trimmedToken[2:])
@@ -510,24 +514,32 @@ func parseOrderedList(t *tokenizer) (*OrderedList, error) {
 	list.Children = append(list.Children, node)
 	t.consume()
 
+		t.returnEmptyLines = true
+	defer func() { t.returnEmptyLines = false }()
+
+	previousEmptyLine := false
 	for {
 		token, line, err = t.token()
 		if err != nil {
 			return nil, fmt.Errorf("line %d: expected ordered list content: %w", line, err)
 		}
 
-		if !isText(token) || t.sawEmptyLine() {
+		trimmedToken := strings.TrimSpace(token)
+		if isHeadline(token) || (previousEmptyLine && trimmedToken == "") {
 			return list, nil
 		}
-
-		trimmedToken := strings.TrimSpace(token)
+		previousEmptyLine = trimmedToken == ""
 
 		if isOrderedList(token) {
 			parts := strings.SplitN(trimmedToken, " ", 2)
 			node = NewParagraph(parts[1])
 			list.Children = append(list.Children, node)
 		} else {
-			node.Content += " " + trimmedToken
+			children, err := parseContent(t, 0)
+			if err != nil {
+				return nil, err
+			}
+			list.Children = append(list.Children, children...)
 		}
 
 		t.consume()

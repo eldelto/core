@@ -27,6 +27,7 @@
     - ~listed code~
     - another
 
+      
     For easier installation we will use the Brew package manager. If
     you don't already use it you can install it by following their
     setup guide: https://brew.sh/index
