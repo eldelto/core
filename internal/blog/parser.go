@@ -623,20 +623,12 @@ func parseProperties(t *tokenizer) (*Properties, error) {
 	return &properties, nil
 }
 
-func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
-	var node TextNode
-	nodes := []TextNode{}
-
-	for {
-		token, line, err := t.token()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nodes, nil
-			}
-
-			return nil, fmt.Errorf("line %d: expected Content: %w", line, err)
-		}
-
+func parseNextNode(t *tokenizer, level uint) (TextNode, error) {
+	token, line, err := t.token()
+	if err != nil {
+		return nil, fmt.Errorf("line %d: expected Content: %w", line, err)
+	}
+	
 		if isHeadline(token) {
 			headline, err := NewHeadline(token)
 			if err != nil {
@@ -644,61 +636,48 @@ func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
 			}
 
 			if headline.Level <= level {
-				return nodes, nil
+				return nil, nil
 			}
 
-			if node, err = parseHeadline(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseHeadline(t)
 		} else if isCodeBlock(token) {
-			if node, err = parseCodeBlock(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseCodeBlock(t)
 		} else if isCommentBlock(token) {
-			if node, err = parseCommentBlock(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseCommentBlock(t)
 		} else if isBlockQuote(token) {
-			if node, err = parseBlockQuote(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseBlockQuote(t)
 		} else if isHtmlBlock(token) {
-			if node, err = parseHtmlBlock(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			 return parseHtmlBlock(t)
 		} else if isUnorderedList(token) {
-			if node, err = parseUnorderedList(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseUnorderedList(t)
 		} else if isOrderedList(token) {
-			if node, err = parseOrderedList(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			return parseOrderedList(t)
 		} else if isProperties(token) {
-			if node, err = parseProperties(t); err != nil {
-				return nil, err
-			}
-			nodes = append(nodes, node)
+			 return parseProperties(t)
 		} else {
 			trimmedToken := strings.TrimSpace(token)
-
-			paragraph, isParagraph := node.(*Paragraph)
-			if t.sawEmptyLine() || node == nil || !isParagraph {
-				node = NewParagraph(trimmedToken)
-				nodes = append(nodes, node)
-			} else {
-				paragraph.Content += " " + trimmedToken
-			}
-
+			node := NewParagraph(trimmedToken)
 			t.consume()
+			return node, nil
 		}
+}
+
+func parseContent(t *tokenizer, level uint) ([]TextNode, error) {
+	nodes := []TextNode{}
+	for {
+		n, err := parseNextNode(t, level)
+				if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nodes, nil
+			}
+					return nil, err
+				}
+
+		if n == nil {
+			return nodes, nil
+		}
+		
+	nodes = append(nodes, n)
 	}
 }
 
