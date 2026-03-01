@@ -1,0 +1,37 @@
+* keyd-x11-application-mapper
+
+  A daemon to remap keys per application that is largely compatible
+  with [[https://github.com/rvaiya/keyd/blob/master/scripts/keyd-application-mapper][keyd-application-mapper]] but only works on X11.
+
+** Motivation
+
+   The official keyd-application-mapper sometimes stopped working on
+   my setup with [[https://www.gentoo.org/][Gentoo]] and [[https://xfce.org/][XFCE]] (especially with VLC Media Player
+   running), so I took it as a justification for yet another hobby
+   project ;)
+
+** Installation
+
+   keyd-x11-application-mapper requires [[https://packages.gentoo.org/packages/x11-apps/xprop][xprop]] and [[https://packages.gentoo.org/packages/x11-apps/xev][xev]] to be available
+   on the system. Furthermore you need a recent version of [[https://go.dev/doc/install][Go]] (>=
+   1.25.0) installed.
+
+   Afterwards you can fetch the latest version by running the following
+   command in your terminal:
+
+   ~go install
+   github.com/eldelto/core/cmd/keyd-x11-application-mapper@latest~
+
+   Alternatively you can run ~make~ in the root of this project to
+   build the whole mono-repo.
+
+   The binary can then be found in ~/go/bin/.
+
+** Usage
+
+   Follow the [[https://github.com/rvaiya/keyd/blob/7c0aecb8bfd34dc8642bf4eefd2e59c89e61cec3/README.md#application-specific-remapping-experimental][keyd docs]] for how to setup application specific key
+   remapping.
+
+   *Note: keyd-x11-application-mapper does not support the ~-d~ option
+   so you need to put ~keyd-x11-application-mapper &~ into your
+   /.xinitrc/ to run it in the background.*
