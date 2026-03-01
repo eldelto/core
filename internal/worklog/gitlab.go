@@ -8,13 +8,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/eldelto/core/internal/async"
 	"github.com/eldelto/core/internal/cli"
 	"github.com/eldelto/core/internal/gitlab"
 	"github.com/eldelto/core/internal/rest"
-	"golang.org/x/sync/errgroup"
 )
 
 type GitlabSink struct {
@@ -124,37 +123,13 @@ func (s *GitlabSink) gitlabIssueToFilteredEntries(issue gitlab.Issue, start, end
 	return filteredEntries, nil
 }
 
-func parallel[I any, O any](values []I, f func(I) ([]O, error)) ([]O, error) {
-	result := []O{}
-	mutex := sync.Mutex{}
-
-	group := errgroup.Group{}
-	group.SetLimit(10)
-	for _, v := range values {
-		group.Go(func() error {
-			res, err := f(v)
-			if err != nil {
-				return err
-			}
-
-			mutex.Lock()
-			defer mutex.Unlock()
-			result = append(result, res...)
-
-			return nil
-		})
-	}
-
-	return result, group.Wait()
-}
-
 func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 	issues, err := s.client.ListProjectIssues(s.projectID, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("fetch Gitlab entries: %w", err)
 	}
 
-	return parallel(issues, func(issue gitlab.Issue) ([]Entry, error) {
+	return async.Parallel(issues, func(issue gitlab.Issue) ([]Entry, error) {
 		return s.gitlabIssueToFilteredEntries(issue, start, end)
 	})
 }
