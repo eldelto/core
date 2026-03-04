@@ -5,6 +5,13 @@ plus a bunch of helper libraries.
 
 It contains the following somewhat finished projects:
 
+## keyd-x11-application-mapper
+
+Drop-in replacement for [keyd-application-mapper](https://github.com/rvaiya/keyd/blob/master/scripts/keyd-application-mapper).
+
+Please see the project's [README](/cmd/keyd-x11-application-mapper/README.org) for more
+information.
+
 ## Flake Finder
 
 A CLI tool to identify flaky tests or flaky command behaviour in
