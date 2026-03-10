@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/google/uuid"
 )
 

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/eldelto/core/internal/atom"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"go.etcd.io/bbolt"
 )
 

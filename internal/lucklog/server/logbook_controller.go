@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/eldelto/core/internal/errs"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/lucklog"
-	"github.com/eldelto/core/internal/web"
 )
 
 var (

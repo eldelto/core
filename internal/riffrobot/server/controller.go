@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"time"
 
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/musical"
 	"github.com/eldelto/core/internal/riffrobot"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 

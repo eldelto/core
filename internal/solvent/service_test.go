@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	web "github.com/eldelto/core/internal/legacyweb"
 	. "github.com/eldelto/core/internal/testutils"
-	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )

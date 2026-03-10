@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/eldelto/core/internal/boltutil"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )

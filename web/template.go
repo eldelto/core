@@ -16,8 +16,20 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+func RenderTemplate(template *template.Template, data any) Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return template.Execute(w, data)
+	}
+}
+
+type Templater struct {
+	templateFS fs.FS
+	assetsFS   fs.FS
+	funcs      template.FuncMap
+}
+
 var (
-	fileHashes   = map[string]string{}
+	fileHashes   = map[string]string{} // TODO: Use sync.Map instead
 	fallbackHash = fmt.Sprintf("%x", time.Now().Unix())
 )
 
@@ -45,21 +57,6 @@ func getFileHash(fs fs.FS, path string) string {
 	return hash
 }
 
-type Template struct {
-	t    template.Template
-	data TemplateData
-}
-
-func (t *Template) Execute(w io.Writer, data any) error {
-	t.data.Data = data
-	return t.t.Execute(w, t.data)
-}
-
-func (t *Template) ExecuteFragment(w io.Writer, name string, data any) error {
-	t.data.Data = data
-	return t.t.ExecuteTemplate(w, name, t.data)
-}
-
 func asset(assetsFS fs.FS) func(string) string {
 	return func(assetPath string) string {
 		assetPath = path.Join("assets", assetPath)
@@ -71,12 +68,6 @@ func asset(assetsFS fs.FS) func(string) string {
 func isURL(s string) bool {
 	url, err := url.Parse(s)
 	return err == nil && url.Scheme != ""
-}
-
-type Templater struct {
-	templateFS fs.FS
-	assetsFS   fs.FS
-	funcs      template.FuncMap
 }
 
 func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
@@ -91,7 +82,7 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 }
 
 // TODO: Don't include base.html per default.
-func (t *Templater) Get(patterns ...string) (*Template, error) {
+func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 	baseTemplate := "base.html.tmpl"
 	baseTemplatePath := path.Join("templates", baseTemplate)
 
@@ -120,10 +111,10 @@ func (t *Templater) Get(patterns ...string) (*Template, error) {
 		return nil, fmt.Errorf("failed to parse template %v: %w", templatePaths, err)
 	}
 
-	return &Template{t: *tmpl}, nil
+	return tmpl, nil
 }
 
-func (t *Templater) GetP(patterns ...string) *Template {
+func (t *Templater) GetP(patterns ...string) *template.Template {
 	template, err := t.Get(patterns...)
 	if err != nil {
 		panic(err)
@@ -132,12 +123,11 @@ func (t *Templater) GetP(patterns ...string) *Template {
 	return template
 }
 
-func (t *Templater) Write(writer io.Writer, msg string, data any, patterns ...string) error {
+func (t *Templater) Write(writer io.Writer, data any, patterns ...string) error {
 	tmpl, err := t.Get(patterns...)
 	if err != nil {
 		return err
 	}
-	tmpl.data.Msg = msg
 
 	if err := tmpl.Execute(writer, data); err != nil {
 		return fmt.Errorf("failed to execute template %v: %w", patterns, err)
@@ -148,58 +138,41 @@ func (t *Templater) Write(writer io.Writer, msg string, data any, patterns ...st
 
 const templatePathUrlParam = "templatePath"
 
-type TemplateData struct {
-	Msg  string
-	Data any
+func NewTemplateModule(templateFS, assetsFS fs.FS, data any) chi.Router {
+	templater := NewTemplater(templateFS, assetsFS)
+
+	r := chi.NewRouter()
+	eh := NewErrorHandlers()
+
+	r.Use(middleware.Compress(5))
+	r.Get("/", eh.Handle(getTemplate(templater, data)))
+	r.Get("/{"+templatePathUrlParam+":.*}", eh.Handle(getTemplate(templater, data)))
+
+	return r
 }
 
-type TemplateModule struct {
-	templater *Templater
-	data      any
-}
-
-func NewTemplateModule(templateFS, assetsFS fs.FS, data any) *TemplateModule {
-	return &TemplateModule{
-		templater: NewTemplater(templateFS, assetsFS),
-		data:      data,
-	}
-}
-
-func (m *TemplateModule) Controller() *Controller {
-	c := Controller{
-		BasePath: "/",
-		Handlers: map[Endpoint]Handler{
-			{Method: http.MethodGet, Path: "/"}:                                  m.getTemplate(),
-			{Method: http.MethodGet, Path: "/{" + templatePathUrlParam + ":.*}"}: m.getTemplate(),
-		},
-		Middleware: []Middleware{middleware.Compress(5)},
-	}
-
-	return &c
-}
-
-func (m *TemplateModule) getTemplate() Handler {
+func getTemplate(templater *Templater, data any) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		templatePath := chi.URLParam(r, templatePathUrlParam)
 		if templatePath == "" {
 			templatePath = "index.html"
 		}
 
+		// TODO: Get from context
 		msg := r.URL.Query().Get("msg")
+		// TODO: Use ContentTypeMiddleware
 		w.Header().Add(ContentTypeHeader, ContentTypeHTML)
+		data := map[string]any{
+			"data": data,
+			"msg":  msg,
+		}
 
-		if err := m.templater.Write(w, msg, m.data, templatePath); err != nil {
+		if err := templater.Write(w, data, templatePath); err != nil {
 			log.Printf("failed to execute template at path %q: %v", templatePath, err)
 			w.WriteHeader(http.StatusNotFound)
-			return m.templater.Write(w, "", m.data, "not-found.html")
+			return templater.Write(w, data, "not-found.html")
 		}
 
 		return nil
-	}
-}
-
-func RenderTemplate(template *Template, data any) Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return template.Execute(w, data)
 	}
 }

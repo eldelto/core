@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/moneypenny/server"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 

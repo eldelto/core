@@ -13,7 +13,7 @@ import (
 	"github.com/eldelto/core/internal/blog"
 	"github.com/eldelto/core/internal/blog/server"
 	"github.com/eldelto/core/internal/boltfs"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron"
 	"go.etcd.io/bbolt"

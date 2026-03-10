@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/mail"
 
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/mealplanner"
-	"github.com/eldelto/core/internal/web"
 	"github.com/google/uuid"
 )
 

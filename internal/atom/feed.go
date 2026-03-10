@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 )
 
 const (

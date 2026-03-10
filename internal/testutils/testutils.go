@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 )
 
 func SkipIntegrationTest(t testing.TB) {

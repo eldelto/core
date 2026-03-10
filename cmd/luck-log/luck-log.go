@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/eldelto/core/internal/conf"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/lucklog"
 	"github.com/eldelto/core/internal/lucklog/server"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron/v2"
 	"go.etcd.io/bbolt"

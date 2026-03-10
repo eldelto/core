@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/eldelto/core/internal/blog"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/go-chi/chi/v5"
 )
 

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/eldelto/core/internal/blog"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 )
 
 func NewFeedController(service *blog.Service) *web.Controller {

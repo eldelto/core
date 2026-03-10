@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 )
 
 const ISO8601Format = "2006-01-02 15:04:05.000"

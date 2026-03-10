@@ -5,7 +5,7 @@ import (
 
 	"github.com/eldelto/core/internal/diatom"
 	"github.com/eldelto/core/internal/diatom/diatomjs"
-	"github.com/eldelto/core/internal/web"
+	web "github.com/eldelto/core/internal/legacyweb"
 )
 
 func NewDiatomController() *web.Controller {

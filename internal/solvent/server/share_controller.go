@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/solvent"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/eldelto/core/internal/conf"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/riddle/server"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 )
 

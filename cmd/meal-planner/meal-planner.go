@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/eldelto/core/internal/conf"
+	web "github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/internal/mealplanner"
 	"github.com/eldelto/core/internal/mealplanner/server"
-	"github.com/eldelto/core/internal/web"
 	"github.com/go-chi/chi/v5"
 	"go.etcd.io/bbolt"
 )
