@@ -130,10 +130,11 @@ func applyBindings(windowName string, config config) error {
 }
 
 func getActiveWindowID() (string, error) {
-	cmd := exec.Command("xprop", "-root", "_NET_ACTIVE_WINDOW")
-	out, err := cmd.Output()
+	cmd := exec.Command("xprop", "-root", "-display", ":0.0",
+		"_NET_ACTIVE_WINDOW")
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("xrop active window: %w", err)
+		return "", fmt.Errorf("xrop active window: %q %w", out, err)
 	}
 
 	id := strings.Split(string(out), "# ")[1]
@@ -143,10 +144,11 @@ func getActiveWindowID() (string, error) {
 }
 
 func getWindowName(id string) (string, error) {
-	cmd := exec.Command("xprop", "-id", id, "_NET_WM_NAME")
-	out, err := cmd.Output()
+	cmd := exec.Command("xprop", "-display", ":0.0",
+		"-id", id, "_NET_WM_NAME")
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("xrop window name: %w", err)
+		return "", fmt.Errorf("xrop window name: %q %w", out, err)
 	}
 
 	name := strings.Split(string(out), "= ")[1]
@@ -165,7 +167,9 @@ func getActiveWindowName() (string, error) {
 }
 
 func listenForWindowChange(ctx context.Context, config config) error {
-	cmd := exec.CommandContext(ctx, "xev", "-root", "-event", "property")
+	cmd := exec.CommandContext(ctx, "xev", "-display", ":0.0",
+		"-root", "-event", "property")
+
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("xev output pipe: %w", err)
@@ -181,11 +185,13 @@ func listenForWindowChange(ctx context.Context, config config) error {
 
 			name, err := getActiveWindowName()
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				return
 			}
 
 			if err := applyBindings(name, config); err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				return
 			}
 		}
 	}()
@@ -246,7 +252,8 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		defer logFile.Close()
-		log.Default().SetOutput(logFile)
+
+		log.Default().SetOutput(io.MultiWriter(os.Stderr, logFile))
 
 		lockFile, err := lockFile(filepath.Join(dir, "app.lock"))
 		if err != nil {
