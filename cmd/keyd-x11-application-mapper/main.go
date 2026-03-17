@@ -185,13 +185,11 @@ func listenForWindowChange(ctx context.Context, config config) error {
 
 			name, err := getActiveWindowName()
 			if err != nil {
-				log.Println(err)
-				return
+				log.Fatal(err)
 			}
 
 			if err := applyBindings(name, config); err != nil {
-				log.Println(err)
-				return
+				log.Fatal(err)
 			}
 		}
 	}()
