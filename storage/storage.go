@@ -10,6 +10,7 @@ import (
 
 	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/boltutil"
+	"github.com/eldelto/core/internal/collections"
 	"go.etcd.io/bbolt"
 )
 
@@ -37,18 +38,24 @@ type Storable interface {
 	ID() []byte
 }
 
-func toRecords(data Storable, user auth.UserID) []Record {
+func structFields(data any) []reflect.StructField {
 	strct := reflect.ValueOf(data).Elem()
 	t := strct.Type()
 
 	if t.Kind() != reflect.Struct {
-		err := fmt.Errorf("'%v' of type '%T' is not a struct. Only structs can be stored.", data, data)
+		err := fmt.Errorf("'%v' of type '%T' is not a struct - only structs can be stored", data, data)
 		panic(err)
 	}
 
+	return reflect.VisibleFields(t)
+}
+
+func toRecords(data Storable, user auth.UserID) []Record {
+	strct := reflect.ValueOf(data).Elem()
 	insertedAt := time.Now().UnixMilli()
+
 	records := make([]Record, 0, 10)
-	for i, f := range reflect.VisibleFields(t) {
+	for i, f := range structFields(data) {
 		r := Record{
 			ID:         data.ID(),
 			Value:      f.Name,
@@ -163,10 +170,54 @@ func Records[T Storable](s *Storage, id []byte) ([]Record, error) {
 	return records, nil
 }
 
-func Load[T Storable](s Storage, id string) (T, error) {
-	// var data T
-	// bucketName := bucketName[T](data.ID())
+func Load[T Storable](s *Storage, data T) error {
+	bucketName := bucketName[T](data.ID())
+	fieldsToStore := collections.SetFromSliceValue(structFields(data),
+		func(f reflect.StructField) string {
+			return f.Name
+		})
 
-	var data T
-	return data, nil
+	strct := reflect.ValueOf(data).Elem()
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("get bucket %q", bucketName)
+		}
+
+		cursor := bucket.Cursor()
+		for k, v := cursor.Last(); v != nil; k, v = cursor.Prev() {
+			var r Record
+			if err := gob.NewDecoder(bytes.NewBuffer(v)).
+				Decode(&r); err != nil {
+				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
+					bucketName, k, err)
+			}
+
+			if !fieldsToStore.Contains(r.Value) {
+				continue
+			}
+
+			attribute := reflect.ValueOf(r).FieldByName("Attribute").Elem()
+			// attribute := reflect.ValueOf(r.Attribute).Elem()
+			f := strct.FieldByName(r.Value)
+			if !(f.IsValid() && f.CanSet() &&
+				attribute.Type().AssignableTo(f.Type())) {
+				continue
+			}
+			f.Set(attribute)
+
+			fieldsToStore.Remove(r.Value)
+			if fieldsToStore.Empty() {
+				break
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("load bucket=%q: %w", bucketName, err)
+	}
+
+	return nil
 }

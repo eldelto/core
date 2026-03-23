@@ -8,6 +8,15 @@ func NewSet[T comparable]() Set[T] {
 	return Set[T]{m: map[T]struct{}{}}
 }
 
+func SetFromSliceValue[T any, O comparable](s []T, f func(t T) O) Set[O] {
+	set := NewSet[O]()
+	for _, v := range s {
+		set.m[f(v)] = struct{}{}
+	}
+
+	return set
+}
+
 func SetFromSlice[T comparable](s []T) Set[T] {
 	set := NewSet[T]()
 	for _, v := range s {
@@ -54,4 +63,16 @@ func (s *Set[T]) Union(other Set[T]) Set[T] {
 	}
 
 	return result
+}
+
+func (s *Set[T]) Length() int {
+	return len(s.m)
+}
+
+func (s *Set[T]) Empty() bool {
+	return s.Length() == 0
+}
+
+func (s *Set[T]) Remove(key T) {
+	delete(s.m, key)
 }
