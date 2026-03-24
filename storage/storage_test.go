@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"errors"
 	"log"
 	"os"
 	"testing"
@@ -73,7 +74,19 @@ func TestStoreAndLoad(t *testing.T) {
 	// err = storage.Load(store, p2)
 
 	var p2 payload
-	err = storage.Load(store, &p2)
+	err = storage.Load(store, p.ID(), &p2)
 	AssertNoError(t, err, "storage.Load")
 	AssertEquals(t, *p, p2, "loaded record")
+
+	// Edit a single field
+	p.String = "edited"
+	err = storage.Store(store, p, user)
+	AssertNoError(t, err, "storage.Store")
+
+	records, err = storage.Records[*payload](store, p.ID())
+	AssertNoError(t, err, "storage.Records")
+	AssertEquals(t, 5, len(records), "record length")
+
+	err = storage.Load(store, []byte("unknown-ID"), &p2)
+	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),"load non-existing")
 }
