@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -50,23 +51,35 @@ func structFields(data any) []reflect.StructField {
 	return reflect.VisibleFields(t)
 }
 
-func toRecords(data Storable, user auth.UserID) []Record {
+func toRecords[T Storable](s *Storage, data T, user auth.UserID) ([]Record, error) {
+		existingRecords, err := loadUniqueRecords(s, data)
+		if err != nil {
+			return nil, err
+		}
+
+	
 	strct := reflect.ValueOf(data).Elem()
 	insertedAt := time.Now().UnixMilli()
 
 	records := make([]Record, 0, 10)
 	for i, f := range structFields(data) {
+		attribute := strct.Field(i).Interface()
+		
+		if reflect.DeepEqual(existingRecords[f.Name].Attribute, attribute) {
+			continue
+		}
+		
 		r := Record{
 			ID:         data.ID(),
 			Value:      f.Name,
-			Attribute:  strct.Field(i).Interface(),
+			Attribute:  attribute,
 			InsertedAt: insertedAt,
 			InsertedBy: user,
 		}
 		records = append(records, r)
 	}
 
-	return records
+	return records, nil
 }
 
 type Storage struct {
@@ -107,6 +120,46 @@ func bucketName[T Storable](id []byte) string {
 	return data.Bucket() + "-" + string(id)
 }
 
+func loadUniqueRecords[T Storable](s *Storage, data T) (map[string]Record, error) {
+	records := map[string]Record{}
+	bucketName := bucketName[T](data.ID())
+	
+	fieldsToStore := collections.SetFromSliceValue(structFields(data),
+		func(f reflect.StructField) string {
+			return f.Name
+		})
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return nil
+		}
+
+		cursor := bucket.Cursor()
+		for k, v := cursor.Last(); v != nil; k, v = cursor.Prev() {
+			var r Record
+			if err := gob.NewDecoder(bytes.NewBuffer(v)).
+				Decode(&r); err != nil {
+				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
+					bucketName, k, err)
+			}
+
+			if !fieldsToStore.Contains(r.Value) {
+				continue
+			}
+
+			records[r.Value] = r
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load unique records: %w", err)
+	}
+
+	return records, nil
+}
+
 func Store[T Storable](s *Storage, data T, user auth.UserID) error {
 	bucketName := bucketName[T](data.ID())
 
@@ -114,7 +167,10 @@ func Store[T Storable](s *Storage, data T, user auth.UserID) error {
 		return fmt.Errorf("ensure bucket exists for '%T': %w", data, err)
 	}
 
-	records := toRecords(data, user)
+	records, err := toRecords(s, data, user)
+	if err != nil {
+		return err
+	}
 
 	return s.db.Batch(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucketName))
@@ -170,8 +226,10 @@ func Records[T Storable](s *Storage, id []byte) ([]Record, error) {
 	return records, nil
 }
 
-func Load[T Storable](s *Storage, data T) error {
-	bucketName := bucketName[T](data.ID())
+var ErrNotFound = errors.New("not found")
+
+func Load[T Storable](s *Storage, id []byte, data T) error {
+	bucketName := bucketName[T](id)
 	fieldsToStore := collections.SetFromSliceValue(structFields(data),
 		func(f reflect.StructField) string {
 			return f.Name
@@ -182,7 +240,7 @@ func Load[T Storable](s *Storage, data T) error {
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucketName))
 		if bucket == nil {
-			return fmt.Errorf("get bucket %q", bucketName)
+			return fmt.Errorf("get bucket %q: %w", bucketName, ErrNotFound)
 		}
 
 		cursor := bucket.Cursor()
