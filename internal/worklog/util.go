@@ -8,7 +8,7 @@ import (
 
 const DateTimeFormat = "2006-01-02 15:04"
 
-var ticketRegex = regexp.MustCompile(`(?:([A-z]+-\d+)|#(\d+))`)
+var ticketRegex = regexp.MustCompile(`(?:([A-z]+-\d+)|(\d*)#(\d+))`)
 
 func parseDateTime(s string) (time.Time, error) {
 	t, err := time.ParseInLocation(DateTimeFormat, s, time.Local)
@@ -19,17 +19,17 @@ func parseDateTime(s string) (time.Time, error) {
 	return t, nil
 }
 
-func parseTicketNumber(s []byte) string {
+func parseTicketNumber(s []byte) (project, ticket string) {
 	matches := ticketRegex.FindSubmatch(s)
 	if len(matches) < 2 {
-		return ""
+		return "", ""
 	}
 
 	if len(matches[1]) > 0 {
-		return string(matches[1])
+		return "", string(matches[1])
 	}
 
-	return string(matches[2])
+	return string(matches[2]), string(matches[3])
 }
 
 func validate(e Entry) error {

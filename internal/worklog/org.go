@@ -15,7 +15,7 @@ const OrgDateTimeFormat = "2006-01-02 Mon 15:04"
 
 var clockPrefix = []byte("CLOCK:")
 
-func entryFromClockLine(ticket, line string, start, end time.Time) (Entry, error) {
+func entryFromClockLine(project, ticket, line string, start, end time.Time) (Entry, error) {
 	if len(line) < 32+len(OrgDateTimeFormat) {
 		return Entry{}, errSkippedEntry
 	}
@@ -33,9 +33,10 @@ func entryFromClockLine(ticket, line string, start, end time.Time) (Entry, error
 	}
 
 	return Entry{
-		Ticket: ticket,
-		To:     to,
-		From:   from,
+		Ticket:    ticket,
+		ProjectID: project,
+		To:        to,
+		From:      from,
 	}, nil
 }
 
@@ -44,6 +45,7 @@ func parseFromOrg(r io.Reader, start, end time.Time) ([]Entry, error) {
 	scanner := bufio.NewScanner(r)
 
 	i := 0
+	project := ""
 	ticket := ""
 	for scanner.Scan() {
 		i++
@@ -58,9 +60,9 @@ func parseFromOrg(r io.Reader, start, end time.Time) ([]Entry, error) {
 		trimmedLine := bytes.TrimSpace(line)
 
 		if line[0] == '*' {
-			ticket = parseTicketNumber(line)
+			project, ticket = parseTicketNumber(line)
 		} else if bytes.HasPrefix(trimmedLine, clockPrefix) {
-			entry, err := entryFromClockLine(ticket, string(trimmedLine), start, end)
+			entry, err := entryFromClockLine(project, ticket, string(trimmedLine), start, end)
 			if err != nil {
 				if errors.Is(err, errSkippedEntry) {
 					continue

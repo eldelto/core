@@ -45,10 +45,11 @@ func PrettyPrintActions(actions map[time.Time][]Action) {
 		for _, action := range dailyActions.actions {
 			entry := action.Entry
 			minutes := int(entry.Duration().Minutes())
+			combinedID := entry.ProjectID + "#" + entry.Ticket
 
 			str := fmt.Sprintf("%-6s %-10s %s - %s => %dh %02d'",
 				action.Operation.String(),
-				entry.Ticket,
+				combinedID,
 				entry.From.Format(TimeFormat),
 				entry.To.Format(TimeFormat),
 				minutes/60,

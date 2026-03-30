@@ -64,16 +64,17 @@ func (s *ClockifySource) FetchEntries(start, end time.Time) ([]Entry, error) {
 		loc = time.UTC
 	}
 	for _, v := range timeEntries {
-		ticket := parseTicketNumber([]byte(v.Description))
+		project, ticket := parseTicketNumber([]byte(v.Description))
 		if ticket == "" {
 			msg := fmt.Sprintf("failed to parse ticket for %s, skipping", v.Description)
 			fmt.Println(cli.Brown(msg))
 			continue
 		}
 		result = append(result, Entry{
-			From:   v.TimeInterval.Start.In(loc),
-			To:     v.TimeInterval.End.In(loc),
-			Ticket: ticket,
+			From:      v.TimeInterval.Start.In(loc),
+			To:        v.TimeInterval.End.In(loc),
+			Ticket:    ticket,
+			ProjectID: project,
 		})
 	}
 	return result, nil

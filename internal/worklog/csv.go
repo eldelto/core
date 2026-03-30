@@ -48,7 +48,7 @@ func parseFromCSV(r io.Reader, start, end time.Time) ([]Entry, error) {
 			return nil, fmt.Errorf("failed to read CSV line %d: %w", i, err)
 		}
 
-		ticket := parseTicketNumber([]byte(rec[ticketIndex]))
+		project, ticket := parseTicketNumber([]byte(rec[ticketIndex]))
 
 		from, err := parseDateTime(rec[fromIndex])
 		if err != nil {
@@ -60,9 +60,10 @@ func parseFromCSV(r io.Reader, start, end time.Time) ([]Entry, error) {
 		}
 
 		entry := Entry{
-			Ticket: ticket,
-			From:   from,
-			To:     to,
+			Ticket:    ticket,
+			ProjectID: project,
+			From:      from,
+			To:        to,
 		}
 		if entry.To.Before(start) || entry.From.After(end) {
 			continue

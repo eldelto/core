@@ -18,6 +18,7 @@ const (
 type Entry struct {
 	Ticket     string    `json:"ticket"`
 	ExternalID string    `json:"externalID"`
+	ProjectID  string    `json:"projectID"`
 	Type       EntryType `json:"type"`
 	From       time.Time `json:"from"`
 	To         time.Time `json:"to"`
@@ -90,20 +91,23 @@ func entryEqual(this Entry) func(Entry) bool {
 
 func generateActions(local, remote []Entry, sink Sink) []Action {
 	actions := []Action{}
-	for _, r := range remote {
-		if !sink.IsApplicable(r) {
-			continue
-		}
-		if !slices.ContainsFunc(local, entryEqual(r)) {
-			actions = append(actions, Action{Entry: r, Operation: Remove})
-		}
-	}
+	filteredLocal := make([]Entry, 0, len(local))
 	for _, l := range local {
 		if !sink.IsApplicable(l) {
 			continue
 		}
 		if !slices.ContainsFunc(remote, entryEqual(l)) {
 			actions = append(actions, Action{Entry: l, Operation: Add})
+		}
+		filteredLocal = append(filteredLocal, l)
+	}
+
+	for _, r := range remote {
+		if !sink.IsApplicable(r) {
+			continue
+		}
+		if !slices.ContainsFunc(filteredLocal, entryEqual(r)) {
+			actions = append(actions, Action{Entry: r, Operation: Remove})
 		}
 	}
 

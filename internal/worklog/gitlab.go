@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -17,8 +18,9 @@ import (
 )
 
 type GitlabSink struct {
-	client    *gitlab.Client
-	projectID int
+	client     *gitlab.Client
+	projectID  int
+	projectIDs []int
 }
 
 func NewGitlabSink(rawHost string, configProvider *cli.ConfigProvider) (*GitlabSink, error) {
@@ -37,6 +39,22 @@ func NewGitlabSink(rawHost string, configProvider *cli.ConfigProvider) (*GitlabS
 		return nil, fmt.Errorf("init GitlabSink: %w", err)
 	}
 
+	rawProjectIDs, err := configProvider.Get("gitlab.project-ids")
+	if err != nil {
+		return nil, fmt.Errorf("init GitlabSink: %w", err)
+	}
+
+	splitIDs := strings.Split(rawProjectIDs, " ")
+	projectIDs := make([]int, len(splitIDs)+1)
+	projectIDs[0] = projectID
+	for i := range splitIDs {
+		projectID, err := strconv.Atoi(splitIDs[i])
+		if err != nil {
+			return nil, fmt.Errorf("init GitlabSink: %w", err)
+		}
+		projectIDs[i+1] = projectID
+	}
+
 	token, err := configProvider.Get("gitlab.api-key")
 	if err != nil {
 		return nil, fmt.Errorf("init GitlabSink: %w", err)
@@ -49,8 +67,9 @@ func NewGitlabSink(rawHost string, configProvider *cli.ConfigProvider) (*GitlabS
 	client := gitlab.NewClient(host, auth)
 
 	return &GitlabSink{
-		client:    client,
-		projectID: projectID,
+		client:     client,
+		projectID:  projectID,
+		projectIDs: projectIDs,
 	}, nil
 }
 
@@ -124,9 +143,13 @@ func (s *GitlabSink) gitlabIssueToFilteredEntries(issue gitlab.Issue, start, end
 }
 
 func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
-	issues, err := s.client.ListProjectIssues(s.projectID, start, end)
-	if err != nil {
-		return nil, fmt.Errorf("fetch Gitlab entries: %w", err)
+	issues := make([]gitlab.Issue, 0, 10)
+	for _, projectID := range s.projectIDs {
+		projectIssues, err := s.client.ListProjectIssues(projectID, start, end)
+		if err != nil {
+			return nil, fmt.Errorf("fetch Gitlab entries: %w", err)
+		}
+		issues = append(issues, projectIssues...)
 	}
 
 	return async.Parallel(issues, func(issue gitlab.Issue) ([]Entry, error) {
@@ -134,8 +157,18 @@ func (s *GitlabSink) FetchEntries(start, end time.Time) ([]Entry, error) {
 	})
 }
 
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
 func (s *GitlabSink) IsApplicable(e Entry) bool {
-	return e.Type == EntryTypeWork && e.Ticket != ""
+	return e.Type == EntryTypeWork &&
+		e.Ticket != "" &&
+		(e.ProjectID == "" || slices.Contains(s.projectIDs, atoi(e.ProjectID)))
 }
 
 func calculateTimeToAdd(actions []Action) int {
@@ -162,9 +195,17 @@ func (s *GitlabSink) entryToIssue(entry Entry) (gitlab.Issue, error) {
 		return gitlab.Issue{}, err
 	}
 
+	projectID := s.projectID
+	if entry.ProjectID != "" {
+		projectID, err = strconv.Atoi(entry.ProjectID)
+		if err != nil {
+			return gitlab.Issue{}, err
+		}
+	}
+
 	return gitlab.Issue{
 		IID:       id,
-		ProjectID: s.projectID,
+		ProjectID: projectID,
 	}, nil
 }
 
