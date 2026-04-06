@@ -9,11 +9,24 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func EnsureBucketExists(db *bbolt.DB, bucketName string) error {
+func EnsureBucketExists(db *bbolt.DB, buckets ...string) error {
 	return db.Update(func(tx *bbolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists([]byte(bucketName)); err != nil {
-			return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+		var bucket *bbolt.Bucket
+		var err error
+		for _, bucketName := range buckets {
+			if bucket == nil {
+				bucket, err = tx.CreateBucketIfNotExists([]byte(bucketName))
+				if err != nil {
+					return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+				}
+			} else {
+				bucket, err = bucket.CreateBucketIfNotExists([]byte(bucketName))
+				if err != nil {
+					return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+				}
+			}
 		}
+
 		return nil
 	})
 }
