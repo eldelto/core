@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 )
 
 type payload struct {
+	Key    []byte
 	String string
 	Int    int
 	Array  []int
@@ -22,7 +24,13 @@ type payload struct {
 }
 
 func newPayload() *payload {
+	uuid, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
 	return &payload{
+		Key:    uuid[:],
 		String: "string-value",
 		Int:    1,
 		Array:  []int{1, 2, 3},
@@ -35,7 +43,7 @@ func (p *payload) Bucket() string {
 }
 
 func (p *payload) ID() []byte {
-	return []byte("ID")
+	return p.Key
 }
 
 func newStorage() *storage.Storage {
@@ -53,9 +61,8 @@ func newUser() auth.UserID {
 }
 
 func TestStoreAndLoad(t *testing.T) {
-	os.Remove("storage-test.db")
-
 	store := newStorage()
+	defer os.Remove("storage-test.db")
 	defer store.Close()
 
 	p := newPayload()
@@ -66,17 +73,16 @@ func TestStoreAndLoad(t *testing.T) {
 
 	records, err := storage.Records[*payload](store, p.ID())
 	AssertNoError(t, err, "storage.Records")
-	AssertEquals(t, 4, len(records), "record length")
+	AssertEquals(t, 5, len(records), "record length")
 
 	// TODO: This doesn't work because reflect can't infer the types
 	// from nil?
 	// var p2 *payload
 	// err = storage.Load(store, p2)
 
-	var p2 payload
-	err = storage.Load(store, p.ID(), &p2)
+	p2, err := storage.Load[*payload](store, p.ID())
 	AssertNoError(t, err, "storage.Load")
-	AssertEquals(t, *p, p2, "loaded record")
+	AssertEquals(t, p, p2, "loaded record")
 
 	// Edit a single field
 	p.String = "edited"
@@ -85,8 +91,37 @@ func TestStoreAndLoad(t *testing.T) {
 
 	records, err = storage.Records[*payload](store, p.ID())
 	AssertNoError(t, err, "storage.Records")
-	AssertEquals(t, 5, len(records), "record length")
+	AssertEquals(t, 6, len(records), "record length")
 
-	err = storage.Load(store, []byte("unknown-ID"), &p2)
-	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),"load non-existing")
+	_, err = storage.Load[*payload](store, []byte("unknown-ID"))
+	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound), "load non-existing")
+}
+
+func TestListAll(t *testing.T) {
+	store := newStorage()
+	defer os.Remove("storage-test.db")
+	defer store.Close()
+
+	p1 := newPayload()
+	p2 := newPayload()
+	user := newUser()
+
+	err := storage.Store(store, p1, user)
+	AssertNoError(t, err, "storage.Store")
+
+	err = storage.Store(store, p2, user)
+	AssertNoError(t, err, "storage.Store")
+
+	records, err := storage.ListAll[*payload](store)
+	AssertNoError(t, err, "storage.ListAll")
+	AssertEquals(t, 2, len(records), "record length")
+
+	// The order is not guaranteed so we explicitly check it.
+	if slices.Equal(records[0].Key, p1.Key) {
+		AssertEquals(t, p1, records[0], "records")
+		AssertEquals(t, p2, records[1], "records")
+	} else {
+		AssertEquals(t, p1, records[1], "records")
+		AssertEquals(t, p2, records[0], "records")
+	}
 }

@@ -1,5 +1,9 @@
 package storage
 
+// TODO:
+//   - Materialized cache for faster reads? (e.g. "payload"/cache)
+//   - Should ListAll always have a defined sort order?
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -52,23 +56,22 @@ func structFields(data any) []reflect.StructField {
 }
 
 func toRecords[T Storable](s *Storage, data T, user auth.UserID) ([]Record, error) {
-		existingRecords, err := loadUniqueRecords(s, data)
-		if err != nil {
-			return nil, err
-		}
+	existingRecords, err := loadUniqueRecords(s, data)
+	if err != nil {
+		return nil, err
+	}
 
-	
 	strct := reflect.ValueOf(data).Elem()
 	insertedAt := time.Now().UnixMilli()
 
 	records := make([]Record, 0, 10)
 	for i, f := range structFields(data) {
 		attribute := strct.Field(i).Interface()
-		
+
 		if reflect.DeepEqual(existingRecords[f.Name].Attribute, attribute) {
 			continue
 		}
-		
+
 		r := Record{
 			ID:         data.ID(),
 			Value:      f.Name,
@@ -115,24 +118,18 @@ func storeRecord(r Record, bucket *bbolt.Bucket, bucketName string) error {
 	return nil
 }
 
-func bucketName[T Storable](id []byte) string {
-	var data T
-	return data.Bucket() + "-" + string(id)
-}
-
 func loadUniqueRecords[T Storable](s *Storage, data T) (map[string]Record, error) {
 	records := map[string]Record{}
-	bucketName := bucketName[T](data.ID())
-	
+
 	fieldsToStore := collections.SetFromSliceValue(structFields(data),
 		func(f reflect.StructField) string {
 			return f.Name
 		})
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
-		if bucket == nil {
-			return nil
+		bucket, err := getBucketFor(tx, data)
+		if err != nil {
+			return err
 		}
 
 		cursor := bucket.Cursor()
@@ -141,7 +138,7 @@ func loadUniqueRecords[T Storable](s *Storage, data T) (map[string]Record, error
 			if err := gob.NewDecoder(bytes.NewBuffer(v)).
 				Decode(&r); err != nil {
 				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-					bucketName, k, err)
+					data.Bucket(), k, err)
 			}
 
 			if !fieldsToStore.Contains(r.Value) {
@@ -160,10 +157,36 @@ func loadUniqueRecords[T Storable](s *Storage, data T) (map[string]Record, error
 	return records, nil
 }
 
-func Store[T Storable](s *Storage, data T, user auth.UserID) error {
-	bucketName := bucketName[T](data.ID())
+func getBucket(tx *bbolt.Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
+	var bucket *bbolt.Bucket
+	for _, bucketName := range buckets {
+		if bucket == nil {
+			bucket = tx.Bucket([]byte(bucketName))
+		} else {
+			bucket = bucket.Bucket([]byte(bucketName))
+		}
 
-	if err := boltutil.EnsureBucketExists(s.db, bucketName); err != nil {
+		if bucket == nil {
+			return nil, fmt.Errorf("bucket %q does not exist: %w",
+				bucketName, ErrNotFound)
+		}
+	}
+
+	return bucket, nil
+}
+
+func getBucketFor(tx *bbolt.Tx, data Storable) (*bbolt.Bucket, error) {
+	return getBucket(tx, []byte(data.Bucket()), data.ID())
+}
+
+func getBucketForType[T Storable](tx *bbolt.Tx, parts ...[]byte) (*bbolt.Bucket, error) {
+	var data T
+	parts = append([][]byte{[]byte(data.Bucket())}, parts...)
+	return getBucket(tx, parts...)
+}
+
+func Store[T Storable](s *Storage, data T, user auth.UserID) error {
+	if err := boltutil.EnsureBucketExists(s.db, data.Bucket(), string(data.ID())); err != nil {
 		return fmt.Errorf("ensure bucket exists for '%T': %w", data, err)
 	}
 
@@ -173,21 +196,13 @@ func Store[T Storable](s *Storage, data T, user auth.UserID) error {
 	}
 
 	return s.db.Batch(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
-		if bucket == nil {
-			return fmt.Errorf("bucket %q does not exist", bucketName)
+		bucket, err := getBucketFor(tx, data)
+		if err != nil {
+			return err
 		}
 
-		// TODO: Create diff and only insert changes
-		// cursor := bucket.Cursor()
-		// cursor.Last()
-		// cursor.Prev()
-
-		// err := bucket.ForEach(func(k, v []byte) error {
-		// })
-
 		for _, r := range records {
-			err := storeRecord(r, bucket, bucketName)
+			err := storeRecord(r, bucket, data.Bucket())
 			if err != nil {
 				return err
 			}
@@ -199,12 +214,11 @@ func Store[T Storable](s *Storage, data T, user auth.UserID) error {
 
 func Records[T Storable](s *Storage, id []byte) ([]Record, error) {
 	records := make([]Record, 0, 10)
-	bucketName := bucketName[T](id)
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
-		if bucket == nil {
-			return fmt.Errorf("get bucket %q", bucketName)
+		bucket, err := getBucketForType[T](tx, id)
+		if err != nil {
+			return err
 		}
 
 		return bucket.ForEach(func(k []byte, v []byte) error {
@@ -212,7 +226,7 @@ func Records[T Storable](s *Storage, id []byte) ([]Record, error) {
 			if err := gob.NewDecoder(bytes.NewBuffer(v)).
 				Decode(&r); err != nil {
 				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-					bucketName, k, err)
+					bucket.Inspect().Name, k, err)
 			}
 
 			records = append(records, r)
@@ -220,16 +234,23 @@ func Records[T Storable](s *Storage, id []byte) ([]Record, error) {
 		})
 	})
 	if err != nil {
-		return nil, fmt.Errorf("records bucket=%q: %w", bucketName, err)
+		var data T
+		return nil, fmt.Errorf("records bucket=%q: %w", data.Bucket(), err)
 	}
 
 	return records, nil
 }
 
+func valueFor[T any]() T {
+	t := reflect.TypeFor[T]().Elem()
+	return reflect.New(t).Interface().(T)
+}
+
 var ErrNotFound = errors.New("not found")
 
-func Load[T Storable](s *Storage, id []byte, data T) error {
-	bucketName := bucketName[T](id)
+func Load[T Storable](s *Storage, id []byte) (T, error) {
+	data := valueFor[T]()
+
 	fieldsToStore := collections.SetFromSliceValue(structFields(data),
 		func(f reflect.StructField) string {
 			return f.Name
@@ -238,9 +259,9 @@ func Load[T Storable](s *Storage, id []byte, data T) error {
 	strct := reflect.ValueOf(data).Elem()
 
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
-		if bucket == nil {
-			return fmt.Errorf("get bucket %q: %w", bucketName, ErrNotFound)
+		bucket, err := getBucketForType[T](tx, id)
+		if err != nil {
+			return err
 		}
 
 		cursor := bucket.Cursor()
@@ -249,7 +270,7 @@ func Load[T Storable](s *Storage, id []byte, data T) error {
 			if err := gob.NewDecoder(bytes.NewBuffer(v)).
 				Decode(&r); err != nil {
 				return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-					bucketName, k, err)
+					bucket.Inspect().Name, k, err)
 			}
 
 			if !fieldsToStore.Contains(r.Value) {
@@ -274,8 +295,34 @@ func Load[T Storable](s *Storage, id []byte, data T) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("load bucket=%q: %w", bucketName, err)
+		var data T
+		return data, fmt.Errorf("load bucket=%q: %w", data.Bucket(), err)
 	}
 
-	return nil
+	return data, nil
+}
+
+func ListAll[T Storable](s *Storage) ([]T, error) {
+	results := make([]T, 0, 10)
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		bucket, err := getBucketForType[T](tx)
+		if err != nil {
+			return err
+		}
+
+		return bucket.ForEachBucket(func(id []byte) error {
+			data, err := Load[T](s, id)
+			if err != nil {
+				return err
+			}
+			results = append(results, data)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("list all: %w", err)
+	}
+
+	return results, nil
 }
