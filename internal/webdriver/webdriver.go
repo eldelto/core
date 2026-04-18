@@ -37,6 +37,20 @@ func withRetry(f func() error) error {
 	return err
 }
 
+func withRetryTimes(n uint, f func() error) error {
+	var err error
+	for range n {
+		err = f()
+		if err == nil {
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	return err
+}
+
 type driver struct {
 	name            string
 	port            int
@@ -272,8 +286,22 @@ func (s *Session) URL() (*url.URL, error) {
 	return url, nil
 }
 
+func (s *Session) WaitForURL(rawURL string) error {
+	return withRetryTimes(30, func() error {
+		url, err := s.URL()
+		if err != nil {
+			return fmt.Errorf("wait for URL %q: %w", rawURL, err)
+		}
+
+		if url.String() != rawURL {
+			return fmt.Errorf("URL %q did not match expected %q", url.String(), rawURL)
+		}
+		return nil
+	})
+}
+
 func (s *Session) WaitForHost(host string) error {
-	return withRetry(func() error {
+	return withRetryTimes(30, func() error {
 		url, err := s.URL()
 		if err != nil {
 			return fmt.Errorf("wait for host %q: %w", host, err)

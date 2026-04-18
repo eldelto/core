@@ -60,6 +60,41 @@ func NewClient(loginHost, host *url.URL, configProvider *cli.ConfigProvider) *Cl
 	}
 }
 
+func otpFlow(session *webdriver.Session) error {
+	if err := session.Minimize(); err != nil {
+		return fmt.Errorf("microsoft auth: %w", err)
+	}
+	otp, err := cli.ReadInput("\nPlease enter your OTP code:\n")
+	if err != nil {
+		return fmt.Errorf("OTP code for microsoft auth: %w", err)
+	}
+	if err := session.Maximize(); err != nil {
+		return fmt.Errorf("microsoft auth: %w", err)
+	}
+
+	if err := session.WriteTo("input[name='otc']", otp); err != nil {
+		return fmt.Errorf("write OTP for microsoft auth: %w", err)
+	}
+	if err := session.Click("input.button_primary"); err != nil {
+		return fmt.Errorf("submit OTP for microsoft auth: %w", err)
+	}
+	time.Sleep(2 * time.Second)
+
+	return nil
+}
+
+func fidoFlow(session *webdriver.Session) error {
+	if err := session.Click(".sign-in-box input.button_primary"); err != nil {
+		return fmt.Errorf("FIDO click continue: %w", err)
+	}
+
+	if err := session.WaitForURL("https://login.microsoftonline.com/common/SAS/ProcessAuth"); err != nil {
+		return fmt.Errorf("FIDO wait for completed auth: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	fmt.Println(cli.Brown("Starting authorization via Microsoft"))
 
@@ -103,26 +138,20 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	}
 	time.Sleep(2 * time.Second)
 
-	// Enter the user's OTP code.
+	// Dispatch between flows.
 	if session.HasElement("input[name='otc']") {
-		if err := session.Minimize(); err != nil {
-			return fmt.Errorf("microsoft auth: %w", err)
+		if err := otpFlow(session); err != nil {
+			return err
 		}
-		otp, err := cli.ReadInput("\nPlease enter your OTP code:\n")
-		if err != nil {
-			return fmt.Errorf("OTP code for microsoft auth: %w", err)
+	}
+	url, err := session.URL()
+	if err != nil {
+		return fmt.Errorf("check FIDO URL: %w", err)
+	}
+	if strings.Contains(url.String(), "fido/get") {
+		if err := fidoFlow(session); err != nil {
+			return err
 		}
-		if err := session.Maximize(); err != nil {
-			return fmt.Errorf("microsoft auth: %w", err)
-		}
-
-		if err := session.WriteTo("input[name='otc']", otp); err != nil {
-			return fmt.Errorf("write OTP for microsoft auth: %w", err)
-		}
-		if err := session.Click("input.button_primary"); err != nil {
-			return fmt.Errorf("submit OTP for microsoft auth: %w", err)
-		}
-		time.Sleep(2 * time.Second)
 	}
 
 	// Click the stay signed in prompt if it exists.
