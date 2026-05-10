@@ -162,3 +162,63 @@ func TestListAll(t *testing.T) {
 		AssertEquals(t, p2, records[0], "records")
 	}
 }
+
+func TestTriggerFunctions(t *testing.T) {
+	store := newStorage()
+	defer os.Remove("storage-test.db")
+	defer store.Close()
+
+	storedFields := []string{}
+	store.RegisterBucket(storage.Bucket{
+		Name: "payload",
+		TriggerFuncs: []storage.TriggerFunc{
+			func(tx *storage.Tx, rs []storage.Record) error {
+				for _, r := range rs {
+					storedFields = append(storedFields, r.Value)
+				}
+				return nil
+			},
+		},
+	})
+
+	p := newPayload()
+	user := newUser()
+
+	err := store.Write(func(tx *storage.Tx) error {
+		return storage.Store(tx, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	AssertEquals(t, []string{"Key", "String", "Int", "Array", "Time"},
+		storedFields, "record length")
+}
+
+func TestTriggerFunctionRollback(t *testing.T) {
+	store := newStorage()
+	defer os.Remove("storage-test.db")
+	defer store.Close()
+
+	store.RegisterBucket(storage.Bucket{
+		Name: "payload",
+		TriggerFuncs: []storage.TriggerFunc{
+			func(tx *storage.Tx, rs []storage.Record) error {
+				return errors.New("test failure")
+			},
+		},
+	})
+
+	p := newPayload()
+	user := newUser()
+
+	err := store.Write(func(tx *storage.Tx) error {
+		return storage.Store(tx, p, user)
+	})
+	AssertError(t, err, "storage.Store")
+
+	err = store.Read(func(tx *storage.Tx) error {
+		_, err = storage.Load[*payload](tx, p.ID())
+		return err
+	})
+	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),
+		"storage.Records")
+}

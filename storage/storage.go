@@ -38,11 +38,11 @@ type Record struct {
 	Retraction bool
 }
 
-type TriggerFunc func(r []Record) error
+type TriggerFunc func(tx *Tx, r []Record) error
 
 type Bucket struct {
-	Name              string
-	beforeInsertFuncs []TriggerFunc
+	Name         string
+	TriggerFuncs []TriggerFunc
 }
 
 type Storable interface {
@@ -238,7 +238,12 @@ func Store[T Storable](tx *Tx, data T, user auth.UserID) error {
 		return err
 	}
 
-	// TODO: beforeInsertFuncs
+	bucketConf := tx.buckets[data.Bucket()]
+	for _, f := range bucketConf.TriggerFuncs {
+		if err := f(tx, records); err != nil {
+			return fmt.Errorf("store '%T': %w", data, err)
+		}
+	}
 
 	for _, r := range records {
 		err := storeRecord(r, bucket, data.Bucket())
