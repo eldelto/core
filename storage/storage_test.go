@@ -53,7 +53,11 @@ func newStorage() *storage.Storage {
 		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
 	}
 
-	return storage.New(db)
+	s := storage.New(db)
+	s.RegisterBucket(storage.Bucket{
+		Name: "payload",
+	})
+	return s
 }
 
 func newUser() auth.UserID {
@@ -68,10 +72,18 @@ func TestStoreAndLoad(t *testing.T) {
 	p := newPayload()
 	user := newUser()
 
-	err := storage.Store(store, p, user)
+	err := store.Write(func(tx *storage.Tx) error {
+		return storage.Store(tx, p, user)
+	})
 	AssertNoError(t, err, "storage.Store")
 
-	records, err := storage.Records[*payload](store, p.ID())
+	var records []storage.Record
+	err = store.Read(func(tx *storage.Tx) error {
+		r, err := storage.Records[*payload](tx, p.ID())
+		records = r
+		return err
+	})
+
 	AssertNoError(t, err, "storage.Records")
 	AssertEquals(t, 5, len(records), "record length")
 
@@ -80,20 +92,36 @@ func TestStoreAndLoad(t *testing.T) {
 	// var p2 *payload
 	// err = storage.Load(store, p2)
 
-	p2, err := storage.Load[*payload](store, p.ID())
+	var p2 *payload
+	err = store.Read(func(tx *storage.Tx) error {
+		p, err := storage.Load[*payload](tx, p.ID())
+		p2 = p
+		return err
+	})
+
 	AssertNoError(t, err, "storage.Load")
 	AssertEquals(t, p, p2, "loaded record")
 
 	// Edit a single field
 	p.String = "edited"
-	err = storage.Store(store, p, user)
+	err = store.Write(func(tx *storage.Tx) error {
+		return storage.Store(tx, p, user)
+	})
 	AssertNoError(t, err, "storage.Store")
 
-	records, err = storage.Records[*payload](store, p.ID())
+	err = store.Read(func(tx *storage.Tx) error {
+		r, err := storage.Records[*payload](tx, p.ID())
+		records = r
+		return err
+	})
 	AssertNoError(t, err, "storage.Records")
 	AssertEquals(t, 6, len(records), "record length")
 
-	_, err = storage.Load[*payload](store, []byte("unknown-ID"))
+	err = store.Read(func(tx *storage.Tx) error {
+		_, err = storage.Load[*payload](tx, []byte("unknown-ID"))
+		return err
+	})
+
 	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound), "load non-existing")
 }
 
@@ -106,13 +134,22 @@ func TestListAll(t *testing.T) {
 	p2 := newPayload()
 	user := newUser()
 
-	err := storage.Store(store, p1, user)
+	err := store.Write(func(tx *storage.Tx) error {
+		if err := storage.Store(tx, p1, user); err != nil {
+			return err
+		}
+
+		return storage.Store(tx, p2, user)
+	})
 	AssertNoError(t, err, "storage.Store")
 
-	err = storage.Store(store, p2, user)
-	AssertNoError(t, err, "storage.Store")
+	var records []*payload
+	err = store.Read(func(tx *storage.Tx) error {
+		r, err := storage.ListAll[*payload](tx)
+		records = r
+		return err
+	})
 
-	records, err := storage.ListAll[*payload](store)
 	AssertNoError(t, err, "storage.ListAll")
 	AssertEquals(t, 2, len(records), "record length")
 
