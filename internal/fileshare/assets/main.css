@@ -1,0 +1,38 @@
+:root {
+	--white: #ffffff;
+	--black: #141414;
+	--highlight: #a01ed9;
+	--light-highlight: #d174fa;
+	--ultra-light-highlight: rgba(209, 116, 250, 0.31);
+	--dark-highlight: #631685;
+	--dark: rgb(0, 23, 62);
+}
+
+@font-face {
+    font-family: Atkinson;
+    font-style: normal;
+    font-weight: 400;
+    src: url(/assets/Atkinson-Hyperlegible-Regular-102a.woff2);
+}
+
+@font-face {
+    font-family: Atkinson;
+    font-style: normal;
+    font-weight: bold;
+    src: url(/assets/Atkinson-Hyperlegible-Bold-102a.woff2);
+}
+
+@font-face {
+    font-family: Atkinson;
+    font-style: italic;
+    font-weight: 400;
+    src: url(/assets/Atkinson-Hyperlegible-Italic-102a.woff2);
+}
+
+@font-face {
+    font-family: Atkinson;
+    font-style: italic;
+    font-weight: bold;
+    src: url(/assets/Atkinson-Hyperlegible-BoldItalic-102a.woff2);
+}
+

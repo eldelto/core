@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	// "net/smtp"
 	"strconv"
 
+	"github.com/eldelto/core/internal/fileshare"
 	"github.com/eldelto/core/internal/conf"
+	"github.com/eldelto/core/storage"
+	"github.com/eldelto/core/web"
+
 	// "github.com/eldelto/core/internal/filehshare"
 	// "github.com/eldelto/core/internal/fileshare/server"
 	// "github.com/eldelto/core/web"
@@ -34,10 +39,11 @@ func wire(host string, port int64) chi.Router {
 	// smtpPort := conf.IntEnvVarWithDefault(smtpPortEnv, 587)
 
 	// Services
-	db, err := bbolt.Open(dbPath, 0600, nil)
+	bolt, err := bbolt.Open(dbPath, 0600, nil)
 	if err != nil {
 		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
 	}
+	db := storage.New(bolt)
 	defer db.Close()
 
 	// var smtpAuth smtp.Auth
@@ -64,8 +70,10 @@ func wire(host string, port int64) chi.Router {
 	r := chi.NewRouter()
 
 	// Controllers
-	// r.Mount("/", web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil))
-	// r.Mount("/assets", web.NewAssetModule(server.AssetsFS))
+	r.Mount("/", web.NewTemplateModule(fileshare.TemplatesFS, fileshare.AssetsFS, nil))
+	r.Mount("/assets", web.NewAssetModule(fileshare.AssetsFS))
+
+	r.Mount("/file", fileshare.NewDirectoryController(db))
 
 	// // TODO: Auth
 	// r.Mount("/browse", fileshare.NewBrowsingModule(service))
@@ -86,6 +94,6 @@ func main() {
 	r := wire(host, port)
 	http.Handle("/", r)
 
-	log.Printf("Solvent listening on localhost:%d with host %q", port, host)
+	log.Printf("File-Share listening on localhost:%d with host %q", port, host)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
