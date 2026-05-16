@@ -1,0 +1,15 @@
+{{define "content"}} 
+
+<ul>
+  {{range .}}
+  <li>
+    {{if .IsDir}}
+    <a href="file/{{.Name}}">{{.Name}}</a>
+    {{else}}
+    <span>{{.Name}}</span>
+    {{end}}
+  </li>
+  {{end}}
+</ul>
+
+{{end}}
