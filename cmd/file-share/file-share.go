@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	// "net/smtp"
 	"strconv"
 
-	"github.com/eldelto/core/internal/fileshare"
 	"github.com/eldelto/core/internal/conf"
+	"github.com/eldelto/core/internal/fileshare"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 
@@ -22,8 +23,6 @@ import (
 )
 
 const (
-	portEnv = "PORT"
-	hostEnv = "HOST"
 	// smtpUserEnv     = "SMTP_USER"
 	// smtpPasswordEnv = "SMTP_PASSWORD"
 	// smtpHostEnv     = "SMTP_HOST"
@@ -33,6 +32,8 @@ const (
 )
 
 func wire(host string, port int64) chi.Router {
+	workdir := conf.RequireEnvVar("WORKDIR")
+
 	// smtpUser := conf.EnvVarWithDefault(smtpUserEnv, "")
 	// smtpPassword := conf.EnvVarWithDefault(smtpPasswordEnv, "")
 	// smtpHost := conf.EnvVarWithDefault(smtpHostEnv, "localhost")
@@ -45,6 +46,12 @@ func wire(host string, port int64) chi.Router {
 	}
 	db := storage.New(bolt)
 	defer db.Close()
+
+	root, err := os.OpenRoot(workdir)
+	if err != nil {
+		log.Fatalf("failed to open workdir: %v", err)
+	}
+	fileSystem := root.FS()
 
 	// var smtpAuth smtp.Auth
 	// if smtpUser != "" && smtpPassword != "" {
@@ -73,7 +80,7 @@ func wire(host string, port int64) chi.Router {
 	r.Mount("/", web.NewTemplateModule(fileshare.TemplatesFS, fileshare.AssetsFS, nil))
 	r.Mount("/assets", web.NewAssetModule(fileshare.AssetsFS))
 
-	r.Mount("/file", fileshare.NewDirectoryController(db))
+	r.Mount("/file", fileshare.NewDirectoryController(db, fileSystem))
 
 	// // TODO: Auth
 	// r.Mount("/browse", fileshare.NewBrowsingModule(service))
@@ -87,8 +94,8 @@ func wire(host string, port int64) chi.Router {
 }
 
 func main() {
-	port := conf.IntEnvVarWithDefault(portEnv, 8080)
-	host := conf.EnvVarWithDefault(hostEnv,
+	port := conf.IntEnvVarWithDefault("PORT", 8080)
+	host := conf.EnvVarWithDefault("HOST",
 		"http://localhost:"+strconv.Itoa(int(port)))
 
 	r := wire(host, port)

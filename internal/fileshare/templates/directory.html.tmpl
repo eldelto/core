@@ -1,12 +1,12 @@
 {{define "content"}} 
 
 <ul>
-  {{range .}}
+  {{range .Entries}}
   <li>
     {{if .IsDir}}
-    <a href="file/{{.Name}}">{{.Name}}</a>
+    <a href="{{$.CurrentURL.JoinPath .Name}}">{{.Name}}</a>
     {{else}}
-    <span>{{.Name}}</span>
+    <a href="{{$.CurrentURL.JoinPath .Name}}?download=true">{{.Name}}</a>
     {{end}}
   </li>
   {{end}}
