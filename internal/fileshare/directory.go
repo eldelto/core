@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
+	"net/url"
 	"strings"
 
 	"github.com/eldelto/core/storage"
@@ -13,63 +13,79 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const pathUrlParam = "path"
 var (
-	InvalidPath = errors.New("invalid path")
-	
-	templater        = web.NewTemplater(TemplatesFS, AssetsFS)
+	ErrInvalidPath = errors.New("invalid path")
+
+	templater         = web.NewTemplater(TemplatesFS, AssetsFS)
 	directoryTemplate = templater.GetP("directory.html")
 )
 
 func invalidPath(path string) error {
-	return fmt.Errorf("path %q: %w", path, InvalidPath)
+	return fmt.Errorf("path %q: %w", path, ErrInvalidPath)
 }
 
-func NewDirectoryController(db *storage.Storage) chi.Router {
+func NewDirectoryController(db *storage.Storage, fileSystem fs.FS) chi.Router {
 	r := chi.NewRouter()
-	r.Get("/", errorHandlers.Handle(getPath()))
-	r.Get("/{path:.*}", errorHandlers.Handle(getPath()))
+	r.Get("/*", errorHandlers.Handle(getPath(fileSystem)))
 
 	return r
 }
 
 type directoryData struct {
-	CurrentPath string
-	Entries []fs.DirEntry
+	CurrentURL *url.URL
+	Entries    []fs.DirEntry
 }
 
-func getPath() web.Handler {
+func listDirectoryContent(w http.ResponseWriter, r *http.Request, fileSystem fs.FS) error {
+	path := chi.URLParam(r, "*")
+	// TODO: Can you escape by uploading a symbolic link?
+	if strings.Contains(path, "..") {
+		return invalidPath(path)
+	}
+	if path == "" {
+		path = "."
+	}
+
+	// TODO: restrict to user's home path
+	// fs.Sub(fs, dir)
+
+	entries, err := fs.ReadDir(fileSystem, path)
+	if err != nil {
+		return err
+	}
+
+	data := directoryData{
+		CurrentURL: r.URL,
+		Entries:    entries,
+	}
+
+	return directoryTemplate.Execute(w, data)
+}
+
+func download(w http.ResponseWriter, r *http.Request, fileSystem fs.FS) error {
+	path := chi.URLParam(r, "*")
+	// TODO: Can you escape by uploading a symbolic link?
+	if strings.Contains(path, "..") {
+		return invalidPath(path)
+	}
+	if path == "" {
+		path = "."
+	}
+
+	// TODO: restrict to user's home path
+	// fs.Sub(fs, dir)
+
+	http.ServeFileFS(w, r, fileSystem, path)
+	return nil
+}
+
+func getPath(fileSystem fs.FS) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		path := chi.URLParam(r, pathUrlParam)
-		// TODO: Can you escape by uploading a symbolic link?
-		if strings.Contains(path, "..") {
-			return invalidPath(path)
-		}
-		if path == "" {
-			path = "."
+		isDownload := r.URL.Query().Get("download")
+		if isDownload == "true" {
+			return download(w, r, fileSystem)
 		}
 
-		fmt.Println(path)
-
-		// TODO: restrict to user's home path
-		// fs.Sub(fs, dir)
-
-		// TODO: Use real file system
-		root, err := os.OpenRoot(".")
-		if err != nil {
-			return err
-		}
-		fileSystem := root.FS()
-
-		entries, err := fs.ReadDir(fileSystem, path)
-		if err != nil {
-			return err
-		}
-
-		data := directoryData{
-			CurrentPath: ,
-		}
-
-		return directoryTemplate.Execute(w, entries)
+		return listDirectoryContent(w, r, fileSystem)
 	}
 }

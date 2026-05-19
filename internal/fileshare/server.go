@@ -13,6 +13,7 @@ var AssetsFS embed.FS
 var TemplatesFS embed.FS
 
 var errorHandlers web.ErrorHandlers
+
 func init() {
 	errorHandlers = web.NewErrorHandlers()
 }
