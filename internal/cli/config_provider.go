@@ -52,6 +52,11 @@ func (cp *ConfigProvider) Get(key string) (string, error) {
 	return value, nil
 }
 
+func (cp *ConfigProvider) Has(key string) bool {
+	value, _ := boltutil.Find[string](cp.db, bucketName, key)
+	return value != ""
+}
+
 func (cp *ConfigProvider) List() (map[string]string, error) {
 	value, err := boltutil.List[string](cp.db, bucketName)
 	if err != nil {

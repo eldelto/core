@@ -83,6 +83,10 @@ func otpFlow(session *webdriver.Session) error {
 	return nil
 }
 
+func isOtpPrompt(session *webdriver.Session) bool {
+	return session.HasElement("input[name='otc']")
+}
+
 func fidoFlow(session *webdriver.Session) error {
 	if err := session.Click(".sign-in-box input.button_primary"); err != nil {
 		return fmt.Errorf("FIDO click continue: %w", err)
@@ -95,6 +99,24 @@ func fidoFlow(session *webdriver.Session) error {
 	return nil
 }
 
+func fidoQuickFlow(session *webdriver.Session) error {
+	if err := session.WaitForURLRegex(`https:\/\/login.microsoftonline.com\/[^\/]+\/login`); err != nil {
+		return fmt.Errorf("FIDO wait for completed auth: %w", err)
+	}
+
+	return nil
+}
+
+func isFidoPrompt(session *webdriver.Session) bool {
+	url, err := session.URL()
+	if err != nil {
+		err := fmt.Errorf("check FIDO URL: %w", err)
+		panic(err)
+	}
+
+	return strings.Contains(url.String(), "fido/get")
+}
+
 func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	fmt.Println(cli.Brown("Starting authorization via Microsoft"))
 
@@ -103,10 +125,14 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 		return fmt.Errorf("microsoft auth: %w", err)
 	}
 
-	if err := session.Minimize(); err != nil {
-		return fmt.Errorf("microsoft auth: %w", err)
-	}
+	requiresInput := !(c.configProvider.Has("microsoft.email") &&
+		c.configProvider.Has("microsoft.password"))
 
+	if requiresInput {
+		if err := session.Minimize(); err != nil {
+			return fmt.Errorf("microsoft auth: %w", err)
+		}
+	}
 	// TODO: term.ReadPassword(int(syscall.Stdin))
 	email, err := c.configProvider.Get("microsoft.email")
 	if err != nil {
@@ -116,8 +142,10 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	if err != nil {
 		return fmt.Errorf("password for microsoft auth: %w", err)
 	}
-	if err := session.Maximize(); err != nil {
-		return fmt.Errorf("microsoft auth: %w", err)
+	if requiresInput {
+		if err := session.Maximize(); err != nil {
+			return fmt.Errorf("microsoft auth: %w", err)
+		}
 	}
 
 	// Enter the user's E-mail.
@@ -129,34 +157,39 @@ func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
 	}
 	time.Sleep(2 * time.Second)
 
-	// Enter the user's password.
-	if err := session.WriteTo("input[name='passwd']", password); err != nil {
-		return fmt.Errorf("write password for microsoft auth: %w", err)
-	}
-	if err := session.Click("input.button_primary"); err != nil {
-		return fmt.Errorf("submit password for microsoft auth: %w", err)
-	}
-	time.Sleep(2 * time.Second)
-
-	// Dispatch between flows.
-	if session.HasElement("input[name='otc']") {
-		if err := otpFlow(session); err != nil {
+	// The password prompt is optional as sometimes the FIDO flow
+	// already starts here depending on the Entra configuration.
+	if isFidoPrompt(session) {
+		if err := fidoQuickFlow(session); err != nil {
 			return err
 		}
-	}
-	url, err := session.URL()
-	if err != nil {
-		return fmt.Errorf("check FIDO URL: %w", err)
-	}
-	if strings.Contains(url.String(), "fido/get") {
-		if err := fidoFlow(session); err != nil {
-			return err
+	} else {
+		// Enter the user's password.
+		if err := session.WriteTo("input[name='passwd']", password); err != nil {
+			return fmt.Errorf("write password for microsoft auth: %w", err)
+		}
+		if err := session.Click("input.button_primary"); err != nil {
+			return fmt.Errorf("submit password for microsoft auth: %w", err)
+		}
+		time.Sleep(2 * time.Second)
+
+		// Dispatch between flows.
+		if isOtpPrompt(session) {
+			if err := otpFlow(session); err != nil {
+				return err
+			}
+		} else if isFidoPrompt(session) {
+			if err := fidoFlow(session); err != nil {
+				return err
+			}
+		} else {
+			panic("unsupported login flow")
 		}
 	}
 
 	// Click the stay signed in prompt if it exists.
 	if err := session.Click(".sign-in-box input.button_primary"); err == nil {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	return nil

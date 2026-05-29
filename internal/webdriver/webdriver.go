@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -295,6 +296,21 @@ func (s *Session) WaitForURL(rawURL string) error {
 
 		if url.String() != rawURL {
 			return fmt.Errorf("URL %q did not match expected %q", url.String(), rawURL)
+		}
+		return nil
+	})
+}
+
+func (s *Session) WaitForURLRegex(regex string) error {
+	r := regexp.MustCompile(regex)
+	return withRetryTimes(30, func() error {
+		url, err := s.URL()
+		if err != nil {
+			return fmt.Errorf("wait for URL %q: %w", regex, err)
+		}
+
+		if !r.MatchString(url.String()) {
+			return fmt.Errorf("URL %q did not match expected %q", url.String(), regex)
 		}
 		return nil
 	})
