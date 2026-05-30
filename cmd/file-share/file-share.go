@@ -31,7 +31,11 @@ const (
 	dbPath = "file-share.db"
 )
 
-func wire(host string, port int64) chi.Router {
+func main() {
+	port := conf.IntEnvVarWithDefault("PORT", 8080)
+	host := conf.EnvVarWithDefault("HOST",
+		"http://localhost:"+strconv.Itoa(int(port)))
+
 	workdir := conf.RequireEnvVar("WORKDIR")
 
 	// smtpUser := conf.EnvVarWithDefault(smtpUserEnv, "")
@@ -51,7 +55,7 @@ func wire(host string, port int64) chi.Router {
 	if err != nil {
 		log.Fatalf("failed to open workdir: %v", err)
 	}
-	fileSystem := root.FS()
+	defer root.Close()
 
 	// var smtpAuth smtp.Auth
 	// if smtpUser != "" && smtpPassword != "" {
@@ -80,7 +84,7 @@ func wire(host string, port int64) chi.Router {
 	r.Mount("/", web.NewTemplateModule(fileshare.TemplatesFS, fileshare.AssetsFS, nil))
 	r.Mount("/assets", web.NewAssetModule(fileshare.AssetsFS))
 
-	r.Mount("/file", fileshare.NewDirectoryController(db, fileSystem))
+	r.Mount("/file", fileshare.NewDirectoryController(db, root))
 
 	// // TODO: Auth
 	// r.Mount("/browse", fileshare.NewBrowsingModule(service))
@@ -90,15 +94,6 @@ func wire(host string, port int64) chi.Router {
 	// server.NewShareController(service).AddMiddleware(auth.Middleware).Register(r)
 	// auth.Controller().Register(r)
 
-	return r
-}
-
-func main() {
-	port := conf.IntEnvVarWithDefault("PORT", 8080)
-	host := conf.EnvVarWithDefault("HOST",
-		"http://localhost:"+strconv.Itoa(int(port)))
-
-	r := wire(host, port)
 	http.Handle("/", r)
 
 	log.Printf("File-Share listening on localhost:%d with host %q", port, host)

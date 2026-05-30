@@ -8,6 +8,7 @@ const (
 	ETagHeader         = "ETag"
 	LocationHeader     = "Location"
 
+	ContentDisposition = "Content-Disposition"
 	ContentTypeAtom        = "application/atom+xml"
 	ContentTypeHTML        = "text/html"
 	ContentTypeJSON        = "application/json"
