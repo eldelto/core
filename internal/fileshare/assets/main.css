@@ -36,3 +36,10 @@
     src: url(/assets/Atkinson-Hyperlegible-BoldItalic-102a.woff2);
 }
 
+.dir-list {
+	border-collapse: separate;
+}
+
+.dir-list tbody tr.selected {
+	outline: 2px solid red;
+}

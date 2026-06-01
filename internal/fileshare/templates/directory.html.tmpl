@@ -6,16 +6,29 @@
   <input type="submit" class="button" value="Upload">
 </form>
 
-<ul>
+<table class="dir-list">
+  <thead>
+  <th></th>
+  <th>name</th>
+  <th>size</th>
+  <th>last modified</th>
+  </thead>
+  <tbody>
   {{range .Entries}}
-  <li>
+  <tr>
+	<td><input type="checkbox" name="item"></td>
+	<td>
     {{if .IsDir}}
-    <a href="{{$.CurrentURL.JoinPath .Name}}">{{.Name}}</a>
+    <span>dir</span><a href="{{$.CurrentURL.JoinPath .Name}}">{{.Name}}</a>
     {{else}}
-    <a href="{{$.CurrentURL.JoinPath .Name}}?download=true">{{.Name}}</a>
+    <span>file</span><a href="{{$.CurrentURL.JoinPath .Name}}?preview=true">{{.Name}}</a>
     {{end}}
-  </li>
+	</td>
+	<td>{{.Size}}</td>
+	<td>{{.ModTime.String}}</td>
+  </tr>
   {{end}}
-</ul>
+  </tbody>
+</table>
 
 {{end}}

@@ -46,7 +46,7 @@ func NewDirectoryController(db *storage.Storage, root *os.Root) chi.Router {
 
 type directoryData struct {
 	CurrentURL *url.URL
-	Entries    []fs.DirEntry
+	Entries    []fs.FileInfo
 }
 
 func listDirectoryContent(w http.ResponseWriter, r *http.Request, fileSystem fs.FS) error {
@@ -67,9 +67,18 @@ func listDirectoryContent(w http.ResponseWriter, r *http.Request, fileSystem fs.
 		return err
 	}
 
+	infos := make([]fs.FileInfo, len(entries))
+	for i := range entries {
+		info, err := entries[i].Info()
+		if err != nil {
+			return err
+		}
+		infos[i] = info
+	}
+
 	data := directoryData{
 		CurrentURL: r.URL,
-		Entries:    entries,
+		Entries:    infos,
 	}
 
 	return directoryTemplate.Execute(w, data)
@@ -93,6 +102,8 @@ func preview(w http.ResponseWriter, r *http.Request, fileSystem fs.FS) error {
 	// - Should we just mingle the mime-types so more files can be
 	//   previewed? (e.g. text/csv becomes text)
 
+	w.Header().Set(web.ContentDispositionHeader, "inline")
+	http.ServeFileFS(w, r, fileSystem, path)
 	return nil
 }
 
@@ -110,7 +121,7 @@ func download(w http.ResponseWriter, r *http.Request, fileSystem fs.FS) error {
 	// TODO: restrict to user's home path
 	// fs.Sub(fs, dir)
 
-	w.Header().Add(web.ContentDisposition, "attachment;filename=\""+filename+"\"")
+	w.Header().Set(web.ContentDispositionHeader, "attachment;filename=\""+filename+"\"")
 	http.ServeFileFS(w, r, fileSystem, path)
 	return nil
 }
@@ -120,6 +131,11 @@ func getPath(fileSystem fs.FS) web.Handler {
 		isDownload := r.URL.Query().Get("download")
 		if isDownload == "true" {
 			return download(w, r, fileSystem)
+		}
+
+		isPreview := r.URL.Query().Get("preview")
+		if isPreview == "true" {
+			return preview(w, r, fileSystem)
 		}
 
 		return listDirectoryContent(w, r, fileSystem)
