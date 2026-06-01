@@ -8,26 +8,40 @@
 
 <table class="dir-list">
   <thead>
-  <th></th>
-  <th>name</th>
-  <th>size</th>
-  <th>last modified</th>
+	<th></th>
+	<th>name</th>
+	<th>size</th>
+	<th>last modified</th>
   </thead>
   <tbody>
-  {{range .Entries}}
-  <tr>
-	<td><input type="checkbox" name="item"></td>
-	<td>
-    {{if .IsDir}}
-    <span>dir</span><a href="{{$.CurrentURL.JoinPath .Name}}">{{.Name}}</a>
-    {{else}}
-    <span>file</span><a href="{{$.CurrentURL.JoinPath .Name}}?preview=true">{{.Name}}</a>
-    {{end}}
-	</td>
-	<td>{{.Size}}</td>
-	<td>{{.ModTime.String}}</td>
-  </tr>
-  {{end}}
+	{{if ne .CurrentPath "."}}
+	<tr>
+	  <td></td>
+	  <td>
+		<span>dir</span>
+		<a href="{{.ParentPath}}" id="parent">parent</a>
+	  </td>
+	  <td></td>
+	  <td></td>
+	</tr>
+	{{end}}
+	{{range .Entries}}
+	<tr>
+	  <td>
+		<input type="checkbox" name="item">
+		<input type="hidden" name="path" value="{{$.CurrentPath}}/{{.Name}}">
+	  </td>
+	  <td>
+		{{if .IsDir}}
+		<span>dir</span><a href="{{$.CurrentURL.JoinPath .Name}}">{{.Name}}</a>
+		{{else}}
+		<span>file</span><a href="{{$.CurrentURL.JoinPath .Name}}?preview=true">{{.Name}}</a>
+		{{end}}
+	  </td>
+	  <td>{{.Size}}</td>
+	  <td>{{.ModTime.String}}</td>
+	</tr>
+	{{end}}
   </tbody>
 </table>
 
