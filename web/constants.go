@@ -3,11 +3,11 @@ package web
 import "errors"
 
 const (
-	CacheControlHeader = "Cache-Control"
+	CacheControlHeader       = "Cache-Control"
 	ContentDispositionHeader = "Content-Disposition"
-	ContentTypeHeader  = "Content-Type"
-	ETagHeader         = "ETag"
-	LocationHeader     = "Location"
+	ContentTypeHeader        = "Content-Type"
+	ETagHeader               = "ETag"
+	LocationHeader           = "Location"
 
 	ContentTypeAtom        = "application/atom+xml"
 	ContentTypeHTML        = "text/html"

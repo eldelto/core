@@ -45,7 +45,7 @@ function getPath(item) {
 }
 
 function navigateUp() {
-	const parent = document.querySelector("#parent");
+	const parent = document.getElementById("parent");
 	if (parent) {
 		parent.click();
 	}
@@ -75,15 +75,21 @@ function getMarked() {
 }
 
 function download() {
-	// TODO: Use hidden form so the browser does all the downloading.
-	const paths = getMarked();
-	fetch("/file/download", {
-		method: "post",
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({paths: paths})
+	const form = document.getElementById("download-form");
+	form.innerHTML = "";
+	
+	const input = document.getElementById("path-input")
+		  .content
+		  .querySelector("input");
+	
+	getMarked().forEach(path => {
+		console.log(input);
+		const i = document.importNode(input, true);
+		i.value = path;
+		form.appendChild(i);
 	});
+
+	form.submit();
 }
 
 document.addEventListener("keydown", function(e) {
