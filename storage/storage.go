@@ -16,11 +16,13 @@ import (
 	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/boltutil"
 	"github.com/eldelto/core/internal/collections"
+	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
 func init() {
 	gob.Register(time.Time{})
+	gob.Register(uuid.UUID{})
 }
 
 func itob(v uint64) []byte {
@@ -47,7 +49,7 @@ type Bucket struct {
 
 type Storable interface {
 	Bucket() string
-	ID() []byte
+	BucketKey() []byte
 }
 
 type Tx struct {
@@ -87,7 +89,7 @@ func toRecords[T Storable](tx *Tx, data T, user auth.UserID) ([]Record, error) {
 		}
 
 		r := Record{
-			ID:         data.ID(),
+			ID:         data.BucketKey(),
 			Value:      f.Name,
 			Attribute:  attribute,
 			InsertedAt: insertedAt,
@@ -214,7 +216,7 @@ func getBucket(tx *Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
 }
 
 func getBucketFor(tx *Tx, data Storable) (*bbolt.Bucket, error) {
-	return getBucket(tx, []byte(data.Bucket()), data.ID())
+	return getBucket(tx, []byte(data.Bucket()), data.BucketKey())
 }
 
 func getBucketForType[T Storable](tx *Tx, parts ...[]byte) (*bbolt.Bucket, error) {
@@ -224,7 +226,7 @@ func getBucketForType[T Storable](tx *Tx, parts ...[]byte) (*bbolt.Bucket, error
 }
 
 func Store[T Storable](tx *Tx, data T, user auth.UserID) error {
-	if err := ensureBucketExists(tx, data.Bucket(), string(data.ID())); err != nil {
+	if err := ensureBucketExists(tx, data.Bucket(), string(data.BucketKey())); err != nil {
 		return fmt.Errorf("ensure bucket exists for '%T': %w", data, err)
 	}
 

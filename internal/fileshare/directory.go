@@ -11,11 +11,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -35,6 +38,9 @@ func NewDirectoryController(db *storage.Storage, root *os.Root) chi.Router {
 	r.Get("/*", errorHandlers.Handle(getPath(fsys)))
 	r.Post("/*", errorHandlers.Handle(upload(root)))
 	r.Post("/download", errorHandlers.Handle(download(fsys)))
+	r.Post("/upload", errorHandlers.Handle(initFile(db, root)))
+	r.Put("/upload/{reference}", errorHandlers.Handle(addFileChunk(db, root)))
+	r.Post("/upload/{reference}", errorHandlers.Handle(commitFile(db, root)))
 	// TODO:
 	// - User handling and restricting them to their own root dir
 	// - Upload multiple
@@ -351,5 +357,145 @@ func download(fsys fs.FS) web.Handler {
 		}
 
 		return zipPaths(w, fsys, paths)
+	}
+}
+
+type ChunkedFile struct {
+	ID       uuid.UUID
+	Path     string
+	TempPath string
+	Name     string
+	Size     uint
+}
+
+func NewChunkedFile(path, name string, size uint) (ChunkedFile, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return ChunkedFile{}, err
+	}
+
+	f, err := os.CreateTemp("", name)
+	if err != nil {
+		return ChunkedFile{}, err
+	}
+	f.Close()
+
+	return ChunkedFile{
+		ID:       id,
+		Path:     path,
+		TempPath: f.Name(),
+		Name:     name,
+		Size:     size,
+	}, nil
+}
+
+func (cf *ChunkedFile) Bucket() string {
+	return "chunked-file"
+}
+
+func (cf *ChunkedFile) BucketKey() []byte {
+	return []byte(cf.ID.String())
+}
+
+const multipartMemory = 2 * 1024 * 1024
+
+func initFile(db *storage.Storage, root *os.Root) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if err := r.ParseMultipartForm(multipartMemory); err != nil {
+			return err
+		}
+
+		path := r.MultipartForm.Value["path"][0]
+		name := r.MultipartForm.Value["name"][0]
+		size, err := strconv.ParseUint(r.MultipartForm.Value["size"][0], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		chunkedFile, err := NewChunkedFile(path, name, uint(size))
+		if err != nil {
+			return err
+		}
+
+		user := auth.UserID{}
+
+		err = db.Write(func(tx *storage.Tx) error {
+			return storage.Store(tx, &chunkedFile, user)
+		})
+		if err != nil {
+			return err
+		}
+
+		w.Header().Set(web.ContentTypeHeader, web.ContentTypeText)
+		_, err = fmt.Fprint(w, chunkedFile.ID)
+		return err
+	}
+}
+
+func addFileChunk(db *storage.Storage, root *os.Root) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		reference := chi.URLParam(r, "reference")
+
+		if err := r.ParseMultipartForm(multipartMemory); err != nil {
+			return err
+		}
+
+		var chunkedFile *ChunkedFile
+		err := db.Read(func(tx *storage.Tx) error {
+			cf, err := storage.Load[*ChunkedFile](tx, []byte(reference))
+			chunkedFile = cf
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
+		f, err := os.OpenFile(chunkedFile.TempPath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		chunkHeader := r.MultipartForm.File["chunk"][0]
+		chunk, err := chunkHeader.Open()
+		if err != nil {
+			return err
+		}
+		defer chunk.Close()
+
+		_, err = io.Copy(f, chunk)
+		return err
+	}
+}
+
+func commitFile(db *storage.Storage, root *os.Root) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		reference := chi.URLParam(r, "reference")
+
+		var chunkedFile *ChunkedFile
+		err := db.Read(func(tx *storage.Tx) error {
+			cf, err := storage.Load[*ChunkedFile](tx, []byte(reference))
+			chunkedFile = cf
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
+		temp, err := os.Open(chunkedFile.TempPath)
+		if err != nil {
+			return err
+		}
+		defer temp.Close()
+
+		path := filepath.Join(chunkedFile.Path, chunkedFile.Name)
+		f, err := root.Create(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(f, temp)
+		return err
 	}
 }

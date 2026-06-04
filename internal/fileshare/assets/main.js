@@ -1,4 +1,6 @@
 const items = document.querySelectorAll(".dir-list tbody tr");
+const filesInput = document.getElementById("files-input");
+
 let selectionIndex = 0;
 const selectedClass = "selected"
 
@@ -92,6 +94,106 @@ function download() {
 	form.submit();
 }
 
+function store() {
+	filesInput.click();
+}
+
+const chunkSize = 1024 * 1024 // 1 MB;
+
+async function initFileStore(file) {
+	console.log(file);
+	const path = location.pathname
+		  .split("/")
+		  .slice(2)
+		  .join("/");
+	
+	const data = new FormData();
+	data.append("path", path);
+	data.append("name", file.name);
+	data.append("size", file.size);
+	
+	const response = await fetch("/file/upload", {
+		method: "POST",
+		body: data
+	});
+
+	// Result will either be a reference to the created file or an
+	// error message.
+	const result = await response.text();
+	if (!response.ok) {
+      throw new Error(result);
+    }
+
+	return result;
+}
+
+async function storeChunk(reference, file, start) {
+	const end = start + chunkSize;
+	
+	const data = new FormData();
+	data.append("chunk", file.slice(start, end));
+	
+	const response = await fetch("/file/upload/" + reference, {
+		method: "PUT",
+		body: data
+	});
+
+	if (!response.ok) {
+		const result = await response.text();
+		throw new Error(result);
+    }
+
+	return end;
+}
+
+async function commitStoredFile(reference) {
+	const response = await fetch("/file/upload/" + reference, {
+		method: "POST"
+	});
+
+	if (!response.ok) {
+		const result = await response.text();
+		throw new Error(result);
+    }
+}
+
+async function storeFile(file) {
+	const name = file.name;
+	const total = file.size;
+	let transmitted = 0;
+
+	const reference = await initFileStore(file);
+	for (transmitted = 0; transmitted < total; transmitted += chunkSize) {
+		await storeChunk(reference, file, transmitted);
+		console.log(`uploading ${name}: ${transmitted} / ${total}`);
+	}
+	await commitStoredFile(reference);
+}
+
+window.addEventListener("error", function(e) {
+	console.log(e);
+	alert(`received error: ${e}`);
+});
+
+window.addEventListener("unhandledrejection", function(e) {
+	console.log(e);
+	alert(`received rejection: ${e.reason}`);
+});
+
+filesInput.addEventListener("change", function(e) {
+	console.log(e.target.files);
+	const files = e.target.files;
+
+	storeFile(files[0]);
+	
+	// TODO:
+	// - reload page
+	// - display progress
+	// - upload files in parallel
+	// - gzip
+	// - 
+});
+
 document.addEventListener("keydown", function(e) {
 	let key = e.key;
 	if (e.shiftKey) {
@@ -130,6 +232,9 @@ document.addEventListener("keydown", function(e) {
 		break;
 	case "d":
 		download();
+		break;
+	case "s":
+		store();
 		break;
 	}
 });

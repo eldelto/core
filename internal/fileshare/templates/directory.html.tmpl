@@ -2,8 +2,8 @@
 
 <form method="POST" action="{{.CurrentURL}}"
 	  enctype="multipart/form-data">
-  <input type="file" name="file">
-  <input type="submit" class="button" value="Upload">
+  <input type="file" name="files"
+		 multiple="true" id="files-input">
 </form>
 
 <template id="path-input">

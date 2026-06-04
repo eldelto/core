@@ -42,7 +42,7 @@ func (p *payload) Bucket() string {
 	return "payload"
 }
 
-func (p *payload) ID() []byte {
+func (p *payload) BucketKey() []byte {
 	return p.Key
 }
 
@@ -79,7 +79,7 @@ func TestStoreAndLoad(t *testing.T) {
 
 	var records []storage.Record
 	err = store.Read(func(tx *storage.Tx) error {
-		r, err := storage.Records[*payload](tx, p.ID())
+		r, err := storage.Records[*payload](tx, p.Key)
 		records = r
 		return err
 	})
@@ -94,7 +94,7 @@ func TestStoreAndLoad(t *testing.T) {
 
 	var p2 *payload
 	err = store.Read(func(tx *storage.Tx) error {
-		p, err := storage.Load[*payload](tx, p.ID())
+		p, err := storage.Load[*payload](tx, p.Key)
 		p2 = p
 		return err
 	})
@@ -110,7 +110,7 @@ func TestStoreAndLoad(t *testing.T) {
 	AssertNoError(t, err, "storage.Store")
 
 	err = store.Read(func(tx *storage.Tx) error {
-		r, err := storage.Records[*payload](tx, p.ID())
+		r, err := storage.Records[*payload](tx, p.Key)
 		records = r
 		return err
 	})
@@ -216,7 +216,7 @@ func TestTriggerFunctionRollback(t *testing.T) {
 	AssertError(t, err, "storage.Store")
 
 	err = store.Read(func(tx *storage.Tx) error {
-		_, err = storage.Load[*payload](tx, p.ID())
+		_, err = storage.Load[*payload](tx, p.Key)
 		return err
 	})
 	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),
