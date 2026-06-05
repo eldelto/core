@@ -47,7 +47,7 @@ func NewDirectoryController(db *storage.Storage, root *os.Root) chi.Router {
 	// - Delete multiple
 	// - Move multiple
 	// - Create directory
-	r.Delete("/*", errorHandlers.Handle(remove(root)))
+	r.Post("/delete", errorHandlers.Handle(deleteFiles(root)))
 
 	return r
 }
@@ -178,50 +178,26 @@ func upload(root *os.Root) web.Handler {
 	}
 }
 
-func remove(root *os.Root) web.Handler {
+func deleteFiles(root *os.Root) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		mr, err := r.MultipartReader()
-		if err != nil {
+		if err := r.ParseForm(); err != nil {
 			return err
 		}
+		paths := r.Form["paths"]
 
-		path := chi.URLParam(r, "*")
-		// TODO: Can you escape by uploading a symbolic link?
-		if strings.Contains(path, "..") {
-			return invalidPath(path)
-		}
-		if path == "" {
-			path = "."
-		}
+		// TODO: Restrict user path
+		// root.OpenRoot(...)
 
-		fmt.Println("base path")
-		fmt.Println(path)
-
-		for {
-			// TODO: Move to function so the defers work.
-			part, err := mr.NextPart()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return err
-			}
-			defer part.Close()
-
-			path := filepath.Join(path, filepath.Base(part.FileName()))
-			fmt.Println(path)
-			dst, err := root.Create(path)
-			if err != nil {
-				return err
-			}
-			defer dst.Close()
-
-			if _, err := io.Copy(dst, part); err != nil {
+		for _, p := range paths {
+			p = filepath.Clean(p)
+			fmt.Println(p)
+			if err := root.RemoveAll(p); err != nil {
 				return err
 			}
 		}
 
-		http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+		referrer := r.Header.Get(web.ReferrerHeader)
+		http.Redirect(w, r, referrer, http.StatusSeeOther)
 		return nil
 	}
 }

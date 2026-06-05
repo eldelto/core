@@ -8,6 +8,7 @@ const (
 	ContentTypeHeader        = "Content-Type"
 	ETagHeader               = "ETag"
 	LocationHeader           = "Location"
+	ReferrerHeader           = "Referrer"
 
 	ContentTypeAtom        = "application/atom+xml"
 	ContentTypeHTML        = "text/html"

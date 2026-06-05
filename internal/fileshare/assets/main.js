@@ -76,15 +76,18 @@ function getMarked() {
 	return paths;
 }
 
-function download() {
-	const form = document.getElementById("download-form");
+function submitWithMarked(formId) {
+	const marked = getMarked();
+	if (marked.length < 1) return;
+	
+	const form = document.getElementById(formId);
 	form.innerHTML = "";
 	
 	const input = document.getElementById("path-input")
 		  .content
 		  .querySelector("input");
 	
-	getMarked().forEach(path => {
+	marked.forEach(path => {
 		console.log(input);
 		const i = document.importNode(input, true);
 		i.value = path;
@@ -92,6 +95,10 @@ function download() {
 	});
 
 	form.submit();
+}
+
+function download() {
+	submitWithMarked("download-form");
 }
 
 function store() {
@@ -170,6 +177,18 @@ async function storeFile(file) {
 	await commitStoredFile(reference);
 }
 
+async function storeFiles(files) {
+	const promises = Array.from(files).map(storeFile);
+	await Promise.all(promises);
+	location.reload();
+}
+
+async function deleteMarked() {
+	if (confirm("Delete all marked files?")) {
+		submitWithMarked("delete-form");
+	}
+}
+
 window.addEventListener("error", function(e) {
 	console.log(e);
 	alert(`received error: ${e}`);
@@ -181,13 +200,12 @@ window.addEventListener("unhandledrejection", function(e) {
 });
 
 filesInput.addEventListener("change", function(e) {
+	if (e.target.files.length < 1) return;
+	
 	console.log(e.target.files);
-	const files = e.target.files;
-
-	storeFile(files[0]);
+	storeFiles(e.target.files);
 	
 	// TODO:
-	// - reload page
 	// - display progress
 	// - upload files in parallel
 	// - gzip
@@ -235,6 +253,9 @@ document.addEventListener("keydown", function(e) {
 		break;
 	case "s":
 		store();
+		break;
+	case "D":
+		deleteMarked();
 		break;
 	}
 });
