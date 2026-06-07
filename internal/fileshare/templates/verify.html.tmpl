@@ -1,0 +1,31 @@
+{{define "content"}}
+
+<div class="FakeTodoList">
+  <div id="TodoListBody">
+	<h1 class="ToDoListTitle">Login - Step 2</h1>
+
+	<p>
+	  A login link as been sent via E-mail to <cite>{{.Data}}</cite>.
+	  <strong>Please also check your spam folder.</strong>
+	</p>
+
+	<p>
+	  Click the received link or enter the sent verification code to
+	  complete the login procedure.
+	</p>
+
+	<form method="GET" action="/auth/session">
+	  <label for="token">Verification code:</label>
+	  <input type="text" name="token"
+			 id="token"
+			 required="true" />
+
+	  <div id="ToDoListFooter">
+		<a href="/" class="secondary cancel">Cancel</a>
+		<button class="primary confirm">Login</button>
+	  </div>
+	</form>
+  </div>
+</div>
+
+{{end}}

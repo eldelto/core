@@ -32,13 +32,9 @@ type Service struct {
 	db     *bbolt.DB
 	host   string
 	mailer web.Mailer
-	auth   web.AuthRepository
 }
 
-func NewService(db *bbolt.DB,
-	host string,
-	mailer web.Mailer,
-	auth web.AuthRepository) (*Service, error) {
+func NewService(db *bbolt.DB, host string, mailer web.Mailer) (*Service, error) {
 	if err := boltutil.EnsureBucketExists(db, logbookBucket); err != nil {
 		panic(err)
 	}
@@ -50,7 +46,6 @@ func NewService(db *bbolt.DB,
 		db:     db,
 		host:   host,
 		mailer: mailer,
-		auth:   auth,
 	}, nil
 }
 

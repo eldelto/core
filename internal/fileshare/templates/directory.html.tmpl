@@ -1,5 +1,7 @@
 {{define "content"}} 
 
+<script defer src='{{asset "main.js"}}'></script>
+
 <form method="POST" action="{{.CurrentURL}}"
 	  enctype="multipart/form-data">
   <input type="file" name="files"

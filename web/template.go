@@ -23,6 +23,7 @@ func RenderTemplate(template *template.Template, data any) Handler {
 }
 
 type Templater struct {
+	dir        string
 	templateFS fs.FS
 	assetsFS   fs.FS
 	funcs      template.FuncMap
@@ -70,8 +71,9 @@ func isURL(s string) bool {
 	return err == nil && url.Scheme != ""
 }
 
-func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
+func NewTemplater(templateFS, assetsFS fs.FS, dir string) *Templater {
 	return &Templater{
+		dir:        dir,
 		templateFS: templateFS,
 		assetsFS:   assetsFS,
 		funcs: template.FuncMap{
@@ -81,10 +83,9 @@ func NewTemplater(templateFS, assetsFS fs.FS) *Templater {
 	}
 }
 
-// TODO: Don't include base.html per default.
 func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 	baseTemplate := "base.html.tmpl"
-	baseTemplatePath := path.Join("templates", baseTemplate)
+	baseTemplatePath := path.Join(t.dir, baseTemplate)
 
 	_, err := fs.Stat(t.templateFS, baseTemplatePath)
 	includeBase := err == nil
@@ -96,7 +97,7 @@ func (t *Templater) Get(patterns ...string) (*template.Template, error) {
 
 	for _, pattern := range patterns {
 		templatePaths = append(templatePaths,
-			path.Join("templates", pattern+".tmpl"))
+			path.Join(t.dir, pattern+".tmpl"))
 	}
 
 	rootTemplate := patterns[0] + ".tmpl"
@@ -139,7 +140,7 @@ func (t *Templater) Write(writer io.Writer, data any, patterns ...string) error 
 const templatePathUrlParam = "templatePath"
 
 func NewTemplateModule(templateFS, assetsFS fs.FS, data any) chi.Router {
-	templater := NewTemplater(templateFS, assetsFS)
+	templater := NewTemplater(templateFS, assetsFS, "templates")
 
 	r := chi.NewRouter()
 	eh := NewErrorHandlers()

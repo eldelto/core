@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	// "net/smtp"
 	"strconv"
 
 	"github.com/eldelto/core/internal/conf"
@@ -14,22 +13,13 @@ import (
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 
-	// "github.com/eldelto/core/internal/filehshare"
-	// "github.com/eldelto/core/internal/fileshare/server"
-	// "github.com/eldelto/core/web"
-	// lweb "github.com/eldelto/core/internal/legacyweb"
+	lweb "github.com/eldelto/core/internal/legacyweb"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.etcd.io/bbolt"
 )
 
-const (
-	// smtpUserEnv     = "SMTP_USER"
-	// smtpPasswordEnv = "SMTP_PASSWORD"
-	// smtpHostEnv     = "SMTP_HOST"
-	// smtpPortEnv     = "SMTP_PORT"
-
-	dbPath = "file-share.db"
-)
+const dbPath = "file-share.db"
 
 func main() {
 	port := conf.IntEnvVarWithDefault("PORT", 8080)
@@ -38,10 +28,10 @@ func main() {
 
 	workdir := conf.RequireEnvVar("WORKDIR")
 
-	// smtpUser := conf.EnvVarWithDefault(smtpUserEnv, "")
-	// smtpPassword := conf.EnvVarWithDefault(smtpPasswordEnv, "")
-	// smtpHost := conf.EnvVarWithDefault(smtpHostEnv, "localhost")
-	// smtpPort := conf.IntEnvVarWithDefault(smtpPortEnv, 587)
+	smtpUser := conf.EnvVarWithDefault("SMTP_USER", "")
+	smtpPassword := conf.EnvVarWithDefault("SMTP_PASSWORD", "")
+	smtpHost := conf.EnvVarWithDefault("SMTP_HOST", "localhost")
+	smtpPort := conf.IntEnvVarWithDefault("SMTP_PORT", 587)
 
 	// Services
 	bolt, err := bbolt.Open(dbPath, 0600, nil)
@@ -51,48 +41,43 @@ func main() {
 	db := storage.New(bolt)
 	defer db.Close()
 
+	db.RegisterBucket(storage.Bucket{
+		Name: "user-data",
+	})
+	db.RegisterBucket(storage.Bucket{
+		Name: "chunked-file",
+	})
+
 	root, err := os.OpenRoot(workdir)
 	if err != nil {
 		log.Fatalf("failed to open workdir: %v", err)
 	}
 	defer root.Close()
 
-	// var smtpAuth smtp.Auth
-	// if smtpUser != "" && smtpPassword != "" {
-	// 	smtpAuth = smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
-	// } else {
-	// 	log.Println("No SMTP config found - running without E-mailing")
-	// }
-	// smtpHost = fmt.Sprintf("%s:%d", smtpHost, smtpPort)
+	auth := lweb.NewAuthenticator(
+		host,
+		"/file",
+		lweb.NewBBoltAuthRepository(bolt),
+		fileshare.TemplatesFS, fileshare.AssetsFS)
 
-	// auth := lweb.NewAuthenticator(
-	// 	host,
-	// 	"/lists",
-	// 	lweb.NewBBoltAuthRepository(db),
-	// 	server.TemplatesFS, server.AssetsFS)
+	mailer := web.NewMailer(host, smtpHost, int(smtpPort),
+		smtpUser, smtpPassword)
+	service := fileshare.NewService(db, root, mailer)
 
-	// service, err := fileshare.NewService(db, host, smtpHost, smtpAuth, auth)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// auth.TokenCallback = service.SendLoginEmail
+	auth.TokenCallback = service.SendLoginEmail
 
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Compress(5))
 
 	// Controllers
 	r.Mount("/", web.NewTemplateModule(fileshare.TemplatesFS, fileshare.AssetsFS, nil))
 	r.Mount("/assets", web.NewAssetModule(fileshare.AssetsFS))
 
-	r.Mount("/file", fileshare.NewDirectoryController(db, root))
+	// TODO: Use new auth module
+	auth.Controller().Register(r)
 
-	// // TODO: Auth
-	// r.Mount("/browse", fileshare.NewBrowsingModule(service))
-	// r.Mount("/files", fileshare.NewFilesModule(service))
-
-	// server.NewListController(service).AddMiddleware(auth.Middleware).Register(r)
-	// server.NewShareController(service).AddMiddleware(auth.Middleware).Register(r)
-	// auth.Controller().Register(r)
+	r.With(auth.Middleware).Mount("/file", fileshare.NewDirectoryController(db, service))
 
 	http.Handle("/", r)
 

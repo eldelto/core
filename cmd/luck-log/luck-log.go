@@ -58,7 +58,7 @@ func main() {
 		authRepository,
 		server.TemplatesFS, server.AssetsFS)
 
-	service, err := lucklog.NewService(db, host, mailer, authRepository)
+	service, err := lucklog.NewService(db, host, mailer)
 	if err != nil {
 		log.Fatal(err)
 	}

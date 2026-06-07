@@ -2,11 +2,13 @@ package fileshare
 
 import (
 	"archive/zip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"path"
@@ -15,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/eldelto/core/auth"
+	"github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 	"github.com/go-chi/chi/v5"
@@ -24,30 +27,30 @@ import (
 var (
 	ErrInvalidPath = errors.New("invalid path")
 
-	templater         = web.NewTemplater(TemplatesFS, AssetsFS)
+	templater         = web.NewTemplater(TemplatesFS, AssetsFS, "templates")
 	directoryTemplate = templater.GetP("directory.html")
+
+	mailTemplater     = web.NewTemplater(TemplatesFS, nil, "templates/emails")
+	mailLoginTemplate = mailTemplater.GetP("login.html")
 )
 
 func invalidPath(path string) error {
 	return fmt.Errorf("path %q: %w", path, ErrInvalidPath)
 }
 
-func NewDirectoryController(db *storage.Storage, root *os.Root) chi.Router {
-	fsys := root.FS()
+func NewDirectoryController(db *storage.Storage, service *Service) chi.Router {
 	r := chi.NewRouter()
-	r.Get("/*", errorHandlers.Handle(getPath(fsys)))
-	r.Post("/*", errorHandlers.Handle(upload(root)))
-	r.Post("/download", errorHandlers.Handle(download(fsys)))
-	r.Post("/upload", errorHandlers.Handle(initFile(db, root)))
-	r.Put("/upload/{reference}", errorHandlers.Handle(addFileChunk(db, root)))
-	r.Post("/upload/{reference}", errorHandlers.Handle(commitFile(db, root)))
+	r.Get("/*", errorHandlers.Handle(getPath(service)))
+	r.Post("/*", errorHandlers.Handle(upload(service)))
+	r.Post("/download", errorHandlers.Handle(download(service)))
+	r.Post("/upload", errorHandlers.Handle(initFile(db)))
+	r.Put("/upload/{reference}", errorHandlers.Handle(addFileChunk(db)))
+	r.Post("/upload/{reference}", errorHandlers.Handle(commitFile(db, service)))
 	// TODO:
-	// - User handling and restricting them to their own root dir
-	// - Upload multiple
-	// - Delete multiple
+	// - User handling and restricting them to their own service dir
 	// - Move multiple
 	// - Create directory
-	r.Post("/delete", errorHandlers.Handle(deleteFiles(root)))
+	r.Post("/delete", errorHandlers.Handle(deleteFiles(service)))
 
 	return r
 }
@@ -59,44 +62,28 @@ type directoryData struct {
 	Entries     []fs.FileInfo
 }
 
-func listDirectoryContent(w http.ResponseWriter, r *http.Request, fsys fs.FS) error {
+func listDirectoryContent(w http.ResponseWriter, r *http.Request, service *Service) error {
 	dirPath := chi.URLParam(r, "*")
-	// TODO: Can you escape by uploading a symbolic link?
-	if strings.Contains(dirPath, "..") {
-		return invalidPath(dirPath)
-	}
 	if dirPath == "" {
 		dirPath = "."
 	}
 
-	// TODO: restrict to user's home path
-	// fs.Sub(fs, dir)
-
-	entries, err := fs.ReadDir(fsys, dirPath)
+	entries, err := service.ListEntries(r.Context(), dirPath)
 	if err != nil {
 		return err
-	}
-
-	infos := make([]fs.FileInfo, len(entries))
-	for i := range entries {
-		info, err := entries[i].Info()
-		if err != nil {
-			return err
-		}
-		infos[i] = info
 	}
 
 	data := directoryData{
 		CurrentPath: dirPath,
 		ParentPath:  path.Dir(r.URL.Path),
 		CurrentURL:  r.URL,
-		Entries:     infos,
+		Entries:     entries,
 	}
 
 	return directoryTemplate.Execute(w, data)
 }
 
-func preview(w http.ResponseWriter, r *http.Request, fsys fs.FS) error {
+func preview(w http.ResponseWriter, r *http.Request, service *Service) error {
 	path := chi.URLParam(r, "*")
 	// TODO: Can you escape by uploading a symbolic link?
 	if strings.Contains(path, "..") {
@@ -106,32 +93,34 @@ func preview(w http.ResponseWriter, r *http.Request, fsys fs.FS) error {
 		path = "."
 	}
 
-	// TODO: restrict to user's home path
-	// fs.Sub(fs, dir)
-
-	// TODO:
-	// - Do we want a custom preview?
-	// - Should we just mingle the mime-types so more files can be
-	//   previewed? (e.g. text/csv becomes text)
+	root, err := service.userRoot(r.Context())
+	if err != nil {
+		return err
+	}
 
 	w.Header().Set(web.ContentDispositionHeader, "inline")
-	http.ServeFileFS(w, r, fsys, path)
+	http.ServeFileFS(w, r, root.FS(), path)
 	return nil
 }
 
-func getPath(fsys fs.FS) web.Handler {
+func getPath(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		isPreview := r.URL.Query().Get("preview")
 		if isPreview == "true" {
-			return preview(w, r, fsys)
+			return preview(w, r, service)
 		}
 
-		return listDirectoryContent(w, r, fsys)
+		return listDirectoryContent(w, r, service)
 	}
 }
 
-func upload(root *os.Root) web.Handler {
+func upload(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		root, err := service.userRoot(r.Context())
+		if err != nil {
+			return err
+		}
+
 		mr, err := r.MultipartReader()
 		if err != nil {
 			return err
@@ -145,9 +134,6 @@ func upload(root *os.Root) web.Handler {
 		if path == "" {
 			path = "."
 		}
-
-		fmt.Println("base path")
-		fmt.Println(path)
 
 		for {
 			// TODO: Move to function so the defers work.
@@ -178,15 +164,17 @@ func upload(root *os.Root) web.Handler {
 	}
 }
 
-func deleteFiles(root *os.Root) web.Handler {
+func deleteFiles(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		root, err := service.userRoot(r.Context())
+		if err != nil {
+			return err
+		}
+
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
 		paths := r.Form["paths"]
-
-		// TODO: Restrict user path
-		// root.OpenRoot(...)
 
 		for _, p := range paths {
 			p = filepath.Clean(p)
@@ -317,8 +305,14 @@ func downloadFile(w http.ResponseWriter, r *http.Request, fsys fs.FS, path strin
 	return nil
 }
 
-func download(fsys fs.FS) web.Handler {
+func download(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		root, err := service.userRoot(r.Context())
+		if err != nil {
+			return err
+		}
+		fsys := root.FS()
+
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
@@ -375,8 +369,12 @@ func (cf *ChunkedFile) BucketKey() []byte {
 
 const multipartMemory = 2 * 1024 * 1024
 
-func initFile(db *storage.Storage, root *os.Root) web.Handler {
+func initFile(db *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		// TODO:
+		// - Validate path is allowed for upload
+		// - Generic form parser/validator
+
 		if err := r.ParseMultipartForm(multipartMemory); err != nil {
 			return err
 		}
@@ -408,7 +406,7 @@ func initFile(db *storage.Storage, root *os.Root) web.Handler {
 	}
 }
 
-func addFileChunk(db *storage.Storage, root *os.Root) web.Handler {
+func addFileChunk(db *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		reference := chi.URLParam(r, "reference")
 
@@ -444,14 +442,19 @@ func addFileChunk(db *storage.Storage, root *os.Root) web.Handler {
 	}
 }
 
-func commitFile(db *storage.Storage, root *os.Root) web.Handler {
+func commitFile(db *storage.Storage, service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		root, err := service.userRoot(r.Context())
+		if err != nil {
+			return err
+		}
+
 		reference := chi.URLParam(r, "reference")
 
-		var chunkedFile *ChunkedFile
-		err := db.Read(func(tx *storage.Tx) error {
+		var chunkedFile ChunkedFile
+		err = db.Read(func(tx *storage.Tx) error {
 			cf, err := storage.Load[*ChunkedFile](tx, []byte(reference))
-			chunkedFile = cf
+			chunkedFile = *cf
 			return err
 		})
 		if err != nil {
@@ -474,4 +477,132 @@ func commitFile(db *storage.Storage, root *os.Root) web.Handler {
 		_, err = io.Copy(f, temp)
 		return err
 	}
+}
+
+type UserData struct {
+	ID      uuid.UUID
+	HomeDir string
+}
+
+func (ud *UserData) Bucket() string {
+	return "user-data"
+}
+
+func (ud *UserData) BucketKey() []byte {
+	return []byte(ud.ID.String())
+}
+
+type Service struct {
+	db     *storage.Storage
+	root   *os.Root
+	mailer web.Mailer
+}
+
+func NewService(db *storage.Storage, root *os.Root,
+	mailer web.Mailer) *Service {
+	return &Service{
+		db:     db,
+		root:   root,
+		mailer: mailer,
+	}
+}
+func (s *Service) initUser(authn legacyweb.Auth) (string, error) {
+	userAuth, ok := authn.(*legacyweb.UserAuth)
+	if !ok {
+		return "", fmt.Errorf("not a valid user auth")
+	}
+	dir := userAuth.Email.String()
+
+	err := s.db.Write(func(tx *storage.Tx) error {
+		if err := s.root.Mkdir(dir, 0744); err != nil && !errors.Is(err, os.ErrExist) {
+			return fmt.Errorf("create new home dir %v: %w", dir, err)
+		}
+
+		return s.setHomeDir(tx, authn, authn, dir)
+	})
+
+	return dir, err
+}
+
+func (s *Service) getHomeDir(auth legacyweb.Auth) (string, error) {
+	var data UserData
+	err := s.db.Read(func(tx *storage.Tx) error {
+		d, err := storage.Load[*UserData](tx, []byte(auth.UserID().String()))
+		data = *d
+		if err != nil {
+			return fmt.Errorf("get home dir for %v: %w", auth.UserID(), err)
+		}
+		return nil
+	})
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.initUser(auth)
+	}
+
+	return data.HomeDir, err
+}
+
+func (s *Service) setHomeDir(tx *storage.Tx, authn, toModify legacyweb.Auth, dir string) error {
+	data := UserData{
+		ID:      toModify.UserID().UUID,
+		HomeDir: dir,
+	}
+	return storage.Store(tx, &data, auth.UserID(authn.UserID()))
+}
+
+func (s *Service) userRoot(ctx context.Context) (*os.Root, error) {
+	auth, err := legacyweb.GetAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	homeDir, err := s.getHomeDir(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := s.root.OpenRoot(homeDir)
+	if err != nil {
+		return nil, fmt.Errorf("open user root dir for %v: %w", auth.UserID(), err)
+	}
+
+	return root, nil
+}
+
+func (s *Service) ListEntries(ctx context.Context, path string) ([]fs.FileInfo, error) {
+	root, err := s.userRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fsys := root.FS()
+
+	entries, err := fs.ReadDir(fsys, path)
+	if err != nil {
+		return nil, fmt.Errorf("list entries in dir %v: %w", path, err)
+	}
+
+	infos := make([]fs.FileInfo, len(entries))
+	for i := range entries {
+		info, err := entries[i].Info()
+		if err != nil {
+			return nil, err
+		}
+		infos[i] = info
+	}
+
+	return infos, nil
+}
+
+type loginData struct {
+	Token auth.TokenID
+}
+
+func (s Service) SendLoginEmail(recipient mail.Address, token legacyweb.TokenID) error {
+	data := loginData{Token: auth.TokenID(token)}
+	sender, err := mail.ParseAddress("no-reply@eldelto.net")
+	if err != nil {
+		return fmt.Errorf("send login E-mail: %w", err)
+	}
+
+	fmt.Println(data)
+	return s.mailer.Send(*sender, recipient, mailLoginTemplate, data)
 }

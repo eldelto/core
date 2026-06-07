@@ -10,8 +10,6 @@
 
   <link rel="stylesheet" href='{{asset "main.css"}}'>
   <link rel="icon" type="image/svg" href='{{asset "favicon.ico"}}'>
-  
-	<script defer src='{{asset "main.js"}}'></script>
 </head>
 
 <body>
@@ -24,7 +22,9 @@
     <a href="/about">About</a>
   </nav>
   <div id="content">
-    {{block "content" .}} <p>The correct content could not be rendered.</p> {{end}}
+    {{block "content" .}}
+	<p>The correct content could not be rendered.</p>
+	{{end}}
   </div>
 </body>
 

@@ -2,7 +2,10 @@ package fileshare
 
 import (
 	"embed"
+	"errors"
+	"net/http"
 
+	"github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/web"
 )
 
@@ -16,4 +19,12 @@ var errorHandlers web.ErrorHandlers
 
 func init() {
 	errorHandlers = web.NewErrorHandlers()
+	errorHandlers.AddHandler(func(e error, w http.ResponseWriter, r *http.Request) bool {
+		if errors.Is(e, legacyweb.ErrUnauthenticated) {
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return true
+		}
+		return false
+
+	})
 }
