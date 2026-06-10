@@ -50,6 +50,7 @@ func NewDirectoryController(db *storage.Storage, service *Service) chi.Router {
 	// - User handling and restricting them to their own service dir
 	// - Move multiple
 	// - Create directory
+	r.Post("/directory", errorHandlers.Handle(createDirectory(service)))
 	r.Post("/delete", errorHandlers.Handle(deleteFiles(service)))
 
 	return r
@@ -160,6 +161,19 @@ func upload(service *Service) web.Handler {
 		}
 
 		http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+		return nil
+	}
+}
+
+func createDirectory(service *Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if err := service.CreateDirectory(r.Context(),
+			r.PostFormValue("path")); err != nil {
+			return err
+		}
+
+		referrer := r.Header.Get(web.ReferrerHeader)
+		http.Redirect(w, r, referrer, http.StatusSeeOther)
 		return nil
 	}
 }
@@ -605,4 +619,23 @@ func (s Service) SendLoginEmail(recipient mail.Address, token legacyweb.TokenID)
 
 	fmt.Println(data)
 	return s.mailer.Send(*sender, recipient, mailLoginTemplate, data)
+}
+
+func (s *Service) CreateDirectory(ctx context.Context, path string) error {
+	auth, err := legacyweb.GetAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	root, err := s.userRoot(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := root.Mkdir(path, 0744); err != nil {
+		return fmt.Errorf("create directory %v for user %v",
+			path, auth.UserID())
+	}
+
+	return nil
 }

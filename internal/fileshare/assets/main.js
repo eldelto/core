@@ -1,8 +1,19 @@
 const items = document.querySelectorAll(".dir-list tbody tr");
 const filesInput = document.getElementById("files-input");
+const createDirDialog = document.getElementById("create-dir-dialog");
 
 let selectionIndex = 0;
 const selectedClass = "selected"
+
+function isDialogOpen() {
+	return Array.from(document.querySelectorAll("dialog"))
+		.some(d => d.open);
+}
+
+function closeDialog() {
+	return document.querySelectorAll("dialog")
+		.forEach(d => d.close());
+}
 
 function moveIndex(offset) {
 	const newIndex = (selectionIndex + offset) % items.length;
@@ -128,7 +139,7 @@ async function initFileStore(file) {
 	// error message.
 	const result = await response.text();
 	if (!response.ok) {
-      throw new Error(result);
+		throw new Error(result);
     }
 
 	return result;
@@ -189,9 +200,15 @@ async function deleteMarked() {
 	}
 }
 
+function createDirectory() {
+	createDirDialog.show();
+	const input = createDirDialog.querySelector("input");
+	input.setSelectionRange(input.value.length, input.value.length);
+}
+
 window.addEventListener("error", function(e) {
 	console.log(e);
-	alert(`received error: ${e}`);
+	alert(`received error: ${e.error}`);
 });
 
 window.addEventListener("unhandledrejection", function(e) {
@@ -219,44 +236,56 @@ document.addEventListener("keydown", function(e) {
 	}
 	console.log(key);
 	
-	switch (key) {
-	case "Enter":
-	case "ArrowDown":
-	case "j":
-		selectionIndex = moveIndex(1);
-		selectItem();
-		break;
-	case "ArrowUp":
-	case "k":
-		selectionIndex = moveIndex(-1);
-		selectItem();
-		break;
-	case "ArrowLeft":
-	case "h":
-		navigateUp();
-		break;
-	case "ArrowRight":
-	case "l":
-		navigateDown();
-		break;
-	case "m":
-		markItem();
-		break;
-	case "u":
-		unmarkItem();
-		break;
-	case "U":
-		unmarkAll();
-		break;
-	case "d":
-		download();
-		break;
-	case "s":
-		store();
-		break;
-	case "D":
-		deleteMarked();
-		break;
+	if (isDialogOpen()) {
+		switch (key) {
+		case "Escape":
+			closeDialog();
+			break;
+		}
+	} else {
+		switch (key) {
+		case "Enter":
+		case "ArrowDown":
+		case "j":
+			selectionIndex = moveIndex(1);
+			selectItem();
+			break;
+		case "ArrowUp":
+		case "k":
+			selectionIndex = moveIndex(-1);
+			selectItem();
+			break;
+		case "ArrowLeft":
+		case "h":
+			navigateUp();
+			break;
+		case "ArrowRight":
+		case "l":
+			navigateDown();
+			break;
+		case "m":
+			markItem();
+			break;
+		case "u":
+			unmarkItem();
+			break;
+		case "U":
+			unmarkAll();
+			break;
+		case "d":
+			download();
+			break;
+		case "s":
+			store();
+			break;
+		case "D":
+			deleteMarked();
+			break;
+		case "+":
+			createDirectory();
+			e.preventDefault();
+			break;
+		}
 	}
 });
 

@@ -55,4 +55,16 @@
   </tbody>
 </table>
 
+<dialog id="create-dir-dialog">
+  <h3>Create directory:</h3>
+  <form method="POST" action="/file/directory">
+	<input type="text" name="path" value="{{.CurrentPath}}/">
+	<button>Create</button>
+  </form>
+
+  <form method="dialog">
+	<button>Cancel</button>
+  </form>
+</dialog>
+
 {{end}}
