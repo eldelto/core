@@ -112,6 +112,37 @@ function download() {
 	submitWithMarked("download-form");
 }
 
+function initProgressCard(name) {
+	const dialog = document.getElementById("upload-dialog");
+
+	const template = document.getElementById("upload-card")
+		  .content
+		  .querySelector("li");
+	const card = document.importNode(template, true);
+	console.log(card);
+	card.querySelector(".ul-name").textContent = name;
+	
+	const list = dialog.querySelector("ul");
+	list.appendChild(card);
+	dialog.show();
+	
+	return card;
+}
+
+function toMB(bytes) {
+	return (bytes / (1024*1024)).toFixed(1);
+}
+
+function updateProgressCard(card, transmitted, total) {
+	const progress = card.querySelector("progress");
+	progress.value = transmitted;
+	progress.max = total;
+
+	const count = card.querySelector(".ul-count");
+	count.textContent = toMB(transmitted) + "/"
+		+ toMB(total) + " MB";
+}
+
 function store() {
 	filesInput.click();
 }
@@ -181,9 +212,11 @@ async function storeFile(file) {
 	let transmitted = 0;
 
 	const reference = await initFileStore(file);
+	const ref = initProgressCard(name);
 	for (transmitted = 0; transmitted < total; transmitted += chunkSize) {
 		await storeChunk(reference, file, transmitted);
 		console.log(`uploading ${name}: ${transmitted} / ${total}`);
+		updateProgressCard(ref, transmitted, total);
 	}
 	await commitStoredFile(reference);
 }
@@ -244,7 +277,6 @@ document.addEventListener("keydown", function(e) {
 		}
 	} else {
 		switch (key) {
-		case "Enter":
 		case "ArrowDown":
 		case "j":
 			selectionIndex = moveIndex(1);
@@ -259,6 +291,7 @@ document.addEventListener("keydown", function(e) {
 		case "h":
 			navigateUp();
 			break;
+		case "Enter":
 		case "ArrowRight":
 		case "l":
 			navigateDown();
