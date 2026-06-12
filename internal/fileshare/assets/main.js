@@ -114,6 +114,11 @@ function download() {
 	submitWithMarked("download-form");
 }
 
+function resetProgressCard() {
+	document.getElementById("upload-dialog")
+		.querySelector("ul").innerHTML = null;
+}
+
 function initProgressCard(name) {
 	const dialog = document.getElementById("upload-dialog");
 
@@ -219,6 +224,7 @@ async function storeFile(file) {
 
 	const reference = await initFileStore(abortCtrl, file);
 	const ref = initProgressCard(name);
+
 	for (transmitted = 0; transmitted < total; transmitted += chunkSize) {
 		await storeChunk(abortCtrl, reference, file, transmitted);
 		console.log(`uploading ${name}: ${transmitted} / ${total}`);
@@ -228,6 +234,8 @@ async function storeFile(file) {
 }
 
 async function storeFiles(files) {
+	resetProgressCard();
+
 	const promises = Array.from(files).map(storeFile);
 	await Promise.all(promises);
 	location.reload();
