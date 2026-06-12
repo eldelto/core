@@ -5,6 +5,8 @@ const createDirDialog = document.getElementById("create-dir-dialog");
 let selectionIndex = 0;
 const selectedClass = "selected"
 
+let abortCtrl = null;
+
 function isDialogOpen() {
 	return Array.from(document.querySelectorAll("dialog"))
 		.some(d => d.open);
@@ -149,7 +151,7 @@ function store() {
 
 const chunkSize = 1024 * 1024 // 1 MB;
 
-async function initFileStore(file) {
+async function initFileStore(abortCtrl, file) {
 	console.log(file);
 	const path = location.pathname
 		  .split("/")
@@ -163,7 +165,8 @@ async function initFileStore(file) {
 	
 	const response = await fetch("/file/upload", {
 		method: "POST",
-		body: data
+		body: data,
+		signal: abortCtrl.signal
 	});
 
 	// Result will either be a reference to the created file or an
@@ -176,7 +179,7 @@ async function initFileStore(file) {
 	return result;
 }
 
-async function storeChunk(reference, file, start) {
+async function storeChunk(abortCtrl, reference, file, start) {
 	const end = start + chunkSize;
 	
 	const data = new FormData();
@@ -184,7 +187,8 @@ async function storeChunk(reference, file, start) {
 	
 	const response = await fetch("/file/upload/" + reference, {
 		method: "PUT",
-		body: data
+		body: data,
+		signal: abortCtrl.signal
 	});
 
 	if (!response.ok) {
@@ -195,9 +199,10 @@ async function storeChunk(reference, file, start) {
 	return end;
 }
 
-async function commitStoredFile(reference) {
+async function commitStoredFile(abortCtrl, reference) {
 	const response = await fetch("/file/upload/" + reference, {
-		method: "POST"
+		method: "POST",
+		signal: abortCtrl.signal
 	});
 
 	if (!response.ok) {
@@ -207,18 +212,19 @@ async function commitStoredFile(reference) {
 }
 
 async function storeFile(file) {
+	const abortCtrl = getAbortController();
 	const name = file.name;
 	const total = file.size;
 	let transmitted = 0;
 
-	const reference = await initFileStore(file);
+	const reference = await initFileStore(abortCtrl, file);
 	const ref = initProgressCard(name);
 	for (transmitted = 0; transmitted < total; transmitted += chunkSize) {
-		await storeChunk(reference, file, transmitted);
+		await storeChunk(abortCtrl, reference, file, transmitted);
 		console.log(`uploading ${name}: ${transmitted} / ${total}`);
 		updateProgressCard(ref, transmitted, total);
 	}
-	await commitStoredFile(reference);
+	await commitStoredFile(abortCtrl, reference);
 }
 
 async function storeFiles(files) {
@@ -245,8 +251,10 @@ window.addEventListener("error", function(e) {
 });
 
 window.addEventListener("unhandledrejection", function(e) {
-	console.log(e);
-	alert(`received rejection: ${e.reason}`);
+	if (e.reason != "cancelled") {
+		console.log(e);
+		alert(`received rejection: ${e.reason}`);
+	}
 });
 
 filesInput.addEventListener("change", function(e) {
@@ -322,6 +330,27 @@ document.addEventListener("keydown", function(e) {
 	}
 });
 
+function getAbortController() {
+	if (!abortCtrl || abortCtrl.signal.aborted) {
+		abortCtrl = new AbortController();
+	}
+
+	return abortCtrl;
+}
+
+function abort() {
+	if (abortCtrl) {
+		abortCtrl.abort("cancelled");
+	}
+}
+
+function addListener(query, event, func) {
+	document.querySelectorAll(query)
+		.forEach(e => e.addEventListener(event, func));
+}
+
 document.addEventListener("DOMContentLoaded", function() {
 	selectItem();
+
+	addListener(".btn-cancel", "click", abort)
 });
