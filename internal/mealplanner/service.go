@@ -411,7 +411,7 @@ func (s *Service) GenerateWeeklyMealPlan(ctx context.Context, date time.Time, me
 		Recipes: make([]Recipe, mealCount),
 		Week:    week(date),
 	}
-	for i := uint(0); i < mealCount; i++ {
+	for i := range mealCount {
 		// TODO: Doing single suggestions in a loop is very inefficient.
 		recipe, err := s.SuggestRecipe(ctx, filter)
 		if err != nil {

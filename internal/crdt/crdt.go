@@ -2,6 +2,7 @@ package crdt
 
 import (
 	"fmt"
+	"maps"
 )
 
 type Mergeable interface {
@@ -95,9 +96,7 @@ func (p *PSet[M]) Merge(other Mergeable) (Mergeable, error) {
 
 func mergeItemMaps[M Mergeable](this, other map[string]M) (map[string]M, error) {
 	mergedItemMap := map[string]M{}
-	for key, value := range this {
-		mergedItemMap[key] = value
-	}
+	maps.Copy(mergedItemMap, this)
 
 	for _, value := range other {
 		err := addToItemMap(mergedItemMap, value)

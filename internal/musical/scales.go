@@ -15,7 +15,7 @@ func (s *ScaleDegrees) Shift(name string, offset int) ScaleDegrees {
 	intervalLen := len(s.intervals)
 	newIntervals := make([]int, intervalLen)
 
-	for i := 0; i < intervalLen; i++ {
+	for i := range intervalLen {
 		newIntervals[i] = s.intervals[(offset+i)%intervalLen]
 	}
 

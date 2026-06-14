@@ -2,6 +2,7 @@ package plantguild_test
 
 import (
 	"os"
+	"slices"
 	"sort"
 	"testing"
 
@@ -57,10 +58,8 @@ func sanitizeEntries(l *plantguild.Lexicon) (modified bool) {
 }
 
 func appendCompanion(companions *[]string, plantName string) bool {
-	for _, companion := range *companions {
-		if companion == plantName {
-			return false
-		}
+	if slices.Contains(*companions, plantName) {
+		return false
 	}
 	*companions = append(*companions, plantName)
 	return true

@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 
 	"github.com/eldelto/core/internal/solvent"
@@ -72,9 +73,7 @@ func copyLists(db *bbolt.DB, source, destination string) error {
 			return err
 		}
 
-		for k, v := range sourceNotebook.Lists {
-			destinationNotebook.Lists[k] = v
-		}
+		maps.Copy(destinationNotebook.Lists, sourceNotebook.Lists)
 
 		buffer := bytes.Buffer{}
 		if err := gob.NewEncoder(&buffer).Encode(destinationNotebook); err != nil {

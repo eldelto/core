@@ -171,7 +171,6 @@ func (s *JiraSink) ProcessActions(actions []Action, localEntries []Entry) error 
 	group.SetLimit(5)
 
 	for _, a := range actions {
-		a := a
 		switch a.Operation {
 		case Add:
 			group.Go(func() error {

@@ -31,7 +31,7 @@ var Preamble string
 func wordToBytes(w Word) [WordSize]byte {
 	bytes := [WordSize]byte{}
 
-	for i := 0; i < WordSize; i++ {
+	for i := range WordSize {
 		bytes[i] = byte((w >> (i * 8)) & 0xFF)
 	}
 

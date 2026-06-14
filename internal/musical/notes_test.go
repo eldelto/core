@@ -31,7 +31,7 @@ func TestNotesManipulation(t *testing.T) {
 			builder := strings.Builder{}
 
 			builder.WriteString(note.String())
-			for i := 0; i < 15; i++ {
+			for range 15 {
 				note = tt.f(note)
 				builder.WriteString(" - ")
 				builder.WriteString(note.String())

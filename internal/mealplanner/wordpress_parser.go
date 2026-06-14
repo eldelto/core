@@ -147,7 +147,7 @@ func parseIngredientsFromHTML(t *html.Tokenizer, recipe *Recipe) error {
 }
 
 func parseStepFromHTML(t *html.Tokenizer, recipe *Recipe) error {
-	step := ""
+	var step strings.Builder
 
 	for t.Err() == nil {
 		t.Next()
@@ -156,11 +156,11 @@ func parseStepFromHTML(t *html.Tokenizer, recipe *Recipe) error {
 		case html.TextToken:
 			s := strings.TrimSpace(token.Data)
 			if s != "" {
-				step += " " + s
+				step.WriteString(" " + s)
 			}
 		case html.EndTagToken:
 			if isTag(token, "li") {
-				recipe.Steps = append(recipe.Steps, strings.TrimSpace(step))
+				recipe.Steps = append(recipe.Steps, strings.TrimSpace(step.String()))
 				return nil
 			}
 		}

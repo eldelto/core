@@ -28,7 +28,7 @@ const (
 
 func randomlyAssignTiles() [tileCount]uint {
 	numbers := [tileCount]uint{}
-	for i := 0; i < len(numbers)/2; i++ {
+	for i := range len(numbers) / 2 {
 		n := uint(rand.Intn(patternPairCount) + 1)
 		numbers[i] = n
 		numbers[i+tileCount/2] = n

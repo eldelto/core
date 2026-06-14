@@ -100,7 +100,7 @@ type Response struct {
 	response   *http.Response
 	T          testing.TB
 	StatusCode int
-	mapBody    map[string]interface{}
+	mapBody    map[string]any
 }
 
 func NewResponse(t testing.TB, response *http.Response) Response {
@@ -108,11 +108,11 @@ func NewResponse(t testing.TB, response *http.Response) Response {
 		response:   response,
 		T:          t,
 		StatusCode: response.StatusCode,
-		mapBody:    map[string]interface{}{},
+		mapBody:    map[string]any{},
 	}
 }
 
-func (r *Response) Body() map[string]interface{} {
+func (r *Response) Body() map[string]any {
 	if len(r.mapBody) <= 0 {
 		defer r.response.Body.Close()
 
@@ -125,7 +125,7 @@ func (r *Response) Body() map[string]interface{} {
 	return r.mapBody
 }
 
-func (r *Response) Decode(value interface{}) error {
+func (r *Response) Decode(value any) error {
 	defer r.response.Body.Close()
 
 	return json.NewDecoder(r.response.Body).Decode(value)

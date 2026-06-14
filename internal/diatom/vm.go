@@ -190,7 +190,7 @@ func (vm *VM) storeByte(addr Word, b byte) error {
 
 func (vm *VM) fetchWord(addr Word) (Word, error) {
 	var w Word
-	for i := 0; i < WordSize; i++ {
+	for i := range WordSize {
 		b, err := vm.fetchByte(addr + Word(i))
 		if err != nil {
 			return w, err
@@ -205,7 +205,7 @@ func (vm *VM) fetchWord(addr Word) (Word, error) {
 
 func (vm *VM) storeWord(addr Word, w Word) error {
 	bytes := wordToBytes(w)
-	for i := 0; i < WordSize; i++ {
+	for i := range WordSize {
 		if err := vm.storeByte(addr+(WordSize-(Word(i)+1)), bytes[i]); err != nil {
 			return err
 		}
