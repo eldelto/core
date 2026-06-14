@@ -1,6 +1,8 @@
 package storage
 
 // TODO:
+//   - Storable should not expose the bucket key
+//   - Different types for read/write transaction
 //   - Materialized cache for faster reads? (e.g. "payload"/cache)
 //   - Should ListAll always have a defined sort order?
 

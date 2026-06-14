@@ -77,7 +77,7 @@ func main() {
 	// TODO: Use new auth module
 	auth.Controller().Register(r)
 
-	r.With(auth.Middleware).Mount("/file", fileshare.NewDirectoryController(db, service))
+	r.With(auth.Middleware).Mount("/file", fileshare.NewDirectoryController(service))
 
 	http.Handle("/", r)
 

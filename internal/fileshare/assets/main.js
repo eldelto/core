@@ -150,6 +150,15 @@ function updateProgressCard(card, transmitted, total) {
 		+ toMB(total) + " MB";
 }
 
+function completeProgressCard(card, total) {
+	const progress = card.querySelector("progress");
+	progress.value = total;
+	progress.max = total;
+
+	const count = card.querySelector(".ul-count");
+	count.textContent = "Completed";
+}
+
 function store() {
 	filesInput.click();
 }
@@ -231,6 +240,7 @@ async function storeFile(file) {
 		updateProgressCard(ref, transmitted, total);
 	}
 	await commitStoredFile(abortCtrl, reference);
+	completeProgressCard(ref, total);
 }
 
 async function storeFiles(files) {
