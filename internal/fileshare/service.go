@@ -1,6 +1,7 @@
 package fileshare
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -291,6 +292,122 @@ func (s *Service) CommitFile(ctx context.Context, reference string) error {
 	if _, err := io.Copy(f, temp); err != nil {
 		return fmt.Errorf("move temp file: reference=%q, err=%w",
 			reference, err)
+	}
+
+	return nil
+}
+
+func (s *Service) DeletePaths(ctx context.Context, paths []string) error {
+	root, err := s.userRoot(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range paths {
+		p = filepath.Clean(p)
+		if err := root.RemoveAll(p); err != nil {
+			return fmt.Errorf("delete path: path=%q, err=%q", p, err)
+		}
+	}
+
+	return nil
+}
+
+func zipFile(zipper *zip.Writer, f fs.File, name string) error {
+	w, err := zipper.Create(name)
+	if err != nil {
+		return fmt.Errorf("zip file: name=%q, err=%w", name, err)
+	}
+
+	if _, err := io.Copy(w, f); err != nil {
+		return fmt.Errorf("copy file to zip: name=%q, err=%w", name, err)
+	}
+	return nil
+}
+
+// This is basically a copy of zip.Writer.AddFS.
+func zipFS(zipper *zip.Writer, fsys fs.FS, prefix string) error {
+	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if name == "." {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && !info.Mode().IsRegular() {
+			return errors.New("zip: cannot add non-regular file")
+		}
+		h, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+		h.Name = filepath.Join(prefix, name)
+		if d.IsDir() {
+			h.Name += "/"
+		}
+		h.Method = zip.Deflate
+		fw, err := zipper.CreateHeader(h)
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		f, err := fsys.Open(name)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = io.Copy(fw, f)
+		return err
+	})
+}
+
+func addZipItem(zipper *zip.Writer, fsys fs.FS, path string) error {
+	path = filepath.Clean(path)
+	f, err := fsys.Open(path)
+	if err != nil {
+		return fmt.Errorf("open zip item: path=%q, err=%w", path, err)
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("stat zip item: path=%q, err=%w", path, err)
+	}
+
+	if info.IsDir() {
+		dir, err := fs.Sub(fsys, path)
+		if err != nil {
+			return fmt.Errorf("create sub fs to zip: path=%q, err=%w", path, err)
+		}
+
+		if err := zipFS(zipper, dir, info.Name()); err != nil {
+			return fmt.Errorf("zip dir: path=%q, err=%w", path, err)
+		}
+		return nil
+	}
+
+	return zipFile(zipper, f, info.Name())
+}
+
+func (s *Service) ZipPaths(ctx context.Context, w io.Writer, paths []string) error {
+	root, err := s.userRoot(ctx)
+	if err != nil {
+		return err
+	}
+	fsys := root.FS()
+
+	zipper := zip.NewWriter(w)
+	defer zipper.Close()
+	for _, p := range paths {
+		if err := addZipItem(zipper, fsys, p); err != nil {
+			return err
+		}
 	}
 
 	return nil

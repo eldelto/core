@@ -1,10 +1,7 @@
 package fileshare
 
 import (
-	"archive/zip"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -17,18 +14,12 @@ import (
 )
 
 var (
-	ErrInvalidPath = errors.New("invalid path")
-
 	templater         = web.NewTemplater(TemplatesFS, AssetsFS, "templates")
 	directoryTemplate = templater.GetP("directory.html")
 
 	mailTemplater     = web.NewTemplater(TemplatesFS, nil, "templates/emails")
 	mailLoginTemplate = mailTemplater.GetP("login.html")
 )
-
-func invalidPath(path string) error {
-	return fmt.Errorf("path %q: %w", path, ErrInvalidPath)
-}
 
 func NewDirectoryController(service *Service) chi.Router {
 	r := chi.NewRouter()
@@ -108,117 +99,19 @@ func createDirectory(service *Service) web.Handler {
 
 func deleteFiles(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		root, err := service.userRoot(r.Context())
-		if err != nil {
-			return err
-		}
-
 		if err := r.ParseForm(); err != nil {
 			return err
 		}
 		paths := r.Form["paths"]
 
-		for _, p := range paths {
-			p = filepath.Clean(p)
-			fmt.Println(p)
-			if err := root.RemoveAll(p); err != nil {
-				return err
-			}
+		if err := service.DeletePaths(r.Context(), paths); err != nil {
+			return err
 		}
 
 		referrer := r.Header.Get(web.ReferrerHeader)
 		http.Redirect(w, r, referrer, http.StatusSeeOther)
 		return nil
 	}
-}
-
-func addZipFile(zipper *zip.Writer, f fs.File, name string) error {
-	w, err := zipper.Create(name)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(w, f)
-	return err
-}
-
-// This is basically a copy of zip.Writer.AddFS.
-func addFS(zipper *zip.Writer, fsys fs.FS, prefix string) error {
-	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if name == "." {
-			return nil
-		}
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() && !info.Mode().IsRegular() {
-			return errors.New("zip: cannot add non-regular file")
-		}
-		h, err := zip.FileInfoHeader(info)
-		if err != nil {
-			return err
-		}
-		h.Name = filepath.Join(prefix, name)
-		if d.IsDir() {
-			h.Name += "/"
-		}
-		h.Method = zip.Deflate
-		fw, err := zipper.CreateHeader(h)
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		f, err := fsys.Open(name)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		_, err = io.Copy(fw, f)
-		return err
-	})
-}
-
-func addZipItem(zipper *zip.Writer, fsys fs.FS, path string) error {
-	path = filepath.Clean(path)
-	f, err := fsys.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	info, err := f.Stat()
-	if err != nil {
-		return err
-	}
-
-	dir, err := fs.Sub(fsys, path)
-	if err != nil {
-		return err
-	}
-
-	if info.IsDir() {
-		return addFS(zipper, dir, info.Name())
-	}
-
-	return addZipFile(zipper, f, info.Name())
-}
-
-func zipPaths(w io.Writer, fsys fs.FS, paths []string) error {
-	zipper := zip.NewWriter(w)
-	defer zipper.Close()
-	for _, p := range paths {
-		if err := addZipItem(zipper, fsys, p); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func isSingleFile(fsys fs.FS, paths []string) (bool, error) {
@@ -247,6 +140,13 @@ func downloadFile(w http.ResponseWriter, r *http.Request, fsys fs.FS, path strin
 	return nil
 }
 
+func downloadZip(w http.ResponseWriter, r *http.Request,
+	service *Service, paths []string) error {
+	w.Header().Set(web.ContentDispositionHeader,
+		`attachment; filename="download.zip"`)
+	return service.ZipPaths(r.Context(), w, paths)
+}
+
 func download(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		root, err := service.userRoot(r.Context())
@@ -268,7 +168,7 @@ func download(service *Service) web.Handler {
 			return downloadFile(w, r, fsys, paths[0])
 		}
 
-		return zipPaths(w, fsys, paths)
+		return downloadZip(w, r, service, paths)
 	}
 }
 
