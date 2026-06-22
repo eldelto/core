@@ -12,6 +12,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"time"
 
@@ -50,7 +51,6 @@ type Bucket struct {
 }
 
 type Storable interface {
-	Bucket() string
 	BucketKey() []byte
 }
 
@@ -113,6 +113,14 @@ func New(db *bbolt.DB) *Storage {
 		db:      db,
 		buckets: map[string]Bucket{},
 	}
+}
+
+func Require(path string) *Storage {
+	db, err := bbolt.Open(path, 0600, nil)
+	if err != nil {
+		log.Fatalf("failed to open bbolt DB %q: %v", path, err)
+	}
+	return New(db)
 }
 
 func (s *Storage) Close() error {

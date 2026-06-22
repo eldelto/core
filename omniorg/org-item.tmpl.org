@@ -1,0 +1,10 @@
+
+** {{.Title}}
+   SCHEDULED: {{.ScheduledAt}}
+   :PROPERTIES:
+   :OMNI_ID:      {{.ID}}
+   :OMNI_TYPE:    {{.Type}}
+   :OMNI_ACTIONS: {{.Actions}}
+   :END:
+
+   {{.Content}}

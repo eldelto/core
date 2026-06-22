@@ -18,6 +18,11 @@ type Provider struct {
 	ConfigProvider
 }
 
+func (p *Provider) Exists(key string) bool {
+	_, err := p.GetString(key)
+	return err == nil
+}
+
 func (p *Provider) GetStringP(key string, defaultValue ...string) string {
 	value, err := p.GetString(key)
 	if err != nil {
