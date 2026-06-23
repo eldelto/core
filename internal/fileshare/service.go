@@ -18,13 +18,14 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	userDataBucket = "user-data"
+	chunkBucket = "chunked-file"
+)
+
 type UserData struct {
 	ID      uuid.UUID
 	HomeDir string
-}
-
-func (ud *UserData) Bucket() string {
-	return "user-data"
 }
 
 func (ud *UserData) BucketKey() []byte {
@@ -58,10 +59,6 @@ func newChunkedFile(path, name string, size uint) (chunkedFile, error) {
 		Name:     name,
 		Size:     size,
 	}, nil
-}
-
-func (cf *chunkedFile) Bucket() string {
-	return "chunked-file"
 }
 
 func (cf *chunkedFile) BucketKey() []byte {
@@ -103,7 +100,7 @@ func (s *Service) initUser(authn legacyweb.Auth) (string, error) {
 func (s *Service) getHomeDir(auth legacyweb.Auth) (string, error) {
 	var data UserData
 	err := s.db.Read(func(tx *storage.Tx) error {
-		d, err := storage.Load[*UserData](tx, []byte(auth.UserID().String()))
+		d, err := storage.Load[*UserData](tx, userDataBucket, []byte(auth.UserID().String()))
 		data = *d
 		if err != nil {
 			return fmt.Errorf("get home dir for %q: %w", auth.UserID(), err)
@@ -122,7 +119,7 @@ func (s *Service) setHomeDir(tx *storage.Tx, authn, toModify legacyweb.Auth, dir
 		ID:      toModify.UserID().UUID,
 		HomeDir: dir,
 	}
-	return storage.Store(tx, &data, auth.UserID(authn.UserID()))
+	return storage.Store(tx, userDataBucket, &data, auth.UserID(authn.UserID()))
 }
 
 func (s *Service) userRoot(ctx context.Context) (*os.Root, error) {
@@ -219,7 +216,7 @@ func (s *Service) InitFile(ctx context.Context,
 	}
 
 	err = s.db.Write(func(tx *storage.Tx) error {
-		return storage.Store(tx, &chunkedFile, auth.UserID(authn.UserID()))
+		return storage.Store(tx, chunkBucket, &chunkedFile, auth.UserID(authn.UserID()))
 	})
 	if err != nil {
 		return "", fmt.Errorf("init chunked file: user=%q, path=%q, err=%w",
@@ -234,7 +231,7 @@ func (s *Service) AddFileChunk(ctx context.Context, reference string, r io.Reade
 
 	var cFile *chunkedFile
 	err := s.db.Read(func(tx *storage.Tx) error {
-		cf, err := storage.Load[*chunkedFile](tx, []byte(reference))
+		cf, err := storage.Load[*chunkedFile](tx, chunkBucket, []byte(reference))
 		cFile = cf
 		return err
 	})
@@ -265,7 +262,7 @@ func (s *Service) CommitFile(ctx context.Context, reference string) error {
 
 	var cFile chunkedFile
 	err = s.db.Read(func(tx *storage.Tx) error {
-		cf, err := storage.Load[*chunkedFile](tx, []byte(reference))
+		cf, err := storage.Load[*chunkedFile](tx, chunkBucket, []byte(reference))
 		cFile = *cf
 		return err
 	})

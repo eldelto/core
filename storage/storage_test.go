@@ -15,6 +15,8 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+const bucketName = "payload"
+
 type payload struct {
 	Key    []byte
 	String string
@@ -38,10 +40,6 @@ func newPayload() *payload {
 	}
 }
 
-func (p *payload) Bucket() string {
-	return "payload"
-}
-
 func (p *payload) BucketKey() []byte {
 	return p.Key
 }
@@ -55,7 +53,7 @@ func newStorage() *storage.Storage {
 
 	s := storage.New(db)
 	s.RegisterBucket(storage.Bucket{
-		Name: "payload",
+		Name: bucketName,
 	})
 	return s
 }
@@ -73,13 +71,13 @@ func TestStoreAndLoad(t *testing.T) {
 	user := newUser()
 
 	err := store.Write(func(tx *storage.Tx) error {
-		return storage.Store(tx, p, user)
+		return storage.Store(tx, bucketName, p, user)
 	})
 	AssertNoError(t, err, "storage.Store")
 
 	var records []storage.Record
 	err = store.Read(func(tx *storage.Tx) error {
-		r, err := storage.Records[*payload](tx, p.Key)
+		r, err := storage.Records[*payload](tx, bucketName, p.Key)
 		records = r
 		return err
 	})
@@ -94,7 +92,7 @@ func TestStoreAndLoad(t *testing.T) {
 
 	var p2 *payload
 	err = store.Read(func(tx *storage.Tx) error {
-		p, err := storage.Load[*payload](tx, p.Key)
+		p, err := storage.Load[*payload](tx, bucketName, p.Key)
 		p2 = p
 		return err
 	})
@@ -105,12 +103,12 @@ func TestStoreAndLoad(t *testing.T) {
 	// Edit a single field
 	p.String = "edited"
 	err = store.Write(func(tx *storage.Tx) error {
-		return storage.Store(tx, p, user)
+		return storage.Store(tx, bucketName, p, user)
 	})
 	AssertNoError(t, err, "storage.Store")
 
 	err = store.Read(func(tx *storage.Tx) error {
-		r, err := storage.Records[*payload](tx, p.Key)
+		r, err := storage.Records[*payload](tx, bucketName, p.Key)
 		records = r
 		return err
 	})
@@ -118,7 +116,7 @@ func TestStoreAndLoad(t *testing.T) {
 	AssertEquals(t, 6, len(records), "record length")
 
 	err = store.Read(func(tx *storage.Tx) error {
-		_, err = storage.Load[*payload](tx, []byte("unknown-ID"))
+		_, err = storage.Load[*payload](tx, bucketName, []byte("unknown-ID"))
 		return err
 	})
 
@@ -135,17 +133,17 @@ func TestListAll(t *testing.T) {
 	user := newUser()
 
 	err := store.Write(func(tx *storage.Tx) error {
-		if err := storage.Store(tx, p1, user); err != nil {
+		if err := storage.Store(tx, bucketName, p1, user); err != nil {
 			return err
 		}
 
-		return storage.Store(tx, p2, user)
+		return storage.Store(tx, bucketName, p2, user)
 	})
 	AssertNoError(t, err, "storage.Store")
 
 	var records []*payload
 	err = store.Read(func(tx *storage.Tx) error {
-		r, err := storage.ListAll[*payload](tx)
+		r, err := storage.ListAll[*payload](tx, bucketName)
 		records = r
 		return err
 	})
@@ -170,7 +168,7 @@ func TestTriggerFunctions(t *testing.T) {
 
 	storedFields := []string{}
 	store.RegisterBucket(storage.Bucket{
-		Name: "payload",
+		Name: bucketName,
 		TriggerFuncs: []storage.TriggerFunc{
 			func(tx *storage.Tx, rs []storage.Record) error {
 				for _, r := range rs {
@@ -185,7 +183,7 @@ func TestTriggerFunctions(t *testing.T) {
 	user := newUser()
 
 	err := store.Write(func(tx *storage.Tx) error {
-		return storage.Store(tx, p, user)
+		return storage.Store(tx, bucketName, p, user)
 	})
 	AssertNoError(t, err, "storage.Store")
 
@@ -199,7 +197,7 @@ func TestTriggerFunctionRollback(t *testing.T) {
 	defer store.Close()
 
 	store.RegisterBucket(storage.Bucket{
-		Name: "payload",
+		Name: bucketName,
 		TriggerFuncs: []storage.TriggerFunc{
 			func(tx *storage.Tx, rs []storage.Record) error {
 				return errors.New("test failure")
@@ -211,12 +209,12 @@ func TestTriggerFunctionRollback(t *testing.T) {
 	user := newUser()
 
 	err := store.Write(func(tx *storage.Tx) error {
-		return storage.Store(tx, p, user)
+		return storage.Store(tx, bucketName, p, user)
 	})
 	AssertError(t, err, "storage.Store")
 
 	err = store.Read(func(tx *storage.Tx) error {
-		_, err = storage.Load[*payload](tx, p.Key)
+		_, err = storage.Load[*payload](tx, bucketName, p.Key)
 		return err
 	})
 	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),

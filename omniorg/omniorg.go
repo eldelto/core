@@ -28,6 +28,8 @@ const (
 
 	ExternalStatusOpen = ExternalStatus(iota)
 	ExternalStatusClosed
+
+	itemBucket = "item"
 )
 
 var (
@@ -75,24 +77,54 @@ func toOrgItem(i *Item, w io.Writer) error {
 	return nil
 }
 
-func writeItems(s Source, w io.Writer, from, until time.Time) error {
+func storeItems(s Source, from, until time.Time) error {
 	ids, err := s.List(from, until)
 	if err != nil {
 		return fmt.Errorf("write items: err=%w", err)
 	}
 
-	for _, id := range ids {
-		item, err := s.FetchItem(id)
-		if err != nil {
-			return err
-		}
+	return repo.Write(func(tx *storage.Tx) error {
+		for _, id := range ids {
+			item, err := s.FetchItem(id)
+			if err != nil {
+				return err
+			}
 
-		if err := toOrgItem(&item, w); err != nil {
+			updateItem(tx, &item)
+		}
+		return nil
+	})
+}
+
+func updateStoredItems(from, until time.Time) error {
+	for _, s := range sources {
+		if err := storeItems(s, from, until); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+func writeItems(w io.Writer) error {
+	now := time.Now()
+
+	return repo.Read(func(tx *storage.Tx) error {
+		items, err := storage.ListAll[*Item](tx, itemBucket)
+		if err != nil {
+			return fmt.Errorf("list items: err=%w", err)
+		}
+
+		for _, i := range items {
+			if i.Status == StatusNew &&
+				i.ScheduledAt != nil &&
+				i.ScheduledAt.Before(now) {
+				if err := toOrgItem(i, w); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }
 
 func GenerateOrgFile(from, until time.Time) error {
@@ -103,50 +135,59 @@ func GenerateOrgFile(from, until time.Time) error {
 	}
 	defer f.Close()
 
+	if err := updateStoredItems(from, until); err != nil {
+		return err
+	}
+
 	if _, err := io.WriteString(f, "* Omni"); err != nil {
 		return fmt.Errorf("write org file heading: err=%w", err)
 	}
 
-	for _, s := range sources {
-		if err := writeItems(s, f, from, until); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeItems(f)
 }
 
 func loadItem(tx *storage.Tx, id ID) (*Item, error) {
-	item, err := storage.Load[*Item](tx, "items", []byte(id))
+	item, err := storage.Load[*Item](tx, itemBucket, []byte(id))
 	if err != nil {
-		return nil, fmt.Errorf("load item: id=%q, err=%w", err)
+		return nil, fmt.Errorf("load item: id=%q, err=%w", id, err)
 	}
 	return item, nil
 }
 
-func updateItem(tx *storage.Tx, item Item) error {
-	if err := storage.Store(tx, "items", item, auth.UserID{}); err != nil {
-		return fmt.Errorf("update item: id=%q, err=%w", err)
+func storeItem(tx *storage.Tx, item *Item) error {
+	if err := storage.Store(tx, itemBucket, item, auth.UserID{}); err != nil {
+		return fmt.Errorf("store item: id=%q, err=%w", item.ID, err)
 	}
 	return nil
 }
 
-func MarkTakenOver(id ID) error {
-	repo.Write(func(tx *storage.Tx) error {
+func updateItem(id ID, f func(i *Item)) error {
+	return repo.Write(func(tx *storage.Tx) error {
 		item, err := loadItem(tx, id)
 		if err != nil {
 			return err
 		}
 
-		item.Status = StatusTakenOver
-		storage.Store(tx, item, auth.UserID{})
-
-		return nil
+		f(item)
+		return storeItem(tx, item)
 	})
-
 }
 
-// func fromOrgItem(org string) (Item, error) {
-// 	panic("implement")
-// 	return Item{}, nil
-// }
+
+func MarkTakenOver(id ID) error {
+	return updateItem(id, func(i *Item) {
+		i.Status = StatusTakenOver
+	})
+}
+
+func MarkIrrelevant(id ID) error {
+	return updateItem(id, func(i *Item) {
+		i.Status = StatusIrrelevant
+	})
+}
+
+func Reschedule(id ID, t time.Time) error {
+	return updateItem(id, func(i *Item) {
+		i.ScheduledAt = &t
+	})
+}
