@@ -20,7 +20,7 @@ import (
 
 const (
 	userDataBucket = "user-data"
-	chunkBucket = "chunked-file"
+	chunkBucket    = "chunked-file"
 )
 
 type UserData struct {
@@ -86,7 +86,7 @@ func (s *Service) initUser(authn legacyweb.Auth) (string, error) {
 	}
 	dir := userAuth.Email.String()
 
-	err := s.db.Write(func(tx *storage.Tx) error {
+	err := s.db.Write(func(tx storage.WriteTx) error {
 		if err := s.root.Mkdir(dir, 0744); err != nil && !errors.Is(err, os.ErrExist) {
 			return fmt.Errorf("create new home dir %q: %w", dir, err)
 		}
@@ -99,7 +99,7 @@ func (s *Service) initUser(authn legacyweb.Auth) (string, error) {
 
 func (s *Service) getHomeDir(auth legacyweb.Auth) (string, error) {
 	var data UserData
-	err := s.db.Read(func(tx *storage.Tx) error {
+	err := s.db.Read(func(tx storage.ReadTx) error {
 		d, err := storage.Load[*UserData](tx, userDataBucket, []byte(auth.UserID().String()))
 		data = *d
 		if err != nil {
@@ -114,7 +114,7 @@ func (s *Service) getHomeDir(auth legacyweb.Auth) (string, error) {
 	return data.HomeDir, err
 }
 
-func (s *Service) setHomeDir(tx *storage.Tx, authn, toModify legacyweb.Auth, dir string) error {
+func (s *Service) setHomeDir(tx storage.WriteTx, authn, toModify legacyweb.Auth, dir string) error {
 	data := UserData{
 		ID:      toModify.UserID().UUID,
 		HomeDir: dir,
@@ -215,7 +215,7 @@ func (s *Service) InitFile(ctx context.Context,
 		return "", err
 	}
 
-	err = s.db.Write(func(tx *storage.Tx) error {
+	err = s.db.Write(func(tx storage.WriteTx) error {
 		return storage.Store(tx, chunkBucket, &chunkedFile, auth.UserID(authn.UserID()))
 	})
 	if err != nil {
@@ -230,7 +230,7 @@ func (s *Service) AddFileChunk(ctx context.Context, reference string, r io.Reade
 	// TODO: Chunked file should be in a user bucket.
 
 	var cFile *chunkedFile
-	err := s.db.Read(func(tx *storage.Tx) error {
+	err := s.db.Read(func(tx storage.ReadTx) error {
 		cf, err := storage.Load[*chunkedFile](tx, chunkBucket, []byte(reference))
 		cFile = cf
 		return err
@@ -261,7 +261,7 @@ func (s *Service) CommitFile(ctx context.Context, reference string) error {
 	}
 
 	var cFile chunkedFile
-	err = s.db.Read(func(tx *storage.Tx) error {
+	err = s.db.Read(func(tx storage.ReadTx) error {
 		cf, err := storage.Load[*chunkedFile](tx, chunkBucket, []byte(reference))
 		cFile = *cf
 		return err

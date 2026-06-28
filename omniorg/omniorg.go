@@ -2,6 +2,7 @@ package omniorg
 
 import (
 	_ "embed"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"os"
@@ -39,8 +40,18 @@ var (
 
 	sources []Source = []Source{}
 	OrgDir           = "."
-	repo             = storage.Require(filepath.Join(OrgDir, "omni-org.db"))
+	Repo             = storage.Require(filepath.Join(OrgDir, "omni-org.db"))
 )
+
+func init() {
+	gob.Register(ID(""))
+	gob.Register(Type(""))
+	gob.Register(Status(0))
+	gob.Register(ExternalID(""))
+	gob.Register(ExternalStatus(0))
+
+	Repo.RegisterBucket(storage.Bucket{Name: itemBucket})
+}
 
 type Action func(i *Item) error
 
@@ -54,11 +65,18 @@ type Item struct {
 	Content        string
 	UpdatedAt      time.Time
 	ScheduledAt    *time.Time
-	Actions        map[string]Action
 }
 
 func (i *Item) BucketKey() []byte {
 	return []byte(i.ID)
+}
+
+// Actions returns the runtime actions attached to the item. They are kept in an
+// unexported field on purpose: actions hold behaviour (functions) which cannot
+// be persisted via gob, so they are excluded from storage and repopulated at
+// runtime.
+func (i *Item) Actions() map[string]Action {
+	return nil
 }
 
 type Source interface {
@@ -83,14 +101,16 @@ func storeItems(s Source, from, until time.Time) error {
 		return fmt.Errorf("write items: err=%w", err)
 	}
 
-	return repo.Write(func(tx *storage.Tx) error {
+	return Repo.Write(func(tx storage.WriteTx) error {
 		for _, id := range ids {
 			item, err := s.FetchItem(id)
 			if err != nil {
 				return err
 			}
 
-			updateItem(tx, &item)
+			if err := storeItem(tx, &item); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -108,7 +128,7 @@ func updateStoredItems(from, until time.Time) error {
 func writeItems(w io.Writer) error {
 	now := time.Now()
 
-	return repo.Read(func(tx *storage.Tx) error {
+	return Repo.Read(func(tx storage.ReadTx) error {
 		items, err := storage.ListAll[*Item](tx, itemBucket)
 		if err != nil {
 			return fmt.Errorf("list items: err=%w", err)
@@ -116,8 +136,8 @@ func writeItems(w io.Writer) error {
 
 		for _, i := range items {
 			if i.Status == StatusNew &&
-				i.ScheduledAt != nil &&
-				i.ScheduledAt.Before(now) {
+				i.ExternalStatus == ExternalStatusOpen &&
+				(i.ScheduledAt == nil || i.ScheduledAt.Before(now)) {
 				if err := toOrgItem(i, w); err != nil {
 					return err
 				}
@@ -146,7 +166,7 @@ func GenerateOrgFile(from, until time.Time) error {
 	return writeItems(f)
 }
 
-func loadItem(tx *storage.Tx, id ID) (*Item, error) {
+func loadItem(tx storage.ReadTx, id ID) (*Item, error) {
 	item, err := storage.Load[*Item](tx, itemBucket, []byte(id))
 	if err != nil {
 		return nil, fmt.Errorf("load item: id=%q, err=%w", id, err)
@@ -154,40 +174,37 @@ func loadItem(tx *storage.Tx, id ID) (*Item, error) {
 	return item, nil
 }
 
-func storeItem(tx *storage.Tx, item *Item) error {
+func storeItem(tx storage.WriteTx, item *Item) error {
 	if err := storage.Store(tx, itemBucket, item, auth.UserID{}); err != nil {
 		return fmt.Errorf("store item: id=%q, err=%w", item.ID, err)
 	}
 	return nil
 }
 
-func updateItem(id ID, f func(i *Item)) error {
-	return repo.Write(func(tx *storage.Tx) error {
-		item, err := loadItem(tx, id)
-		if err != nil {
-			return err
-		}
+func updateItem(tx storage.WriteTx, id ID, f func(i *Item)) error {
+	item, err := loadItem(tx, id)
+	if err != nil {
+		return err
+	}
 
-		f(item)
-		return storeItem(tx, item)
-	})
+	f(item)
+	return storeItem(tx, item)
 }
 
-
-func MarkTakenOver(id ID) error {
-	return updateItem(id, func(i *Item) {
+func MarkTakenOver(tx storage.WriteTx, id ID) error {
+	return updateItem(tx, id, func(i *Item) {
 		i.Status = StatusTakenOver
 	})
 }
 
-func MarkIrrelevant(id ID) error {
-	return updateItem(id, func(i *Item) {
+func MarkIrrelevant(tx storage.WriteTx, id ID) error {
+	return updateItem(tx, id, func(i *Item) {
 		i.Status = StatusIrrelevant
 	})
 }
 
-func Reschedule(id ID, t time.Time) error {
-	return updateItem(id, func(i *Item) {
+func Reschedule(tx storage.WriteTx, id ID, t time.Time) error {
+	return updateItem(tx, id, func(i *Item) {
 		i.ScheduledAt = &t
 	})
 }

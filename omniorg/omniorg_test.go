@@ -13,26 +13,37 @@ import (
 
 var stubs = map[omniorg.ExternalID]omniorg.Item{
 	"external-1": omniorg.Item{
-		ID:          "id-1",
-		ExternalID:  "external-1",
-		Type:        "stub",
-		Status:      omniorg.StatusOpen,
-		Title:       "Stub 1",
-		Content:     "Just a stub",
-		UpdatedAt:   time.Date(2020, 01, 01, 12, 0, 0, 0, time.UTC),
-		ScheduledAt: nil,
-		Actions:     map[string]omniorg.Action{},
+		ID:             "id-1",
+		ExternalID:     "external-1",
+		Type:           "stub",
+		Status:         omniorg.StatusNew,
+		ExternalStatus: omniorg.ExternalStatusOpen,
+		Title:          "Stub 1",
+		Content:        "Just a stub",
+		UpdatedAt:      time.Date(2020, 01, 01, 12, 0, 0, 0, time.UTC),
+		ScheduledAt:    nil,
 	},
 	"external-2": omniorg.Item{
-		ID:          "id-2",
-		ExternalID:  "external-2",
-		Type:        "stub",
-		Status:      omniorg.StatusClosed,
-		Title:       "Stub 2",
-		Content:     "Just a stub",
-		UpdatedAt:   time.Date(2020, 01, 01, 12, 0, 0, 0, time.UTC),
-		ScheduledAt: nil,
-		Actions:     map[string]omniorg.Action{},
+		ID:             "id-2",
+		ExternalID:     "external-2",
+		Type:           "stub",
+		Status:         omniorg.StatusIrrelevant,
+		ExternalStatus: omniorg.ExternalStatusOpen,
+		Title:          "Stub 2",
+		Content:        "Just a stub",
+		UpdatedAt:      time.Date(2020, 01, 01, 12, 0, 0, 0, time.UTC),
+		ScheduledAt:    nil,
+	},
+	"external-3": omniorg.Item{
+		ID:             "id-3",
+		ExternalID:     "external-3",
+		Type:           "stub",
+		Status:         omniorg.StatusNew,
+		ExternalStatus: omniorg.ExternalStatusClosed,
+		Title:          "Stub 3",
+		Content:        "Just a stub",
+		UpdatedAt:      time.Date(2020, 01, 01, 12, 0, 0, 0, time.UTC),
+		ScheduledAt:    nil,
 	},
 }
 
@@ -69,16 +80,6 @@ func TestGenerateOrgFile(t *testing.T) {
    SCHEDULED: <nil>
    :PROPERTIES:
    :OMNI_ID:      id-1
-   :OMNI_TYPE:    stub
-   :OMNI_ACTIONS: map[]
-   :END:
-
-   Just a stub
-
-** Stub 2
-   SCHEDULED: <nil>
-   :PROPERTIES:
-   :OMNI_ID:      id-2
    :OMNI_TYPE:    stub
    :OMNI_ACTIONS: map[]
    :END:

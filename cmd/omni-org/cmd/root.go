@@ -10,6 +10,7 @@ import (
 
 	"github.com/eldelto/core/internal/conf"
 	"github.com/eldelto/core/omniorg"
+	"github.com/eldelto/core/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +56,9 @@ func commandLoop() error {
 			err = omniorg.GenerateOrgFile(time.Time{}, time.Now())
 			fmt.Println("Generated omni.org")
 		case "taken-over":
-			err = omniorg.MarkTakenOver(entryID)
+			err = omniorg.Repo.Write(func(tx storage.WriteTx) error {
+				return omniorg.MarkTakenOver(tx, entryID)
+			})
 		case "quit":
 			return nil
 		default:
