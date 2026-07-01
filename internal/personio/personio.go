@@ -100,7 +100,7 @@ func fidoFlow(session *webdriver.Session) error {
 }
 
 func fidoQuickFlow(session *webdriver.Session) error {
-	if err := session.WaitForURLRegex(`https:\/\/login.microsoftonline.com\/[^\/]+\/login`); err != nil {
+	if err := session.WaitForURLRegex(`https:\/\/login.microsoftonline.com\/[^\/]+\/auth/finish`); err != nil {
 		return fmt.Errorf("FIDO wait for completed auth: %w", err)
 	}
 
@@ -114,7 +114,7 @@ func isFidoPrompt(session *webdriver.Session) bool {
 		panic(err)
 	}
 
-	return strings.Contains(url.String(), "fido/get")
+	return strings.Contains(url.String(), "bridge/fido")
 }
 
 func (c *Client) authorizeViaMicrosoft(session *webdriver.Session) error {
