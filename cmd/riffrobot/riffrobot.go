@@ -23,7 +23,7 @@ func main() {
 	} else {
 		value, err := strconv.ParseInt(rawPort, 10, 64)
 		if err != nil {
-			log.Fatalf("failed to convert %q to valid port: %v", value, err)
+			log.Fatalf("failed to convert '%d' to valid port: %v", value, err)
 		}
 		port = int(value)
 	}

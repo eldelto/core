@@ -1,26 +1,21 @@
 package storage
 
-// TODO:
-//   - Storable should not expose the bucket key
-//   - Different types for read/write transaction
-//   - Materialized cache for faster reads? (e.g. "payload"/cache)
-//   - Should ListAll always have a defined sort order?
-
 import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"reflect"
+	"log"
 	"time"
 
 	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/boltutil"
-	"github.com/eldelto/core/internal/collections"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
+
+var ErrNotFound = errors.New("not found")
 
 func init() {
 	gob.Register(time.Time{})
@@ -33,16 +28,7 @@ func itob(v uint64) []byte {
 	return b
 }
 
-type Record struct {
-	ID         []byte
-	Value      string
-	Attribute  any
-	InsertedAt int64
-	InsertedBy auth.UserID
-	Retraction bool
-}
-
-type TriggerFunc func(tx *Tx, r []Record) error
+type TriggerFunc func(tx WriteTx, old, new any) error
 
 type Bucket struct {
 	Name         string
@@ -50,58 +36,53 @@ type Bucket struct {
 }
 
 type Storable interface {
-	Bucket() string
 	BucketKey() []byte
 }
 
-type Tx struct {
+type Record[T Storable] struct {
+	Data       T
+	InsertedAt time.Time
+	InsertedBy auth.UserID
+}
+
+type ReadTx interface {
+	ReadTx() readTx
+	Buckets() map[string]Bucket
+	Tx() *bbolt.Tx
+}
+
+type readTx struct {
 	tx      *bbolt.Tx
 	buckets map[string]Bucket
 }
 
-type TxFunc func(tx *Tx) error
-
-func structFields(data any) []reflect.StructField {
-	strct := reflect.ValueOf(data).Elem()
-	t := strct.Type()
-
-	if t.Kind() != reflect.Struct {
-		err := fmt.Errorf("'%v' of type '%T' is not a struct - only structs can be stored", data, data)
-		panic(err)
-	}
-
-	return reflect.VisibleFields(t)
+func (r readTx) ReadTx() readTx {
+	return r
 }
 
-func toRecords[T Storable](tx *Tx, data T, user auth.UserID) ([]Record, error) {
-	existingRecords, err := loadUniqueRecords(tx, data)
-	if err != nil {
-		return nil, err
-	}
-
-	strct := reflect.ValueOf(data).Elem()
-	insertedAt := time.Now().UnixMilli()
-
-	records := make([]Record, 0, 10)
-	for i, f := range structFields(data) {
-		attribute := strct.Field(i).Interface()
-
-		if reflect.DeepEqual(existingRecords[f.Name].Attribute, attribute) {
-			continue
-		}
-
-		r := Record{
-			ID:         data.BucketKey(),
-			Value:      f.Name,
-			Attribute:  attribute,
-			InsertedAt: insertedAt,
-			InsertedBy: user,
-		}
-		records = append(records, r)
-	}
-
-	return records, nil
+func (r readTx) Buckets() map[string]Bucket {
+	return r.buckets
 }
+
+func (r readTx) Tx() *bbolt.Tx {
+	return r.tx
+}
+
+type WriteTx interface {
+	ReadTx
+	WriteTx() writeTx
+}
+
+type writeTx struct {
+	readTx
+}
+
+func (w writeTx) WriteTx() writeTx {
+	return w
+}
+
+type ReadTxFunc func(tx ReadTx) error
+type WriteTxFunc func(tx WriteTx) error
 
 type Storage struct {
 	db      *bbolt.DB
@@ -115,6 +96,14 @@ func New(db *bbolt.DB) *Storage {
 	}
 }
 
+func Require(path string) *Storage {
+	db, err := bbolt.Open(path, 0600, nil)
+	if err != nil {
+		log.Fatalf("failed to open bbolt DB %q: %v", path, err)
+	}
+	return New(db)
+}
+
 func (s *Storage) Close() error {
 	return s.db.Close()
 }
@@ -126,9 +115,9 @@ func (s *Storage) RegisterBucket(b Bucket) {
 	}
 }
 
-func (s *Storage) Read(f TxFunc) error {
+func (s *Storage) Read(f ReadTxFunc) error {
 	return s.db.View(func(btx *bbolt.Tx) error {
-		tx := Tx{
+		tx := readTx{
 			tx:      btx,
 			buckets: s.buckets,
 		}
@@ -136,74 +125,31 @@ func (s *Storage) Read(f TxFunc) error {
 	})
 }
 
-func (s *Storage) Write(f TxFunc) error {
+func (s *Storage) Write(f WriteTxFunc) error {
 	return s.db.Update(func(btx *bbolt.Tx) error {
-		tx := Tx{
-			tx:      btx,
-			buckets: s.buckets,
+		tx := writeTx{
+			readTx{
+				tx:      btx,
+				buckets: s.buckets,
+			},
 		}
 		return f(&tx)
 	})
 }
 
-func storeRecord(r Record, bucket *bbolt.Bucket, bucketName string) error {
-	id, err := bucket.NextSequence()
-	if err != nil {
-		return err
+func getBucketConf(buckets map[string]Bucket, key string) (Bucket, error) {
+	conf, ok := buckets[key]
+	if !ok {
+		return Bucket{}, fmt.Errorf("bucket %q is not registered", key)
 	}
-	key := itob(id)
-
-	// TODO: Reuse encoder and buffer
-	buffer := bytes.Buffer{}
-	if err := gob.NewEncoder(&buffer).Encode(r); err != nil {
-		return fmt.Errorf("encode value - bucket=%q, key=%q: %w",
-			bucketName, key, err)
-	}
-
-	if err := bucket.Put([]byte(key), buffer.Bytes()); err != nil {
-		return fmt.Errorf("persist value - bucket=%q, key=%q: %w",
-			bucketName, key, err)
-	}
-	return nil
+	return conf, nil
 }
 
-func loadUniqueRecords[T Storable](tx *Tx, data T) (map[string]Record, error) {
-	records := map[string]Record{}
-
-	fieldsToStore := collections.SetFromSliceValue(structFields(data),
-		func(f reflect.StructField) string {
-			return f.Name
-		})
-
-	bucket, err := getBucketFor(tx, data)
-	if err != nil {
-		return nil, err
-	}
-
-	cursor := bucket.Cursor()
-	for k, v := cursor.Last(); v != nil; k, v = cursor.Prev() {
-		var r Record
-		if err := gob.NewDecoder(bytes.NewBuffer(v)).
-			Decode(&r); err != nil {
-			return nil, fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-				data.Bucket(), k, err)
-		}
-
-		if !fieldsToStore.Contains(r.Value) {
-			continue
-		}
-
-		records[r.Value] = r
-	}
-
-	return records, nil
-}
-
-func getBucket(tx *Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
+func getBucket(tx *bbolt.Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
 	var bucket *bbolt.Bucket
 	for _, bucketName := range buckets {
 		if bucket == nil {
-			bucket = tx.tx.Bucket(bucketName)
+			bucket = tx.Bucket(bucketName)
 		} else {
 			bucket = bucket.Bucket(bucketName)
 		}
@@ -217,140 +163,115 @@ func getBucket(tx *Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
 	return bucket, nil
 }
 
-func getBucketFor(tx *Tx, data Storable) (*bbolt.Bucket, error) {
-	return getBucket(tx, []byte(data.Bucket()), data.BucketKey())
+func getBucketFor(tx *bbolt.Tx, bucket string, data Storable) (*bbolt.Bucket, error) {
+	return getBucket(tx, []byte(bucket), data.BucketKey())
 }
 
-func getBucketForType[T Storable](tx *Tx, parts ...[]byte) (*bbolt.Bucket, error) {
-	var data T
-	parts = append([][]byte{[]byte(data.Bucket())}, parts...)
-	return getBucket(tx, parts...)
-}
-
-func Store[T Storable](tx *Tx, data T, user auth.UserID) error {
-	if err := ensureBucketExists(tx, data.Bucket(), string(data.BucketKey())); err != nil {
-		return fmt.Errorf("ensure bucket exists for '%T': %w", data, err)
-	}
-
-	records, err := toRecords(tx, data, user)
-	if err != nil {
-		return err
-	}
-
-	bucket, err := getBucketFor(tx, data)
-	if err != nil {
-		return err
-	}
-
-	bucketConf := tx.buckets[data.Bucket()]
-	for _, f := range bucketConf.TriggerFuncs {
-		if err := f(tx, records); err != nil {
-			return fmt.Errorf("store '%T': %w", data, err)
+func ensureBucketExists(tx WriteTx, buckets ...string) error {
+	var bucket *bbolt.Bucket
+	var err error
+	for _, bucketName := range buckets {
+		if bucket == nil {
+			bucket, err = tx.Tx().CreateBucketIfNotExists([]byte(bucketName))
+			if err != nil {
+				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+			}
+		} else {
+			bucket, err = bucket.CreateBucketIfNotExists([]byte(bucketName))
+			if err != nil {
+				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+			}
 		}
 	}
-
-	for _, r := range records {
-		err := storeRecord(r, bucket, data.Bucket())
-		if err != nil {
-			return err
-		}
-	}
-
-	// TODO: afterInsertFuncs
-	// TODO: Do I really need both?
 
 	return nil
 }
 
-func Records[T Storable](tx *Tx, id []byte) ([]Record, error) {
-	records := make([]Record, 0, 10)
+func Load[T Storable](tx ReadTx, bucketName string, key []byte) (T, error) {
+	var res T
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName), key)
+	if err != nil {
+		return res, err
+	}
 
-	bucket, err := getBucketForType[T](tx, id)
+	_, value := bucket.Cursor().Last()
+	if value == nil {
+		return res, fmt.Errorf("load: bucket=%q, key=%q, err=%w",
+			bucketName, key, ErrNotFound)
+	}
+
+	var rec Record[T]
+	if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&rec); err != nil {
+		return res, fmt.Errorf("decode value: bucket=%q, key=%q, err=%w",
+			bucketName, key, err)
+	}
+
+	return rec.Data, nil
+}
+
+// LoadAt returns the most recent version of the record that was inserted at or
+// before t. It returns ErrNotFound if no such version exists.
+func LoadAt[T Storable](tx ReadTx, bucketName string, key []byte, t time.Time) (T, error) {
+	var res T
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName), key)
+	if err != nil {
+		return res, err
+	}
+
+	cursor := bucket.Cursor()
+	for k, value := cursor.Last(); k != nil; k, value = cursor.Prev() {
+		var rec Record[T]
+		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&rec); err != nil {
+			return res, fmt.Errorf("decode value: bucket=%q, key=%q, err=%w",
+				bucketName, key, err)
+		}
+
+		if !rec.InsertedAt.After(t) {
+			return rec.Data, nil
+		}
+	}
+
+	return res, fmt.Errorf("load at: bucket=%q, key=%q, time=%q, err=%w",
+		bucketName, key, t, ErrNotFound)
+}
+
+// Records returns the full version history of a record, ordered from oldest to
+// newest, limited to versions inserted at or before t.
+func Records[T Storable](tx ReadTx, bucketName string, key []byte, t time.Time) ([]Record[T], error) {
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName), key)
 	if err != nil {
 		return nil, err
 	}
 
-	err = bucket.ForEach(func(k []byte, v []byte) error {
-		var r Record
-		if err := gob.NewDecoder(bytes.NewBuffer(v)).
-			Decode(&r); err != nil {
-			return fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-				bucket.Inspect().Name, k, err)
+	records := make([]Record[T], 0, 10)
+	cursor := bucket.Cursor()
+	for k, value := cursor.First(); k != nil; k, value = cursor.Next() {
+		var rec Record[T]
+		if err := gob.NewDecoder(bytes.NewBuffer(value)).Decode(&rec); err != nil {
+			return nil, fmt.Errorf("decode value: bucket=%q, key=%q, err=%w",
+				bucketName, key, err)
 		}
 
-		records = append(records, r)
-		return nil
-	})
-	if err != nil {
-		var data T
-		return nil, fmt.Errorf("records bucket=%q: %w", data.Bucket(), err)
+		// Records are stored in insertion (and thus chronological) order, so we
+		// can stop as soon as we pass t.
+		if rec.InsertedAt.After(t) {
+			break
+		}
+		records = append(records, rec)
 	}
 
 	return records, nil
 }
 
-func valueFor[T any]() T {
-	t := reflect.TypeFor[T]().Elem()
-	return reflect.New(t).Interface().(T)
-}
-
-var ErrNotFound = errors.New("not found")
-
-func Load[T Storable](tx *Tx, id []byte) (T, error) {
-	data := valueFor[T]()
-
-	fieldsToStore := collections.SetFromSliceValue(structFields(data),
-		func(f reflect.StructField) string {
-			return f.Name
-		})
-
-	strct := reflect.ValueOf(data).Elem()
-
-	bucket, err := getBucketForType[T](tx, id)
-	if err != nil {
-		return data, err
-	}
-
-	cursor := bucket.Cursor()
-	for k, v := cursor.Last(); v != nil; k, v = cursor.Prev() {
-		var r Record
-		if err := gob.NewDecoder(bytes.NewBuffer(v)).
-			Decode(&r); err != nil {
-			return data, fmt.Errorf("decode value - bucket=%q, key=%q: %w",
-				bucket.Inspect().Name, k, err)
-		}
-
-		if !fieldsToStore.Contains(r.Value) {
-			continue
-		}
-
-		attribute := reflect.ValueOf(r).FieldByName("Attribute").Elem()
-		// attribute := reflect.ValueOf(r.Attribute).Elem()
-		f := strct.FieldByName(r.Value)
-		if !(f.IsValid() && f.CanSet() &&
-			attribute.Type().AssignableTo(f.Type())) {
-			continue
-		}
-		f.Set(attribute)
-
-		fieldsToStore.Remove(r.Value)
-		if fieldsToStore.Empty() {
-			break
-		}
-	}
-
-	return data, nil
-}
-
-func ListAll[T Storable](tx *Tx) ([]T, error) {
+func ListAll[T Storable](tx ReadTx, bucketName string) ([]T, error) {
 	results := make([]T, 0, 10)
-	bucket, err := getBucketForType[T](tx)
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName))
 	if err != nil {
 		return nil, err
 	}
 
 	err = bucket.ForEachBucket(func(id []byte) error {
-		data, err := Load[T](tx, id)
+		data, err := Load[T](tx, bucketName, id)
 		if err != nil {
 			return err
 		}
@@ -364,21 +285,59 @@ func ListAll[T Storable](tx *Tx) ([]T, error) {
 	return results, nil
 }
 
-func ensureBucketExists(tx *Tx, buckets ...string) error {
-	var bucket *bbolt.Bucket
-	var err error
-	for _, bucketName := range buckets {
-		if bucket == nil {
-			bucket, err = tx.tx.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
-			}
-		} else {
-			bucket, err = bucket.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+func Store[T Storable](tx WriteTx, bucketName string, data T, user auth.UserID) error {
+	bucketConf, err := getBucketConf(tx.Buckets(), bucketName)
+	if err != nil {
+		return err
+	}
+
+	key := data.BucketKey()
+	if err := ensureBucketExists(tx, bucketName, string(key)); err != nil {
+		return fmt.Errorf("ensure bucket exists for '%T': %w", data, err)
+	}
+
+	bucket, err := getBucketFor(tx.Tx(), bucketName, data)
+	if err != nil {
+		return err
+	}
+
+	// The previous version is only needed to feed the trigger functions, so we
+	// avoid the extra read when a bucket has none.
+	if len(bucketConf.TriggerFuncs) > 0 {
+		var old T
+		old, err = Load[T](tx, bucketName, key)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return err
+		}
+
+		for _, f := range bucketConf.TriggerFuncs {
+			if err := f(tx, old, data); err != nil {
+				return fmt.Errorf("store '%T': %w", data, err)
 			}
 		}
+	}
+
+	seq, err := bucket.NextSequence()
+	if err != nil {
+		return fmt.Errorf("store next sequence: bucket=%q, key=%q, err=%w",
+			bucketName, key, err)
+	}
+	id := itob(seq)
+
+	buffer := bytes.Buffer{}
+	rec := Record[T]{
+		Data:       data,
+		InsertedAt: time.Now(),
+		InsertedBy: user,
+	}
+	if err := gob.NewEncoder(&buffer).Encode(rec); err != nil {
+		return fmt.Errorf("encode value: bucket=%q, key=%q, err=%w",
+			bucketName, key, err)
+	}
+
+	if err := bucket.Put(id, buffer.Bytes()); err != nil {
+		return fmt.Errorf("persist value: bucket=%q, key=%q, err=%w",
+			bucketName, key, err)
 	}
 
 	return nil

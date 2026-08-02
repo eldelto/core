@@ -240,16 +240,16 @@ outer:
 
 	buff := bytes.Buffer{}
 	if err := json.NewEncoder(&buff).Encode(newEntries); err != nil {
-		return fmt.Errorf("encode worklog entries for ticket %q: %w", issue.ID, err)
+		return fmt.Errorf("encode worklog entries for ticket '%d': %w", issue.ID, err)
 	}
 
 	if note == nil {
 		if _, err := s.client.CreateNote(issue, buff.String()); err != nil {
-			return fmt.Errorf("create worklog comment for ticket %q: %w", issue.ID, err)
+			return fmt.Errorf("create worklog comment for ticket '%d': %w", issue.ID, err)
 		}
 	} else {
 		if _, err := s.client.UpdateNote(*note, buff.String()); err != nil {
-			return fmt.Errorf("update worklog comment for ticket %q: %w", issue.ID, err)
+			return fmt.Errorf("update worklog comment for ticket '%d': %w", issue.ID, err)
 		}
 	}
 
@@ -265,7 +265,7 @@ func (s *GitlabSink) updateTicket(actions []Action) error {
 	timeToAdd := calculateTimeToAdd(actions)
 	if timeToAdd != 0 {
 		if _, err := s.client.AddTimeSpent(issue, timeToAdd); err != nil {
-			return fmt.Errorf("failed to update time spent for ticket %q: %w", issue.ID, err)
+			return fmt.Errorf("failed to update time spent for ticket '%d': %w", issue.ID, err)
 		}
 	}
 
