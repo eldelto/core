@@ -101,10 +101,11 @@ func (s *Service) getHomeDir(auth legacyweb.Auth) (string, error) {
 	var data UserData
 	err := s.db.Read(func(tx storage.ReadTx) error {
 		d, err := storage.Load[*UserData](tx, userDataBucket, []byte(auth.UserID().String()))
-		data = *d
 		if err != nil {
 			return fmt.Errorf("get home dir for %q: %w", auth.UserID(), err)
 		}
+		data = *d
+
 		return nil
 	})
 	if errors.Is(err, storage.ErrNotFound) {

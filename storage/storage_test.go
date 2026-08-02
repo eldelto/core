@@ -44,7 +44,7 @@ func (p *payload) BucketKey() []byte {
 	return p.Key
 }
 
-func newStorage(t *testing.T) *storage.Storage {
+func newStorage(t testing.TB) *storage.Storage {
 	dbPath := "storage-test.db"
 	db, err := bbolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -295,4 +295,83 @@ func TestTriggerFunctionRollback(t *testing.T) {
 	})
 	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),
 		"storage.Records")
+}
+
+func toIntArray(bytes []byte) []int {
+	res := make([]int, len(bytes))
+	for i, b := range bytes {
+		res[i] = int(b)
+	}
+	return res
+}
+
+func FuzzStoreAndLoad(f *testing.F) {
+	f.Add(-1, "asdf", []byte{9, 1, 2})
+	f.Add(1, "", []byte{})
+	f.Fuzz(func(t *testing.T, i int, s string, a []byte) {
+		store := newStorage(t)
+		user := newUser()
+
+		p := newPayload()
+		p.Int = i
+		p.String = s
+		p.Array = toIntArray(a)
+		// gob encodes empty slices as nil so we don't want to crash
+		// on that.
+		if len(p.Array) == 0 {
+			p.Array = nil
+		}
+
+		err := store.Write(func(tx storage.WriteTx) error {
+			return storage.Store(tx, bucketName, p, user)
+		})
+		AssertNoError(t, err, "storage.Store")
+
+		var records []storage.Record[*payload]
+		err = store.Read(func(tx storage.ReadTx) error {
+			r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+			records = r
+			return err
+		})
+		AssertNoError(t, err, "storage.Records")
+		AssertEquals(t, 1, len(records), "record length")
+
+		var p2 *payload
+		err = store.Read(func(tx storage.ReadTx) error {
+			p, err := storage.Load[*payload](tx, bucketName, p.Key)
+			p2 = p
+			return err
+		})
+		AssertNoError(t, err, "storage.Load")
+		AssertEquals(t, p, p2, "loaded record")
+
+		// Edit a single field - this should create a new version.
+		p.String = "edited"
+		err = store.Write(func(tx storage.WriteTx) error {
+			return storage.Store(tx, bucketName, p, user)
+		})
+		AssertNoError(t, err, "storage.Store")
+
+		err = store.Read(func(tx storage.ReadTx) error {
+			r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+			records = r
+			return err
+		})
+		AssertNoError(t, err, "storage.Records")
+		AssertEquals(t, 2, len(records), "record length")
+
+		err = store.Read(func(tx storage.ReadTx) error {
+			loaded, err := storage.Load[*payload](tx, bucketName, p.Key)
+			p2 = loaded
+			return err
+		})
+		AssertNoError(t, err, "storage.Load")
+		AssertEquals(t, "edited", p2.String, "latest version")
+
+		err = store.Read(func(tx storage.ReadTx) error {
+			_, err = storage.Load[*payload](tx, bucketName, []byte("unknown-ID"))
+			return err
+		})
+		AssertEquals(t, true, errors.Is(err, storage.ErrNotFound), "load non-existing")
+	})
 }
