@@ -23,7 +23,15 @@ Lock up your coding agent for good.
 ```json
 {
 	"packages": ["curl", "grep", "go"],
-	"hosts": ["localhost:5432", "go.dev"],
+	"connections": ["localhost:5432", "go.dev"],
 	"directories": ["~/.claude"]
 }
 ```
+
+## Architecture
+
+### Network Isolation
+
+- Per-container firewall rules via `ufw` for specific IPs and ports
+- HTTP/HTTPS is only allowed via a bespoke proxy that checks allowed
+  domain names
