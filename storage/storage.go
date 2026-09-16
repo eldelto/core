@@ -9,7 +9,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/boltutil"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
@@ -39,10 +38,12 @@ type Storable interface {
 	BucketKey() []byte
 }
 
+type UserID []byte
+
 type Record[T Storable] struct {
 	Data       T
 	InsertedAt time.Time
-	InsertedBy auth.UserID
+	InsertedBy UserID
 }
 
 type ReadTx interface {
@@ -285,7 +286,7 @@ func ListAll[T Storable](tx ReadTx, bucketName string) ([]T, error) {
 	return results, nil
 }
 
-func Store[T Storable](tx WriteTx, bucketName string, data T, user auth.UserID) error {
+func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error {
 	bucketConf, err := getBucketConf(tx.Buckets(), bucketName)
 	if err != nil {
 		return err
