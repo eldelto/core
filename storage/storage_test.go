@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldelto/core/auth"
 	. "github.com/eldelto/core/internal/testutils"
 	"github.com/eldelto/core/storage"
 	"github.com/google/uuid"
@@ -63,8 +62,8 @@ func newStorage(t testing.TB) *storage.Storage {
 	return s
 }
 
-func newUser() auth.UserID {
-	return auth.UserID{UUID: uuid.UUID{}}
+func newUser() storage.UserID {
+	return []byte{}
 }
 
 func TestStoreAndLoad(t *testing.T) {
