@@ -47,8 +47,8 @@ func spawn(input string) error {
 	packages := []string{"curl"}
 	err = template.Execute(dockerFile, map[string]any{
 		"packages": packages,
-		"binary": "sleep",
-		"input":  input,
+		"binary":   "sleep",
+		"input":    input,
 	})
 	if err != nil {
 		return fmt.Errorf("spawn: %w", err)
