@@ -38,7 +38,11 @@ type Storable interface {
 	BucketKey() []byte
 }
 
-type UserID []byte
+type UserID uuid.UUID
+
+func (id UserID) String() string {
+	return uuid.UUID(id).String()
+}
 
 type Record[T Storable] struct {
 	Data       T

@@ -63,7 +63,7 @@ func newStorage(t testing.TB) *storage.Storage {
 }
 
 func newUser() storage.UserID {
-	return []byte{}
+	return storage.UserID(uuid.UUID{})
 }
 
 func TestStoreAndLoad(t *testing.T) {
