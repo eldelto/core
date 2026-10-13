@@ -17,12 +17,13 @@ import (
 )
 
 type Role uint
+type contextKey string
 
 const (
 	RoleAdmin = Role(iota)
 	RoleUser
 
-	authCtxKey = "auth"
+	authCtxKey = contextKey("auth")
 
 	userBucket       = "auth.user"
 	capabilityBucket = "auth.capability"
@@ -287,15 +288,8 @@ func userResource(email mail.Address, parts ...string) Resource {
 	return Resource(path)
 }
 
-func (s *Service) FindCapability(id CapabilityID) (*Capability, error) {
-	// TODO: This is not very handy.
-	var cap *Capability
-	err := s.store.Read(func(tx storage.ReadTx) error {
-		c, err := storage.Load[*Capability](tx, capabilityBucket, id[:])
-		cap = c
-		return err
-	})
-	return cap, err
+func (s *Service) findCapability(tx storage.ReadTx, id CapabilityID) (*Capability, error) {
+	return storage.Load[*Capability](tx, capabilityBucket, id[:])
 }
 
 func (s *Service) Set(ctx context.Context, tx storage.ReadTx,
@@ -318,7 +312,7 @@ func (s *Service) Set(ctx context.Context, tx storage.ReadTx,
 	return context.WithValue(ctx, authCtxKey, capCtx), nil
 }
 
-func (s *Service) FindUserByEmail(ctx context.Context,
+func (s *Service) FindUserByEmail(ctx context.Context, tx storage.ReadTx,
 	email mail.Address) (*User, error) {
 	cap, err := FromContext(ctx)
 	if err != nil {
@@ -329,12 +323,7 @@ func (s *Service) FindUserByEmail(ctx context.Context,
 		return nil, err
 	}
 
-	var users []*User
-	err = s.store.Read(func(tx storage.ReadTx) error {
-		u, err := storage.ListAll[*User](tx, userBucket)
-		users = u
-		return err
-	})
+	users, err := storage.ListAll[*User](tx, userBucket)
 	if err != nil {
 		return nil, err
 	}
@@ -346,6 +335,35 @@ func (s *Service) FindUserByEmail(ctx context.Context,
 		}
 	}
 	return nil, fmt.Errorf("no matching user found: err=%w", storage.ErrNotFound)
+}
+
+func (s *Service) createUser(ctx context.Context, tx storage.WriteTx,
+	email mail.Address) (*User, error) {
+	cap, err := FromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create user: err=%w", err)
+	}
+
+	if err := cap.RequireWrite(userResource(email)); err != nil {
+		return nil, err
+	}
+
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("create user ID: err=%w", err)
+	}
+
+	user := &User{
+		ID:    storage.UserID(id),
+		Email: email,
+		Role:  RoleUser,
+	}
+
+	if err := storage.Store(tx, userBucket, user, user.ID); err != nil {
+		return nil, fmt.Errorf("create user: err=%w", err)
+	}
+
+	return user, nil
 }
 
 const loginTokenValidity = 60 * 24 * 30 // 30 days
@@ -361,12 +379,14 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 		return CapabilityID{}, err
 	}
 
-	user, err := s.FindUserByEmail(ctx, email)
+	user, err := s.FindUserByEmail(ctx, tx, email)
 	if err != nil {
-		if errors.As(err, storage.ErrNotFound) {
-			// TODO: Create user
-		} else {
-			return CapabilityID{}, fmt.Errorf("login: err=%w")
+		if errors.Is(err, storage.ErrNotFound) {
+			user, err = s.createUser(ctx, tx, email)
+		}
+
+		if err != nil {
+			return CapabilityID{}, fmt.Errorf("login: err=%w", err)
 		}
 	}
 
@@ -383,6 +403,33 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 	}
 
 	return capabilityID, nil
+}
+
+type loginData struct {
+	Host  *url.URL
+	Token CapabilityID
+}
+
+func (s *Service) SendLoginEmail(ctx context.Context, email mail.Address,
+	id CapabilityID) error {
+	cap, err := FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("send login E-mail: err=%w", err)
+	}
+
+	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
+		return err
+	}
+
+	data := loginData{
+		Host:  s.config.Host,
+		Token: id,
+	}
+
+	if err := s.mailer.Send(s.config.DefaultSender, email, s.magicLinkTemplate, data); err != nil {
+		return fmt.Errorf("send login E-mail: err=%w", err)
+	}
+	return nil
 }
 
 // Modules

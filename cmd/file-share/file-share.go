@@ -64,7 +64,7 @@ func main() {
 		smtpUser, smtpPassword)
 	service := fileshare.NewService(db, root, mailer)
 
-	auth.TokenCallback = service.SendLoginEmail
+	// auth.TokenCallback = service.SendLoginEmail
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
