@@ -10,7 +10,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/storage"
 )
 
@@ -175,7 +174,7 @@ func loadItem(tx storage.ReadTx, id ID) (*Item, error) {
 }
 
 func storeItem(tx storage.WriteTx, item *Item) error {
-	if err := storage.Store(tx, itemBucket, item, auth.UserID{}); err != nil {
+	if err := storage.Store(tx, itemBucket, item, storage.UserID{}); err != nil {
 		return fmt.Errorf("store item: id=%q, err=%w", item.ID, err)
 	}
 	return nil

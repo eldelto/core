@@ -17,8 +17,8 @@ var (
 	templater         = web.NewTemplater(TemplatesFS, AssetsFS, "templates")
 	directoryTemplate = templater.GetP("directory.html")
 
-	mailTemplater     = web.NewTemplater(TemplatesFS, nil, "templates/emails")
-	mailLoginTemplate = mailTemplater.GetP("login.html")
+	// mailTemplater     = web.NewTemplater(TemplatesFS, nil, "templates/emails")
+	// mailLoginTemplate = mailTemplater.GetP("login.html")
 )
 
 func NewDirectoryController(service *Service) chi.Router {

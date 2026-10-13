@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/mail"
 	"os"
 	"path/filepath"
 
-	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/legacyweb"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
@@ -120,7 +118,7 @@ func (s *Service) setHomeDir(tx storage.WriteTx, authn, toModify legacyweb.Auth,
 		ID:      toModify.UserID().UUID,
 		HomeDir: dir,
 	}
-	return storage.Store(tx, userDataBucket, &data, auth.UserID(authn.UserID()))
+	return storage.Store(tx, userDataBucket, &data, storage.UserID(authn.UserID().UUID))
 }
 
 func (s *Service) userRoot(ctx context.Context) (*os.Root, error) {
@@ -167,21 +165,6 @@ func (s *Service) ListEntries(ctx context.Context, path string) ([]fs.FileInfo, 
 	return infos, nil
 }
 
-type loginData struct {
-	Token auth.TokenID
-}
-
-func (s Service) SendLoginEmail(recipient mail.Address, token legacyweb.TokenID) error {
-	data := loginData{Token: auth.TokenID(token)}
-	sender, err := mail.ParseAddress("no-reply@eldelto.net")
-	if err != nil {
-		return fmt.Errorf("send login E-mail: %w", err)
-	}
-
-	fmt.Println(data)
-	return s.mailer.Send(*sender, recipient, mailLoginTemplate, data)
-}
-
 func (s *Service) CreateDirectory(ctx context.Context, path string) error {
 	auth, err := legacyweb.GetAuth(ctx)
 	if err != nil {
@@ -217,7 +200,7 @@ func (s *Service) InitFile(ctx context.Context,
 	}
 
 	err = s.db.Write(func(tx storage.WriteTx) error {
-		return storage.Store(tx, chunkBucket, &chunkedFile, auth.UserID(authn.UserID()))
+		return storage.Store(tx, chunkBucket, &chunkedFile, storage.UserID(authn.UserID().UUID))
 	})
 	if err != nil {
 		return "", fmt.Errorf("init chunked file: user=%q, path=%q, err=%w",
