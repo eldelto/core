@@ -1,0 +1,21 @@
+{{define "content"}}
+
+<h1>Login - Step 1</h1>
+
+<p>
+  After you press <cite>Login</cite> an E-mail containing a one-time-password
+  will be sent to you to complete the login/signup process.
+</p>
+
+<form method="POST" action="login">
+  <label for="email">E-mail:</label>
+  <input type="email" name="email" id="email" required="true"
+		 placeholder="example@your.mail" />
+
+  <div>
+	<a href="/" class="secondary cancel">Cancel</a>
+	<button class="primary">Login</button>
+  </div>
+</form>
+
+{{end}}
