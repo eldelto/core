@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
+	"net/http"
 	"net/mail"
 	"net/url"
 	"strings"
@@ -27,12 +29,15 @@ const (
 
 	userBucket       = "auth.user"
 	capabilityBucket = "auth.capability"
+	shortCodeBucket  = "auth.shortCodeCapability"
 )
 
 var (
 	ErrUnauthenticated = errors.New("no authentication found")
 	ErrUnautorized     = errors.New("unauthorized")
-	ServiceUserID      = storage.UserID(uuid.Nil[:])
+
+	serviceUserID = storage.UserID(uuid.Nil)
+	ServiceUser   = User{ID: serviceUserID}
 )
 
 type User struct {
@@ -50,7 +55,7 @@ type Resource string
 func newResource(res string) (Resource, error) {
 	res = strings.TrimSpace(res)
 	if res[0] != '/' {
-		return "", fmt.Errorf("resource must be an absolute path")
+		return "", fmt.Errorf("resource must be an absolute path: %q", res)
 	}
 
 	switch strings.Count(res, "*") {
@@ -89,6 +94,16 @@ func (s Scopes) Add(res string, perm Permission) {
 }
 
 type CapabilityID uuid.UUID
+
+func (id CapabilityID) String() string {
+	return uuid.UUID(id).String()
+}
+
+func (id CapabilityID) ShortCode() string {
+	// TODO: Use cryptographic random alpha-numeric
+	return base64.RawURLEncoding.EncodeToString(id[:])
+}
+
 type CapabilityHash []byte
 
 type Capability struct {
@@ -194,20 +209,21 @@ func FromContext(ctx context.Context) (CapabilityCtx, error) {
 
 type Config struct {
 	Host          *url.URL
-	DefaultSender mail.Address
+	DefaultSender *mail.Address
 }
 
 type Service struct {
 	config            Config
-	store             storage.Storage
+	store             *storage.Storage
 	mailer            web.Mailer
 	magicLinkTemplate *template.Template
 }
 
-func NewService(config Config, store storage.Storage,
+func NewService(config Config, store *storage.Storage,
 	mailer web.Mailer, magicLinkTemplate *template.Template) *Service {
 	store.RegisterBucket(storage.Bucket{Name: userBucket})
 	store.RegisterBucket(storage.Bucket{Name: capabilityBucket})
+	store.RegisterBucket(storage.Bucket{Name: shortCodeBucket})
 
 	return &Service{
 		config:            config,
@@ -218,44 +234,86 @@ func NewService(config Config, store storage.Storage,
 }
 
 func (s *Service) IssueCapability(ctx context.Context, tx storage.WriteTx, user *User, scopes Scopes,
-	validForMinutes uint) (CapabilityID, CapabilityCtx, error) {
-
-	// TODO: Require user in context
+	validForMinutes uint) (CapabilityID, Capability, error) {
 	capCtx, err := FromContext(ctx)
 	if err != nil {
-		return CapabilityID{}, CapabilityCtx{}, err
+		return CapabilityID{}, Capability{}, err
 	}
 
 	creator, err := capCtx.RequireUser()
 	if err != nil {
-		return CapabilityID{}, CapabilityCtx{},
+		return CapabilityID{}, Capability{},
 			fmt.Errorf("issue capability: %w", err)
 	}
 
 	id, capability, err := generateCapability(creator, user, scopes, validForMinutes)
 	if err != nil {
-		return CapabilityID{}, CapabilityCtx{}, err
+		return CapabilityID{}, Capability{}, err
 	}
 
 	if err := storage.Store(tx, capabilityBucket, &capability, creator.ID); err != nil {
-		return CapabilityID{}, CapabilityCtx{}, err
+		return CapabilityID{}, Capability{}, err
 	}
 
-	capabilityCtx := CapabilityCtx{
-		Hash:   capability.Hash,
-		User:   user,
-		Scopes: scopes,
+	return id, capability, nil
+}
+
+type shortCodeCapability struct {
+	Code string
+	Hash CapabilityHash
+}
+
+func (s shortCodeCapability) BucketKey() []byte {
+	return []byte(s.Code)
+}
+
+func (s *Service) storeWithShortCode(tx storage.WriteTx, code string,
+	cap *Capability) error {
+	scc := shortCodeCapability{
+		Code: code,
+		Hash: cap.Hash,
+	}
+	fmt.Printf("storing: %v\n", scc)
+	if err := storage.Store(tx, shortCodeBucket, scc, cap.CreatedByID); err != nil {
+		return fmt.Errorf("store short code: err=%w", err)
 	}
 
-	return id, capabilityCtx, nil
+	return nil
+}
+
+func (s *Service) findCapabilityByShortCode(tx storage.ReadTx, code string) (*Capability, error) {
+	mapping, err := storage.Load[shortCodeCapability](tx, shortCodeBucket, []byte(code))
+	if err != nil {
+		return nil, fmt.Errorf("find short code mapping: err=%w", err)
+	}
+
+	cap, err := storage.Load[*Capability](tx, capabilityBucket, mapping.Hash)
+	if err != nil {
+		return nil, fmt.Errorf("find by capability: err=%w", err)
+	}
+
+	return cap, nil
+}
+
+type magicLinkData struct {
+	URL  *url.URL
+	Code string
 }
 
 func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email mail.Address, redirectPath string) error {
-
 	scopes := Scopes{}
-	scopes.Add("/auth/"+email.String()+"/login", PermissionWrite)
+	scopes.Add(string(userResource(email, "login")), PermissionWrite)
+	ctx = fakeCapability(ctx, scopes)
 
-	id, _, err := s.IssueCapability(ctx, tx, nil, scopes, 5)
+	scopes = Scopes{}
+	resource, err := url.JoinPath("/user", email.Address, "login")
+	if err != nil {
+		return err
+	}
+
+	scopes.Add(resource, PermissionWrite)
+
+	id, cap, err := s.IssueCapability(ctx, tx, nil, scopes, 5)
 	if err != nil {
 		return fmt.Errorf("magic link: %w", err)
 	}
@@ -266,21 +324,33 @@ func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email m
 	}
 
 	redirectPath = url.PathEscape(redirectPath)
+
+	loginURL = loginURL.JoinPath("auth", email.Address, "verify")
 	query := loginURL.Query()
 	query.Set("redirect", redirectPath)
 	loginURL.RawQuery = query.Encode()
-
 	loginURL.Fragment = uuid.UUID(id).String()
 
-	return s.mailer.Send(s.config.DefaultSender,
+	code := id.ShortCode()
+	if err := s.storeWithShortCode(tx, code, &cap); err != nil {
+		return err
+	}
+
+	data := magicLinkData{
+		URL:  loginURL,
+		Code: code,
+	}
+	fmt.Println(data)
+
+	return s.mailer.Send(*s.config.DefaultSender,
 		email,
 		s.magicLinkTemplate,
-		loginURL)
+		data)
 }
 
 func userResource(email mail.Address, parts ...string) Resource {
-	parts = append([]string{email.String()}, parts...)
-	path, err := url.JoinPath("user", parts...)
+	parts = append([]string{email.Address}, parts...)
+	path, err := url.JoinPath("/user", parts...)
 	if err != nil {
 		panic(err)
 	}
@@ -288,9 +358,9 @@ func userResource(email mail.Address, parts ...string) Resource {
 	return Resource(path)
 }
 
-func (s *Service) findCapability(tx storage.ReadTx, id CapabilityID) (*Capability, error) {
-	return storage.Load[*Capability](tx, capabilityBucket, id[:])
-}
+// func (s *Service) findCapability(tx storage.ReadTx, id CapabilityID) (*Capability, error) {
+// 	return storage.Load[*Capability](tx, capabilityBucket, id[:])
+// }
 
 func (s *Service) Set(ctx context.Context, tx storage.ReadTx,
 	capability *Capability) (context.Context, error) {
@@ -369,15 +439,20 @@ func (s *Service) createUser(ctx context.Context, tx storage.WriteTx,
 const loginTokenValidity = 60 * 24 * 30 // 30 days
 
 func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
-	email mail.Address) (CapabilityID, error) {
+	email mail.Address) (CapabilityID, Capability, error) {
 	cap, err := FromContext(ctx)
 	if err != nil {
-		return CapabilityID{}, fmt.Errorf("login: err=%w", err)
+		return CapabilityID{}, Capability{}, fmt.Errorf("login: err=%w", err)
 	}
 
+	fmt.Println(cap.Scopes)
 	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
-		return CapabilityID{}, err
+		return CapabilityID{}, Capability{}, err
 	}
+
+	scopes := Scopes{}
+	scopes.Add(string(userResource(email)), PermissionWrite)
+	ctx = fakeCapability(ctx, scopes)
 
 	user, err := s.FindUserByEmail(ctx, tx, email)
 	if err != nil {
@@ -386,23 +461,32 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 		}
 
 		if err != nil {
-			return CapabilityID{}, fmt.Errorf("login: err=%w", err)
+			return CapabilityID{}, Capability{}, fmt.Errorf("login: err=%w", err)
 		}
 	}
 
-	scopes := Scopes{}
-	resource, err := url.JoinPath("user", user.ID.String(), "*")
+	scopes = Scopes{}
+	resource, err := url.JoinPath("/user", user.ID.String(), "*")
 	if err != nil {
 		panic(err)
 	}
 
 	scopes.Add(resource, PermissionOwner)
-	capabilityID, _, err := s.IssueCapability(ctx, tx, user, scopes, loginTokenValidity)
+	capabilityID, capability, err := s.IssueCapability(ctx, tx, user, scopes, loginTokenValidity)
 	if err != nil {
-		return capabilityID, fmt.Errorf("login: err=%w", err)
+		return capabilityID, capability, fmt.Errorf("login: err=%w", err)
 	}
 
-	return capabilityID, nil
+	return capabilityID, capability, nil
+}
+
+func fakeCapability(ctx context.Context, scopes Scopes) context.Context {
+	capCtx := CapabilityCtx{
+		User:   &ServiceUser,
+		Scopes: scopes,
+	}
+
+	return context.WithValue(ctx, authCtxKey, capCtx)
 }
 
 type loginData struct {
@@ -426,10 +510,43 @@ func (s *Service) SendLoginEmail(ctx context.Context, email mail.Address,
 		Token: id,
 	}
 
-	if err := s.mailer.Send(s.config.DefaultSender, email, s.magicLinkTemplate, data); err != nil {
+	if err := s.mailer.Send(*s.config.DefaultSender, email, s.magicLinkTemplate, data); err != nil {
 		return fmt.Errorf("send login E-mail: err=%w", err)
 	}
 	return nil
+}
+
+const sessionCookieName = "thy_session"
+
+func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID, cap Capability) {
+	cookie := http.Cookie{
+		Name:     sessionCookieName,
+		Value:    capID.String(),
+		Path:     "/",
+		Secure:   !strings.Contains(s.config.Host.Hostname(), "localhost"),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  cap.ValidUntil,
+	}
+	http.SetCookie(w, &cookie)
+}
+
+func (s *Service) ListUsers(ctx context.Context, tx storage.ReadTx) ([]*User, error) {
+	cap, err := FromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list users: err=%w", err)
+	}
+
+	if err := cap.RequireRead("/user"); err != nil {
+		return nil, err
+	}
+
+	users, err := storage.ListAll[*User](tx, userBucket)
+	if err != nil {
+		return nil, fmt.Errorf("list users: err=%w", err)
+	}
+
+	return users, nil
 }
 
 // Modules

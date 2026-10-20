@@ -1,0 +1,12 @@
+{{define "content"}}
+
+  {{range .Data }}
+  <a href="/lists/{{.ID}}">
+	<button class="ListViewToDoList" tabindex="-1">
+	  <span class="ListViewToDoListTitle">{{.Title}}</span>
+	</button>
+  </a>
+  {{end}}
+
+</div>
+{{end}}
