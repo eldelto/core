@@ -12,9 +12,11 @@
   procedure.
 </p>
 
-<form method="POST" action="/user/{{.}}/verify">
+<form method="POST" action="/auth/verify">
   <label for="code">Verification code:</label>
   <input type="text" name="code" id="code" required="true" />
+  <input type="hidden" name="email" id="email" required="true"
+		 value="{{.}}" />
 
   <a href="/" class="secondary">Cancel</a>
   <button class="primary">Login</button>
