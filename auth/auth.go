@@ -22,14 +22,22 @@ type Role uint
 type contextKey string
 
 const (
-	RoleAdmin = Role(iota)
-	RoleUser
+	RoleUser = Role(iota)
+	RoleAdmin
+
+	PermissionNone = Permission(iota)
+	PermissionRead
+	PermissionWrite
+	PermissionOwner
 
 	authCtxKey = contextKey("auth")
 
 	userBucket       = "auth.user"
 	capabilityBucket = "auth.capability"
 	shortCodeBucket  = "auth.shortCodeCapability"
+
+	loginTokenValidity = 60 * 24 * 30 // 30 days
+	sessionCookieName  = "thy_session"
 )
 
 var (
@@ -52,11 +60,12 @@ func (u *User) BucketKey() []byte {
 
 type Resource string
 
-func newResource(res string) (Resource, error) {
-	res = strings.TrimSpace(res)
-	if res[0] != '/' {
-		return "", fmt.Errorf("resource must be an absolute path: %q", res)
+func newResource(parts ...string) (Resource, error) {
+	res, err := url.JoinPath("/", parts...)
+	if err != nil {
+		return "", fmt.Errorf("invalid resource path: parts=%q, err=%w", parts, err)
 	}
+	res = strings.TrimSpace(res)
 
 	switch strings.Count(res, "*") {
 	case 0:
@@ -75,17 +84,10 @@ func newResource(res string) (Resource, error) {
 
 type Permission uint
 
-const (
-	PermissionNone = Permission(iota)
-	PermissionRead
-	PermissionWrite
-	PermissionOwner
-)
-
 type Scopes map[Resource]Permission
 
-func (s Scopes) Add(res string, perm Permission) {
-	resource, err := newResource(res)
+func (s Scopes) Add(perm Permission, parts ...string) {
+	resource, err := newResource(parts...)
 	if err != nil {
 		panic(err)
 	}
@@ -117,6 +119,10 @@ type Capability struct {
 
 func (c *Capability) BucketKey() []byte {
 	return c.Hash
+}
+
+func (c *Capability) Valid() bool {
+	return c.RevokedAt == nil && time.Now().Before(c.ValidUntil)
 }
 
 type CapabilityCtx struct {
@@ -292,6 +298,10 @@ func (s *Service) findCapabilityByShortCode(tx storage.ReadTx, code string) (*Ca
 		return nil, fmt.Errorf("find by capability: err=%w", err)
 	}
 
+	if !cap.Valid() {
+		return nil, fmt.Errorf("capability expired: err=%w", storage.ErrNotFound)
+	}
+
 	return cap, nil
 }
 
@@ -301,17 +311,10 @@ type magicLinkData struct {
 }
 
 func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email mail.Address, redirectPath string) error {
+	ctx = fakeCapability(ctx, Scopes{})
+
 	scopes := Scopes{}
-	scopes.Add(string(userResource(email, "login")), PermissionWrite)
-	ctx = fakeCapability(ctx, scopes)
-
-	scopes = Scopes{}
-	resource, err := url.JoinPath("/user", email.Address, "login")
-	if err != nil {
-		return err
-	}
-
-	scopes.Add(resource, PermissionWrite)
+	scopes.Add(PermissionWrite, "user", email.Address, "login")
 
 	id, cap, err := s.IssueCapability(ctx, tx, nil, scopes, 5)
 	if err != nil {
@@ -340,7 +343,6 @@ func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email m
 		URL:  loginURL,
 		Code: code,
 	}
-	fmt.Println(data)
 
 	return s.mailer.Send(*s.config.DefaultSender,
 		email,
@@ -436,8 +438,6 @@ func (s *Service) createUser(ctx context.Context, tx storage.WriteTx,
 	return user, nil
 }
 
-const loginTokenValidity = 60 * 24 * 30 // 30 days
-
 func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 	email mail.Address) (CapabilityID, Capability, error) {
 	cap, err := FromContext(ctx)
@@ -445,13 +445,12 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 		return CapabilityID{}, Capability{}, fmt.Errorf("login: err=%w", err)
 	}
 
-	fmt.Println(cap.Scopes)
 	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
 		return CapabilityID{}, Capability{}, err
 	}
 
 	scopes := Scopes{}
-	scopes.Add(string(userResource(email)), PermissionWrite)
+	scopes.Add(PermissionWrite, "user", email.Address)
 	ctx = fakeCapability(ctx, scopes)
 
 	user, err := s.FindUserByEmail(ctx, tx, email)
@@ -466,13 +465,9 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 	}
 
 	scopes = Scopes{}
-	resource, err := url.JoinPath("/user", user.ID.String(), "*")
-	if err != nil {
-		panic(err)
-	}
-
-	scopes.Add(resource, PermissionOwner)
-	capabilityID, capability, err := s.IssueCapability(ctx, tx, user, scopes, loginTokenValidity)
+	scopes.Add(PermissionOwner, "user", user.ID.String(), "*")
+	capabilityID, capability, err := s.IssueCapability(ctx, tx, user, scopes,
+		loginTokenValidity)
 	if err != nil {
 		return capabilityID, capability, fmt.Errorf("login: err=%w", err)
 	}
@@ -516,9 +511,8 @@ func (s *Service) SendLoginEmail(ctx context.Context, email mail.Address,
 	return nil
 }
 
-const sessionCookieName = "thy_session"
-
-func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID, cap Capability) {
+func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID,
+	cap Capability) {
 	cookie := http.Cookie{
 		Name:     sessionCookieName,
 		Value:    capID.String(),
