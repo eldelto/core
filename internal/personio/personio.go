@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -342,106 +343,149 @@ func (c *Client) GetAttendance(employeeID EmployeeID, start, end time.Time) ([]A
 	return periods, nil
 }
 
-func (c *Client) resolveDayID(day time.Time) (string, error) {
-	date := day.Format(time.DateOnly)
-	dayID, ok := c.dayIDs[date]
-	if ok {
-		return dayID, nil
-	}
-
-	start := day.Add(-7 * 24 * time.Hour)
-	end := day.Add(7 * 24 * time.Hour)
-	_, err := c.GetAttendance(c.employeeID, start, end)
-	if err != nil {
-		return "", fmt.Errorf("resolve day ID: %w", err)
-	}
-
-	dayID, ok = c.dayIDs[date]
-	if !ok {
-		newId, err := uuid.NewRandom()
-		if err != nil {
-			return "", fmt.Errorf("resolve day ID: %w", err)
-		}
-		dayID = newId.String()
-	}
-
-	return dayID, nil
-}
-
-type attendancePeriod struct {
-	ID         string  `json:"id"`
-	ProjectID  *string `json:"project_id"`
-	PeriodType string  `json:"period_type"`
-	Comment    *string `json:"comment"`
-	Start      string  `json:"start"`
-	End        string  `json:"end"`
-}
-
-type createAttendanceRequest struct {
-	EmployeeID EmployeeID         `json:"employee_id"`
-	Periods    []attendancePeriod `json:"periods"`
-}
-
 type Attendance struct {
 	Start   time.Time
 	End     time.Time
 	Comment string
 }
 
-func attendanceToPeriod(a Attendance) (attendancePeriod, error) {
+const (
+	trackAttendanceQuery       query         = "52d040f7dfa51ff8a9a3cd149cd2da58c5d15ed404f2be69e1d081bcab879c83"
+	trackAttendanceOperation   operationName = "TM_TrackAttendancePeriodsOnDay_v2026071301"
+	originWeb                  origin        = "ATTENDANCE_ORIGIN_WEB"
+	deleteAttendancesQuery     query         = "ba5746220742d912960d7f0eb863eac69bbe9039f638f64b68a3cf348d635078"
+	deleteAttendancesOperation operationName = "TM_DeleteAttendancePeriodsOnDays_v2026071501"
+	periodTypeWork                           = "ATTENDANCE_PERIOD_TYPE_WORK"
+)
+
+func toGraphqlDate(t time.Time) graphqlDate {
+	return graphqlDate{Year: uint(t.Year()), Month: uint(t.Month()), Day: uint(t.Day())}
+}
+
+func toGraphqlDateTime(t time.Time) graphqlDateTime {
+	return graphqlDateTime{
+		Date: toGraphqlDate(t),
+		Time: graphqlTime{Hours: uint(t.Hour()), Minutes: uint(t.Minute())},
+	}
+}
+
+func attendanceToGraphqlPeriod(personID string, a Attendance) (graphqlAttendancePeriod, error) {
 	// TODO: Validate start/end to be equal to day.
 	periodID, err := uuid.NewRandom()
 	if err != nil {
-		return attendancePeriod{}, fmt.Errorf("create attendance periode ID: %w", err)
+		return graphqlAttendancePeriod{}, fmt.Errorf("create attendance periode ID: %w", err)
 	}
 
-	return attendancePeriod{
-		ID:         periodID.String(),
-		PeriodType: "work",
-		Start:      a.Start.Format(personioFormat),
-		End:        a.End.Format(personioFormat),
-		Comment:    &a.Comment,
+	return graphqlAttendancePeriod{
+		ID:             graphqlID{ID: periodID.String()},
+		Type:           periodTypeWork,
+		StartLocalTime: toGraphqlDateTime(a.Start),
+		EndLocalTime:   toGraphqlDateTime(a.End),
+		PersonID:       graphqlID{ID: personID},
+		Origin:         originWeb,
 	}, nil
 }
 
-func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attendances []Attendance) error {
-	dayID, err := c.resolveDayID(day)
-	if err != nil {
+func postGraphql[I any](c *Client, operation operationName, q query, input I) error {
+	request := graphqlRequest[I]{
+		Query:         q,
+		OperationName: operation,
+		Variables:     graphqlVariables[I]{Input: input},
+	}
+
+	var response map[string]any
+	if err := rest.POST(c.host.JoinPath("graphql")).
+		Cookies(c.cookies).
+		RequestBody(request).
+		ResponseAs(&response).
+		Run(); err != nil {
 		return err
 	}
 
-	endpoint := c.host.JoinPath("svc/attendance-api/v1/days", dayID)
+	if errs, ok := response["errors"]; ok {
+		return fmt.Errorf("graphql errors: %v", errs)
+	}
 
-	periods := make([]attendancePeriod, len(attendances))
+	return nil
+}
+
+type query string
+type operationName string
+type origin string
+
+type graphqlID struct {
+	ID string `json:"id"`
+}
+
+type graphqlDate struct {
+	Year  uint `json:"year"`
+	Month uint `json:"month"`
+	Day   uint `json:"day"`
+}
+
+type graphqlTime struct {
+	Hours   uint `json:"hours"`
+	Minutes uint `json:"minutes"`
+}
+
+type graphqlDateTime struct {
+	Date graphqlDate `json:"date"`
+	Time graphqlTime `json:"time"`
+}
+
+type graphqlAttendancePeriod struct {
+	ID             graphqlID       `json:"id"`
+	Type           string          `json:"type"`
+	StartLocalTime graphqlDateTime `json:"startLocalTime"`
+	EndLocalTime   graphqlDateTime `json:"endLocalTime"`
+	PersonID       graphqlID       `json:"personId"`
+	Origin         origin          `json:"origin"`
+}
+
+type graphqlCreateInput struct {
+	Origin                 origin                    `json:"origin"`
+	AssumedAttributionDate graphqlDate               `json:"assumedAttributionDate"`
+	PersonID               graphqlID                 `json:"personId"`
+	AttendancePeriods      []graphqlAttendancePeriod `json:"attendancePeriods"`
+}
+
+type graphqlVariables[I any] struct {
+	Input I `json:"input"`
+}
+
+type graphqlRequest[I any] struct {
+	Query         query               `json:"query"`
+	OperationName operationName       `json:"operationName"`
+	Variables     graphqlVariables[I] `json:"variables"`
+}
+
+type graphqlDeleteInput struct {
+	PersonID graphqlID     `json:"personId"`
+	Dates    []graphqlDate `json:"dates"`
+	Origin   origin        `json:"origin"`
+}
+
+func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time,
+	attendances []Attendance) error {
+	personID := strconv.Itoa(int(employeeID))
+
+	periods := make([]graphqlAttendancePeriod, len(attendances))
 	for i, attendance := range attendances {
-		period, err := attendanceToPeriod(attendance)
+		period, err := attendanceToGraphqlPeriod(personID, attendance)
 		if err != nil {
 			return err
 		}
 		periods[i] = period
 	}
 
-	request := createAttendanceRequest{
-		EmployeeID: employeeID,
-		Periods:    periods,
+	input := graphqlCreateInput{
+		Origin:                 originWeb,
+		AssumedAttributionDate: toGraphqlDate(day),
+		PersonID:               graphqlID{ID: personID},
+		AttendancePeriods:      periods,
 	}
 
-	csrfToken := ""
-	for _, c := range c.cookies {
-		if c.Name == "ATHENA-XSRF-TOKEN" {
-			csrfToken = c.Value
-			break
-		}
-	}
-
-	var response map[string]any
-
-	if err := rest.PUT(endpoint).
-		Cookies(c.cookies).
-		AddHeader("x-athena-xsrf-token", csrfToken).
-		RequestBody(request).
-		ResponseAs(&response).
-		Run(); err != nil {
+	if err := postGraphql(c, trackAttendanceOperation, trackAttendanceQuery, input); err != nil {
 		return fmt.Errorf("create attendance for employee %d: %w", employeeID, err)
 	}
 
@@ -449,25 +493,13 @@ func (c *Client) CreateAttendances(employeeID EmployeeID, day time.Time, attenda
 }
 
 func (c *Client) RemoveAttendances(employeeID EmployeeID, day time.Time) error {
-	dayID, err := c.resolveDayID(day)
-	if err != nil {
-		return err
+	input := graphqlDeleteInput{
+		PersonID: graphqlID{ID: strconv.Itoa(int(employeeID))},
+		Dates:    []graphqlDate{toGraphqlDate(day)},
+		Origin:   originWeb,
 	}
 
-	endpoint := c.host.JoinPath("api/v1/attendances/days", dayID, "periods")
-
-	csrfToken := ""
-	for _, c := range c.cookies {
-		if c.Name == "XSRF-TOKEN" {
-			csrfToken = c.Value
-			break
-		}
-	}
-
-	if err := rest.DELETE(endpoint).
-		Cookies(c.cookies).
-		AddHeader("x-csrf-token", csrfToken).
-		Run(); err != nil {
+	if err := postGraphql(c, deleteAttendancesOperation, deleteAttendancesQuery, input); err != nil {
 		return fmt.Errorf("delete attendances for employee %d: %w", employeeID, err)
 	}
 
