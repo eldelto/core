@@ -1,6 +1,7 @@
 package omniorg
 
 import (
+	"context"
 	_ "embed"
 	"encoding/gob"
 	"fmt"
@@ -39,7 +40,7 @@ var (
 
 	sources []Source = []Source{}
 	OrgDir           = "."
-	Repo             = storage.Require(filepath.Join(OrgDir, "omni-org.db"))
+	Repo             = storage.Require(context.Background(), filepath.Join(OrgDir, "omni-org.db"))
 )
 
 func init() {

@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"errors"
 	"log"
 	"os"
@@ -44,13 +45,14 @@ func (p *payload) BucketKey() []byte {
 }
 
 func newStorage(t testing.TB) *storage.Storage {
+	ctx := context.Background()
 	dbPath := "storage-test.db"
 	db, err := bbolt.Open(dbPath, 0600, nil)
 	if err != nil {
 		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
 	}
 
-	s := storage.New(db)
+	s := storage.New(ctx, db)
 	s.RegisterBucket(storage.Bucket{
 		Name: bucketName,
 	})
@@ -373,4 +375,48 @@ func FuzzStoreAndLoad(f *testing.F) {
 		})
 		AssertEquals(t, true, errors.Is(err, storage.ErrNotFound), "load non-existing")
 	})
+}
+
+func TestMaintenance(t *testing.T) {
+	store := newStorage(t)
+	store.RegisterBucket(storage.Bucket{
+		Name:          bucketName,
+		Retention:     100 * time.Millisecond,
+		KeepRevisions: 2,
+	})
+
+	p := newPayload()
+	user := newUser()
+
+	p.String = "v1"
+	err := store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	p.String = "v2"
+	err = store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	time.Sleep(100 * time.Millisecond)
+
+	p.String = "v3"
+	err = store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	store.RunMaintenance()
+
+	var history []storage.Record[*payload]
+	err = store.Read(func(tx storage.ReadTx) error {
+		r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+		history = r
+		return err
+	})
+	AssertNoError(t, err, "storage.Records")
+	AssertEquals(t, 2, len(history), "records up to in-between time")
+	AssertEquals(t, "v3", history[1].Data.String, "keeps the newest record")
 }

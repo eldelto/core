@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"net/mail"
 	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"strconv"
 
@@ -22,6 +26,9 @@ import (
 const dbPath = "auth-service.db"
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	port := conf.IntEnvVarWithDefault("PORT", 8080)
 	rawHost := conf.EnvVarWithDefault("HOST",
 		"http://localhost:"+strconv.Itoa(int(port)))
@@ -41,7 +48,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
 	}
-	store := storage.New(bolt)
+	store := storage.New(ctx, bolt)
 	defer store.Close()
 
 	mailer := web.NewMailer(host.String(), smtpHost, int(smtpPort),
