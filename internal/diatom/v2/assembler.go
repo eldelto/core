@@ -560,7 +560,7 @@ func ResolveLabels(r io.Reader, w io.Writer) error {
 	labelBuf := &bytes.Buffer{}
 	asm := newAssembler(r, labelBuf)
 
-	if err := readLabels(asm); err != nil && !errors.Is(err, io.EOF) {
+	if err := readLabels(asm); !errors.Is(err, io.EOF) {
 		return scanError(asm, err)
 	}
 

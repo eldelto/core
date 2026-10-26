@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/gob"
 	"errors"
@@ -9,7 +10,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/eldelto/core/internal/boltutil"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
@@ -30,8 +30,10 @@ func itob(v uint64) []byte {
 type TriggerFunc func(tx WriteTx, old, new any) error
 
 type Bucket struct {
-	Name         string
-	TriggerFuncs []TriggerFunc
+	Name          string
+	KeepRevisions uint
+	Retention     time.Duration
+	TriggerFuncs  []TriggerFunc
 }
 
 type Storable interface {
@@ -94,19 +96,53 @@ type Storage struct {
 	buckets map[string]Bucket
 }
 
-func New(db *bbolt.DB) *Storage {
-	return &Storage{
+func ensureBucketExists(tx WriteTx, buckets ...string) error {
+	var bucket *bbolt.Bucket
+	var err error
+	for _, bucketName := range buckets {
+		if bucket == nil {
+			bucket, err = tx.Tx().CreateBucketIfNotExists([]byte(bucketName))
+			if err != nil {
+				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+			}
+		} else {
+			bucket, err = bucket.CreateBucketIfNotExists([]byte(bucketName))
+			if err != nil {
+				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func New(ctx context.Context, db *bbolt.DB) *Storage {
+	s := &Storage{
 		db:      db,
 		buckets: map[string]Bucket{},
 	}
+
+	go func() {
+		tick := time.Tick(time.Hour)
+		for {
+			select {
+			case <-tick:
+				s.RunMaintenance()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return s
 }
 
-func Require(path string) *Storage {
+func Require(ctx context.Context, path string) *Storage {
 	db, err := bbolt.Open(path, 0600, nil)
 	if err != nil {
 		log.Fatalf("failed to open bbolt DB %q: %v", path, err)
 	}
-	return New(db)
+	return New(ctx, db)
 }
 
 func (s *Storage) Close() error {
@@ -115,7 +151,11 @@ func (s *Storage) Close() error {
 
 func (s *Storage) RegisterBucket(b Bucket) {
 	s.buckets[b.Name] = b
-	if err := boltutil.EnsureBucketExists(s.db, b.Name); err != nil {
+
+	err := s.Write(func(tx WriteTx) error {
+		return ensureBucketExists(tx, b.Name)
+	})
+	if err != nil {
 		panic(err)
 	}
 }
@@ -140,6 +180,65 @@ func (s *Storage) Write(f WriteTxFunc) error {
 		}
 		return f(&tx)
 	})
+}
+
+type recordLite struct {
+	InsertedAt time.Time
+}
+
+func deleteOldBucketRecords(tx WriteTx, parent Bucket, child []byte, now time.Time) error {
+	if parent.Retention == 0 {
+		return nil
+	}
+
+	bucket, err := getBucket(tx.Tx(), []byte(parent.Name), child)
+	if err != nil {
+		return err
+	}
+
+	i := 0
+	cursor := bucket.Cursor()
+	for k, v := cursor.Last(); k != nil; k, v = cursor.Prev() {
+		i++
+		if i <= int(parent.KeepRevisions) {
+			continue
+		}
+
+		var rec recordLite
+		if err := gob.NewDecoder(bytes.NewBuffer(v)).Decode(&rec); err != nil {
+			return fmt.Errorf("decode value: bucket=%q, key=%q, err=%w",
+				parent.Name, child, err)
+		}
+
+		if rec.InsertedAt.Add(parent.Retention).Before(now) {
+			return bucket.Delete(k)
+		}
+	}
+
+	return nil
+}
+
+func deleteOldRecords(s *Storage, b Bucket, now time.Time) error {
+	name := []byte(b.Name)
+	return s.Write(func(tx WriteTx) error {
+		bucket, err := getBucket(tx.Tx(), name)
+		if err != nil {
+			return err
+		}
+
+		return bucket.ForEachBucket(func(key []byte) error {
+			return deleteOldBucketRecords(tx, b, key, now)
+		})
+	})
+}
+
+func (s *Storage) RunMaintenance() {
+	for _, b := range s.buckets {
+		if err := deleteOldRecords(s, b, time.Now()); err != nil {
+			log.Printf("failed to delete old records: bucket=%q, err=%s",
+				b.Name, err)
+		}
+	}
 }
 
 func getBucketConf(buckets map[string]Bucket, key string) (Bucket, error) {
@@ -170,26 +269,6 @@ func getBucket(tx *bbolt.Tx, buckets ...[]byte) (*bbolt.Bucket, error) {
 
 func getBucketFor(tx *bbolt.Tx, bucket string, data Storable) (*bbolt.Bucket, error) {
 	return getBucket(tx, []byte(bucket), data.BucketKey())
-}
-
-func ensureBucketExists(tx WriteTx, buckets ...string) error {
-	var bucket *bbolt.Bucket
-	var err error
-	for _, bucketName := range buckets {
-		if bucket == nil {
-			bucket, err = tx.Tx().CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
-			}
-		} else {
-			bucket, err = bucket.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("ensure bucket exists %q: %w", bucketName, err)
-			}
-		}
-	}
-
-	return nil
 }
 
 func Load[T Storable](tx ReadTx, bucketName string, key []byte) (T, error) {

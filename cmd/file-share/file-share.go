@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"strconv"
 
@@ -22,6 +25,9 @@ import (
 const dbPath = "file-share.db"
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	port := conf.IntEnvVarWithDefault("PORT", 8080)
 	host := conf.EnvVarWithDefault("HOST",
 		"http://localhost:"+strconv.Itoa(int(port)))
@@ -38,7 +44,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
 	}
-	db := storage.New(bolt)
+	db := storage.New(ctx, bolt)
 	defer db.Close()
 
 	db.RegisterBucket(storage.Bucket{
