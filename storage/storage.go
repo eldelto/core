@@ -31,8 +31,8 @@ type TriggerFunc func(tx WriteTx, old, new any) error
 
 type Bucket struct {
 	Name          string
-	KeepRevisions uint
 	Retention     time.Duration
+	KeepRevisions uint
 	TriggerFuncs  []TriggerFunc
 }
 
@@ -369,6 +369,26 @@ func ListAll[T Storable](tx ReadTx, bucketName string) ([]T, error) {
 	return results, nil
 }
 
+func runTriggerFuncs[T Storable](tx WriteTx, b Bucket, data T, key []byte) error {
+	if len(b.TriggerFuncs) < 1 {
+		return nil
+	}
+
+	old, err := Load[T](tx, b.Name, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	for _, f := range b.TriggerFuncs {
+		if err := f(tx, old, data); err != nil {
+			return fmt.Errorf("pre-commit trigger failed: type='%T': err=%w",
+				data, err)
+		}
+	}
+
+	return nil
+}
+
 func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error {
 	bucketConf, err := getBucketConf(tx.Buckets(), bucketName)
 	if err != nil {
@@ -385,20 +405,8 @@ func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error
 		return err
 	}
 
-	// The previous version is only needed to feed the trigger functions, so we
-	// avoid the extra read when a bucket has none.
-	if len(bucketConf.TriggerFuncs) > 0 {
-		var old T
-		old, err = Load[T](tx, bucketName, key)
-		if err != nil && !errors.Is(err, ErrNotFound) {
-			return err
-		}
-
-		for _, f := range bucketConf.TriggerFuncs {
-			if err := f(tx, old, data); err != nil {
-				return fmt.Errorf("store '%T': %w", data, err)
-			}
-		}
+	if err := runTriggerFuncs(tx, bucketConf, data, key); err != nil {
+		return err
 	}
 
 	seq, err := bucket.NextSequence()
