@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/eldelto/core/storage"
+	"github.com/eldelto/core/validate"
 	"github.com/eldelto/core/web"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
@@ -56,6 +57,12 @@ type User struct {
 
 func (u *User) BucketKey() []byte {
 	return u.ID[:]
+}
+
+func (u *User) Validate() error {
+	return errors.Join(
+		validate.NotEmpty("email", u.Email.Address),
+	)
 }
 
 type Resource string
@@ -123,6 +130,13 @@ func (c *Capability) BucketKey() []byte {
 
 func (c *Capability) Valid() bool {
 	return c.RevokedAt == nil && time.Now().Before(c.ValidUntil)
+}
+
+func (c *Capability) Validate() error {
+	return errors.Join(
+		validate.NotEmpty("hash", c.Hash),
+		validate.NotEmpty("scopes", c.Scopes),
+	)
 }
 
 type CapabilityCtx struct {
@@ -225,11 +239,34 @@ type Service struct {
 	magicLinkTemplate *template.Template
 }
 
+var year = time.Hour * 24 * 365
+
 func NewService(config Config, store *storage.Storage,
 	mailer web.Mailer, magicLinkTemplate *template.Template) *Service {
-	store.RegisterBucket(storage.Bucket{Name: userBucket})
-	store.RegisterBucket(storage.Bucket{Name: capabilityBucket})
-	store.RegisterBucket(storage.Bucket{Name: shortCodeBucket})
+	store.RegisterBucket(storage.Bucket{
+		Name:          userBucket,
+		Retention:     1 * year,
+		KeepRevisions: 1,
+		TriggerFuncs: []storage.TriggerFunc{
+			validate.BeforeCommit(&User{}),
+		},
+	})
+	store.RegisterBucket(storage.Bucket{
+		Name:          capabilityBucket,
+		Retention:     1 * year,
+		KeepRevisions: 0,
+		TriggerFuncs: []storage.TriggerFunc{
+			validate.BeforeCommit(&Capability{}),
+		},
+	})
+	store.RegisterBucket(storage.Bucket{
+		Name:          shortCodeBucket,
+		Retention:     10 * time.Minute,
+		KeepRevisions: 0,
+		TriggerFuncs: []storage.TriggerFunc{
+			validate.BeforeCommit(shortCodeCapability{}),
+		},
+	})
 
 	return &Service{
 		config:            config,
@@ -273,13 +310,19 @@ func (s shortCodeCapability) BucketKey() []byte {
 	return []byte(s.Code)
 }
 
+func (s shortCodeCapability) Validate() error {
+	return errors.Join(
+		validate.NotEmpty("code", s.Code),
+		validate.NotEmpty("hash", s.Hash),
+	)
+}
+
 func (s *Service) storeWithShortCode(tx storage.WriteTx, code string,
 	cap *Capability) error {
 	scc := shortCodeCapability{
 		Code: code,
 		Hash: cap.Hash,
 	}
-	fmt.Printf("storing: %v\n", scc)
 	if err := storage.Store(tx, shortCodeBucket, scc, cap.CreatedByID); err != nil {
 		return fmt.Errorf("store short code: err=%w", err)
 	}
