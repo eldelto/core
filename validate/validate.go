@@ -45,8 +45,8 @@ func NotEmpty(field string, data any) error {
 	return nil
 }
 
-func BeforeCommit[T Validatable](data T) storage.TriggerFunc {
-	return func(tx storage.WriteTx, old, new any) error {
+func BeforeCommit[T Validatable](data T) storage.PreCommitFunc {
+	return func(tx storage.WriteTx, bucket string, old, new any) error {
 		data, ok := new.(T)
 		if !ok {
 			return fmt.Errorf("validation failed: type=%T, err=%w",

@@ -4,11 +4,11 @@ type Set[T comparable] struct {
 	m map[T]struct{}
 }
 
-func NewSet[T comparable]() Set[T] {
-	return Set[T]{m: map[T]struct{}{}}
+func NewSet[T comparable]() *Set[T] {
+	return &Set[T]{m: map[T]struct{}{}}
 }
 
-func SetFromSliceValue[T any, O comparable](s []T, f func(t T) O) Set[O] {
+func SetFromSliceValue[T any, O comparable](s []T, f func(t T) O) *Set[O] {
 	set := NewSet[O]()
 	for _, v := range s {
 		set.m[f(v)] = struct{}{}
@@ -17,7 +17,7 @@ func SetFromSliceValue[T any, O comparable](s []T, f func(t T) O) Set[O] {
 	return set
 }
 
-func SetFromSlice[T comparable](s []T) Set[T] {
+func SetFromSlice[T comparable](s []T) *Set[T] {
 	set := NewSet[T]()
 	for _, v := range s {
 		set.m[v] = struct{}{}
@@ -26,7 +26,18 @@ func SetFromSlice[T comparable](s []T) Set[T] {
 	return set
 }
 
-func (s *Set[T]) Slice() []T {
+func SetToSlice[T comparable, U any](s *Set[T], f func(T) U) []U {
+	result := make([]U, len(s.m))
+	i := 0
+	for k := range s.m {
+		result[i] = f(k)
+		i++
+	}
+
+	return result
+}
+
+func (s Set[T]) Slice() []T {
 	result := make([]T, len(s.m))
 	i := 0
 	for k := range s.m {
@@ -37,12 +48,12 @@ func (s *Set[T]) Slice() []T {
 	return result
 }
 
-func (s *Set[T]) Contains(key T) bool {
+func (s Set[T]) Contains(key T) bool {
 	_, ok := s.m[key]
 	return ok
 }
 
-func (s *Set[T]) Difference(other Set[T]) []T {
+func (s Set[T]) Difference(other *Set[T]) []T {
 	result := []T{}
 	for k := range s.m {
 		if _, ok := other.m[k]; !ok {
@@ -53,7 +64,7 @@ func (s *Set[T]) Difference(other Set[T]) []T {
 	return result
 }
 
-func (s *Set[T]) Union(other Set[T]) Set[T] {
+func (s Set[T]) Union(other *Set[T]) *Set[T] {
 	result := NewSet[T]()
 	for k := range s.m {
 		result.m[k] = struct{}{}
@@ -65,14 +76,18 @@ func (s *Set[T]) Union(other Set[T]) Set[T] {
 	return result
 }
 
-func (s *Set[T]) Length() int {
+func (s Set[T]) Length() int {
 	return len(s.m)
 }
 
-func (s *Set[T]) Empty() bool {
+func (s Set[T]) Empty() bool {
 	return s.Length() == 0
 }
 
-func (s *Set[T]) Remove(key T) {
+func (s Set[T]) Add(key T) {
+	s.m[key] = struct{}{}
+}
+
+func (s Set[T]) Remove(key T) {
 	delete(s.m, key)
 }

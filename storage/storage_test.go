@@ -18,7 +18,7 @@ import (
 const bucketName = "payload"
 
 type payload struct {
-	Key    []byte
+	Key    uuid.UUID
 	String string
 	Int    int
 	Array  []int
@@ -32,7 +32,7 @@ func newPayload() *payload {
 	}
 
 	return &payload{
-		Key:    uuid[:],
+		Key:    uuid,
 		String: "string-value",
 		Int:    1,
 		Array:  []int{1, 2, 3},
@@ -41,7 +41,7 @@ func newPayload() *payload {
 }
 
 func (p *payload) BucketKey() []byte {
-	return p.Key
+	return p.Key[:]
 }
 
 func newStorage(t testing.TB) *storage.Storage {
@@ -81,7 +81,7 @@ func TestStoreAndLoad(t *testing.T) {
 
 	var records []storage.Record[*payload]
 	err = store.Read(func(tx storage.ReadTx) error {
-		r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+		r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), time.Now())
 		records = r
 		return err
 	})
@@ -90,7 +90,7 @@ func TestStoreAndLoad(t *testing.T) {
 
 	var p2 *payload
 	err = store.Read(func(tx storage.ReadTx) error {
-		p, err := storage.Load[*payload](tx, bucketName, p.Key)
+		p, err := storage.Load[*payload](tx, bucketName, p.BucketKey())
 		p2 = p
 		return err
 	})
@@ -105,7 +105,7 @@ func TestStoreAndLoad(t *testing.T) {
 	AssertNoError(t, err, "storage.Store")
 
 	err = store.Read(func(tx storage.ReadTx) error {
-		r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+		r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), time.Now())
 		records = r
 		return err
 	})
@@ -113,7 +113,7 @@ func TestStoreAndLoad(t *testing.T) {
 	AssertEquals(t, 2, len(records), "record length")
 
 	err = store.Read(func(tx storage.ReadTx) error {
-		loaded, err := storage.Load[*payload](tx, bucketName, p.Key)
+		loaded, err := storage.Load[*payload](tx, bucketName, p.BucketKey())
 		p2 = loaded
 		return err
 	})
@@ -154,7 +154,7 @@ func TestLoadAtAndRecords(t *testing.T) {
 	// LoadAt the in-between time returns the first version.
 	var atBetween *payload
 	err = store.Read(func(tx storage.ReadTx) error {
-		v, err := storage.LoadAt[*payload](tx, bucketName, p.Key, between)
+		v, err := storage.LoadAt[*payload](tx, bucketName, p.BucketKey(), between)
 		atBetween = v
 		return err
 	})
@@ -164,7 +164,7 @@ func TestLoadAtAndRecords(t *testing.T) {
 	// LoadAt the current time returns the latest version.
 	var atNow *payload
 	err = store.Read(func(tx storage.ReadTx) error {
-		v, err := storage.LoadAt[*payload](tx, bucketName, p.Key, time.Now())
+		v, err := storage.LoadAt[*payload](tx, bucketName, p.BucketKey(), time.Now())
 		atNow = v
 		return err
 	})
@@ -174,7 +174,7 @@ func TestLoadAtAndRecords(t *testing.T) {
 	// Records up to the in-between time only contains the first version.
 	var history []storage.Record[*payload]
 	err = store.Read(func(tx storage.ReadTx) error {
-		r, err := storage.Records[*payload](tx, bucketName, p.Key, between)
+		r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), between)
 		history = r
 		return err
 	})
@@ -183,7 +183,7 @@ func TestLoadAtAndRecords(t *testing.T) {
 
 	// LoadAt before any version exists returns ErrNotFound.
 	err = store.Read(func(tx storage.ReadTx) error {
-		_, err := storage.LoadAt[*payload](tx, bucketName, p.Key,
+		_, err := storage.LoadAt[*payload](tx, bucketName, p.BucketKey(),
 			time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 		return err
 	})
@@ -217,7 +217,7 @@ func TestListAll(t *testing.T) {
 	AssertEquals(t, 2, len(records), "record length")
 
 	// The order is not guaranteed so we explicitly check it.
-	if slices.Equal(records[0].Key, p1.Key) {
+	if slices.Equal(records[0].BucketKey(), p1.BucketKey()) {
 		AssertEquals(t, p1, records[0], "records")
 		AssertEquals(t, p2, records[1], "records")
 	} else {
@@ -226,21 +226,23 @@ func TestListAll(t *testing.T) {
 	}
 }
 
-func TestTriggerFunctions(t *testing.T) {
+func TestPreCommitFuncs(t *testing.T) {
 	store := newStorage(t)
 
 	type change struct {
-		old *payload
-		new *payload
+		bucket string
+		old    *payload
+		new    *payload
 	}
 	changes := []change{}
 	store.RegisterBucket(storage.Bucket{
 		Name: bucketName,
-		TriggerFuncs: []storage.TriggerFunc{
-			func(tx storage.WriteTx, old, new any) error {
+		PreCommitFuncs: []storage.PreCommitFunc{
+			func(tx storage.WriteTx, bucket string, old, new any) error {
 				changes = append(changes, change{
-					old: old.(*payload),
-					new: new.(*payload),
+					bucket: bucket,
+					old:    old.(*payload),
+					new:    new.(*payload),
 				})
 				return nil
 			},
@@ -250,7 +252,7 @@ func TestTriggerFunctions(t *testing.T) {
 	p := newPayload()
 	user := newUser()
 
-	// First store - there is no previous version yet.
+	// First store - old is nil.
 	err := store.Write(func(tx storage.WriteTx) error {
 		return storage.Store(tx, bucketName, p, user)
 	})
@@ -258,8 +260,9 @@ func TestTriggerFunctions(t *testing.T) {
 	AssertEquals(t, 1, len(changes), "trigger invocations")
 	AssertEquals(t, (*payload)(nil), changes[0].old, "old value on insert")
 	AssertEquals(t, p, changes[0].new, "new value on insert")
+	AssertEquals(t, "payload", changes[0].bucket, "new value on insert")
 
-	// Second store - the trigger now sees the previous version as old.
+	// Second store - old is set.
 	p.String = "edited"
 	err = store.Write(func(tx storage.WriteTx) error {
 		return storage.Store(tx, bucketName, p, user)
@@ -268,15 +271,16 @@ func TestTriggerFunctions(t *testing.T) {
 	AssertEquals(t, 2, len(changes), "trigger invocations")
 	AssertEquals(t, "string-value", changes[1].old.String, "old value on update")
 	AssertEquals(t, "edited", changes[1].new.String, "new value on update")
+	AssertEquals(t, "payload", changes[1].bucket, "new value on insert")
 }
 
-func TestTriggerFunctionRollback(t *testing.T) {
+func TestPreCommitFuncRollback(t *testing.T) {
 	store := newStorage(t)
 
 	store.RegisterBucket(storage.Bucket{
 		Name: bucketName,
-		TriggerFuncs: []storage.TriggerFunc{
-			func(tx storage.WriteTx, old, new any) error {
+		PreCommitFuncs: []storage.PreCommitFunc{
+			func(tx storage.WriteTx, bucket string, old, new any) error {
 				return errors.New("test failure")
 			},
 		},
@@ -291,11 +295,41 @@ func TestTriggerFunctionRollback(t *testing.T) {
 	AssertError(t, err, "storage.Store")
 
 	err = store.Read(func(tx storage.ReadTx) error {
-		_, err = storage.Load[*payload](tx, bucketName, p.Key)
+		_, err = storage.Load[*payload](tx, bucketName, p.BucketKey())
 		return err
 	})
 	AssertEquals(t, true, errors.Is(err, storage.ErrNotFound),
 		"storage.Records")
+}
+
+func TestPostCommitFuncs(t *testing.T) {
+	store := newStorage(t)
+
+	type change struct {
+		bucket string
+		ids    [][]byte
+	}
+	changes := []change{}
+
+	store.RegisterBucket(storage.Bucket{
+		Name: bucketName,
+		PostCommitFuncs: []storage.PostCommitFunc{
+			func(bucket string, ids [][]byte) {
+				changes = append(changes, change{bucket, ids})
+			},
+		},
+	})
+
+	p := newPayload()
+	user := newUser()
+
+	err := store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+	AssertEquals(t, 1, len(changes), "post commit invocations")
+	AssertEquals(t, "payload", changes[0].bucket, "post commit bucket")
+	AssertEquals(t, [][]byte{p.BucketKey()}, changes[0].ids, "post commit ids")
 }
 
 func toIntArray(bytes []byte) []int {
@@ -304,6 +338,56 @@ func toIntArray(bytes []byte) []int {
 		res[i] = int(b)
 	}
 	return res
+}
+
+func TestMaintenance(t *testing.T) {
+	store := newStorage(t)
+	store.RegisterBucket(storage.Bucket{
+		Name:          bucketName,
+		Retention:     100 * time.Millisecond,
+		KeepRevisions: 2,
+	})
+
+	p := newPayload()
+	user := newUser()
+
+	p.String = "v1"
+	err := store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	p.String = "v2"
+	err = store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	p.String = "v3"
+	err = store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	time.Sleep(100 * time.Millisecond)
+
+	p.String = "v4"
+	err = store.Write(func(tx storage.WriteTx) error {
+		return storage.Store(tx, bucketName, p, user)
+	})
+	AssertNoError(t, err, "storage.Store")
+
+	store.RunMaintenance()
+
+	var history []storage.Record[*payload]
+	err = store.Read(func(tx storage.ReadTx) error {
+		r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), time.Now())
+		history = r
+		return err
+	})
+	AssertNoError(t, err, "storage.Records")
+	AssertEquals(t, 2, len(history), "records up to in-between time")
+	AssertEquals(t, "v4", history[1].Data.String, "keeps the newest record")
 }
 
 func FuzzStoreAndLoad(f *testing.F) {
@@ -330,7 +414,7 @@ func FuzzStoreAndLoad(f *testing.F) {
 
 		var records []storage.Record[*payload]
 		err = store.Read(func(tx storage.ReadTx) error {
-			r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+			r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), time.Now())
 			records = r
 			return err
 		})
@@ -339,7 +423,7 @@ func FuzzStoreAndLoad(f *testing.F) {
 
 		var p2 *payload
 		err = store.Read(func(tx storage.ReadTx) error {
-			p, err := storage.Load[*payload](tx, bucketName, p.Key)
+			p, err := storage.Load[*payload](tx, bucketName, p.BucketKey())
 			p2 = p
 			return err
 		})
@@ -354,7 +438,7 @@ func FuzzStoreAndLoad(f *testing.F) {
 		AssertNoError(t, err, "storage.Store")
 
 		err = store.Read(func(tx storage.ReadTx) error {
-			r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
+			r, err := storage.Records[*payload](tx, bucketName, p.BucketKey(), time.Now())
 			records = r
 			return err
 		})
@@ -362,7 +446,7 @@ func FuzzStoreAndLoad(f *testing.F) {
 		AssertEquals(t, 2, len(records), "record length")
 
 		err = store.Read(func(tx storage.ReadTx) error {
-			loaded, err := storage.Load[*payload](tx, bucketName, p.Key)
+			loaded, err := storage.Load[*payload](tx, bucketName, p.BucketKey())
 			p2 = loaded
 			return err
 		})
@@ -375,48 +459,4 @@ func FuzzStoreAndLoad(f *testing.F) {
 		})
 		AssertEquals(t, true, errors.Is(err, storage.ErrNotFound), "load non-existing")
 	})
-}
-
-func TestMaintenance(t *testing.T) {
-	store := newStorage(t)
-	store.RegisterBucket(storage.Bucket{
-		Name:          bucketName,
-		Retention:     100 * time.Millisecond,
-		KeepRevisions: 2,
-	})
-
-	p := newPayload()
-	user := newUser()
-
-	p.String = "v1"
-	err := store.Write(func(tx storage.WriteTx) error {
-		return storage.Store(tx, bucketName, p, user)
-	})
-	AssertNoError(t, err, "storage.Store")
-
-	p.String = "v2"
-	err = store.Write(func(tx storage.WriteTx) error {
-		return storage.Store(tx, bucketName, p, user)
-	})
-	AssertNoError(t, err, "storage.Store")
-
-	time.Sleep(100 * time.Millisecond)
-
-	p.String = "v3"
-	err = store.Write(func(tx storage.WriteTx) error {
-		return storage.Store(tx, bucketName, p, user)
-	})
-	AssertNoError(t, err, "storage.Store")
-
-	store.RunMaintenance()
-
-	var history []storage.Record[*payload]
-	err = store.Read(func(tx storage.ReadTx) error {
-		r, err := storage.Records[*payload](tx, bucketName, p.Key, time.Now())
-		history = r
-		return err
-	})
-	AssertNoError(t, err, "storage.Records")
-	AssertEquals(t, 2, len(history), "records up to in-between time")
-	AssertEquals(t, "v3", history[1].Data.String, "keeps the newest record")
 }

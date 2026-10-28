@@ -10,6 +10,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/eldelto/core/internal/collections"
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
@@ -27,13 +28,16 @@ func itob(v uint64) []byte {
 	return b
 }
 
-type TriggerFunc func(tx WriteTx, old, new any) error
+// TODO: Type the commit functions data argument?
+type PreCommitFunc func(tx WriteTx, bucket string, old, new any) error
+type PostCommitFunc func(bucket string, keys [][]byte)
 
 type Bucket struct {
-	Name          string
-	Retention     time.Duration
-	KeepRevisions uint
-	TriggerFuncs  []TriggerFunc
+	Name            string
+	Retention       time.Duration
+	KeepRevisions   uint
+	PreCommitFuncs  []PreCommitFunc
+	PostCommitFuncs []PostCommitFunc
 }
 
 type Storable interface {
@@ -82,6 +86,7 @@ type WriteTx interface {
 
 type writeTx struct {
 	readTx
+	events map[string]*collections.Set[string]
 }
 
 func (w writeTx) WriteTx() writeTx {
@@ -114,6 +119,48 @@ func ensureBucketExists(tx WriteTx, buckets ...string) error {
 	}
 
 	return nil
+}
+
+func storeEvent(tx WriteTx, bucket string, old, new any) error {
+	s := new.(Storable)
+	wtx := tx.(*writeTx)
+	set := wtx.events[bucket]
+	if set == nil {
+		set = collections.NewSet[string]()
+		wtx.events[bucket] = set
+	}
+	set.Add(string(s.BucketKey()))
+
+	return nil
+}
+
+func runPreCommitFuncs[T Storable](tx WriteTx, b Bucket, data T, key []byte) error {
+	if len(b.PreCommitFuncs) < 1 {
+		return nil
+	}
+
+	old, err := Load[T](tx, b.Name, key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	for _, f := range b.PreCommitFuncs {
+		if err := f(tx, b.Name, old, data); err != nil {
+			return fmt.Errorf("pre-commit trigger failed: type='%T': err=%w",
+				data, err)
+		}
+	}
+
+	return nil
+}
+
+func runPostCommitFuncs(b Bucket, keys *collections.Set[string]) {
+	for _, f := range b.PostCommitFuncs {
+		slice := collections.SetToSlice(keys, func(s string) []byte {
+			return []byte(s)
+		})
+		f(b.Name, slice)
+	}
 }
 
 func New(ctx context.Context, db *bbolt.DB) *Storage {
@@ -150,6 +197,7 @@ func (s *Storage) Close() error {
 }
 
 func (s *Storage) RegisterBucket(b Bucket) {
+	b.PreCommitFuncs = append(b.PreCommitFuncs, storeEvent)
 	s.buckets[b.Name] = b
 
 	err := s.Write(func(tx WriteTx) error {
@@ -173,11 +221,24 @@ func (s *Storage) Read(f ReadTxFunc) error {
 func (s *Storage) Write(f WriteTxFunc) error {
 	return s.db.Update(func(btx *bbolt.Tx) error {
 		tx := writeTx{
-			readTx{
+			readTx: readTx{
 				tx:      btx,
 				buckets: s.buckets,
 			},
+			events: map[string]*collections.Set[string]{},
 		}
+
+		btx.OnCommit(func() {
+			for bucketName, keys := range tx.events {
+				bucket, ok := tx.buckets[bucketName]
+				if !ok {
+					panic(fmt.Errorf("update operation triggered for unknown bucket: bucket=%q", bucketName))
+				}
+
+				runPostCommitFuncs(bucket, keys)
+			}
+		})
+
 		return f(&tx)
 	})
 }
@@ -211,7 +272,9 @@ func deleteOldBucketRecords(tx WriteTx, parent Bucket, child []byte, now time.Ti
 		}
 
 		if rec.InsertedAt.Add(parent.Retention).Before(now) {
-			return bucket.Delete(k)
+			if err := bucket.Delete(k); err != nil {
+				return fmt.Errorf("delete old records: err=%w", err)
+			}
 		}
 	}
 
@@ -369,26 +432,6 @@ func ListAll[T Storable](tx ReadTx, bucketName string) ([]T, error) {
 	return results, nil
 }
 
-func runTriggerFuncs[T Storable](tx WriteTx, b Bucket, data T, key []byte) error {
-	if len(b.TriggerFuncs) < 1 {
-		return nil
-	}
-
-	old, err := Load[T](tx, b.Name, key)
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		return err
-	}
-
-	for _, f := range b.TriggerFuncs {
-		if err := f(tx, old, data); err != nil {
-			return fmt.Errorf("pre-commit trigger failed: type='%T': err=%w",
-				data, err)
-		}
-	}
-
-	return nil
-}
-
 func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error {
 	bucketConf, err := getBucketConf(tx.Buckets(), bucketName)
 	if err != nil {
@@ -405,7 +448,7 @@ func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error
 		return err
 	}
 
-	if err := runTriggerFuncs(tx, bucketConf, data, key); err != nil {
+	if err := runPreCommitFuncs(tx, bucketConf, data, key); err != nil {
 		return err
 	}
 

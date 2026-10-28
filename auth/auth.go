@@ -37,7 +37,7 @@ const (
 	capabilityBucket = "auth.capability"
 	shortCodeBucket  = "auth.shortCodeCapability"
 
-	loginTokenValidity = 60 * 24 * 30 // 30 days
+	loginTokenValidity = 24 * 30 * time.Hour // 30 days
 	sessionCookieName  = "thy_session"
 )
 
@@ -184,12 +184,12 @@ func hash(id uuid.UUID) CapabilityHash {
 		3, 64*1024, 4, 32)
 }
 
-func validUntil(validForMinutes uint) time.Time {
-	return time.Now().Add(time.Duration(validForMinutes) * time.Minute)
+func validUntil(validFor time.Duration) time.Time {
+	return time.Now().Add(validFor)
 }
 
 func generateCapability(creator User, user *User, scopes Scopes,
-	validForMinutes uint) (CapabilityID, Capability, error) {
+	validFor time.Duration) (CapabilityID, Capability, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return CapabilityID{}, Capability{}, fmt.Errorf("generate token: %w", err)
@@ -204,7 +204,7 @@ func generateCapability(creator User, user *User, scopes Scopes,
 		Hash:        hash(id),
 		CreatedByID: creator.ID,
 		UserID:      userID,
-		ValidUntil:  validUntil(validForMinutes),
+		ValidUntil:  validUntil(validFor),
 		Scopes:      scopes,
 	}
 
@@ -247,7 +247,7 @@ func NewService(config Config, store *storage.Storage,
 		Name:          userBucket,
 		Retention:     1 * year,
 		KeepRevisions: 1,
-		TriggerFuncs: []storage.TriggerFunc{
+		PreCommitFuncs: []storage.PreCommitFunc{
 			validate.BeforeCommit(&User{}),
 		},
 	})
@@ -255,7 +255,7 @@ func NewService(config Config, store *storage.Storage,
 		Name:          capabilityBucket,
 		Retention:     1 * year,
 		KeepRevisions: 0,
-		TriggerFuncs: []storage.TriggerFunc{
+		PreCommitFuncs: []storage.PreCommitFunc{
 			validate.BeforeCommit(&Capability{}),
 		},
 	})
@@ -263,7 +263,7 @@ func NewService(config Config, store *storage.Storage,
 		Name:          shortCodeBucket,
 		Retention:     10 * time.Minute,
 		KeepRevisions: 0,
-		TriggerFuncs: []storage.TriggerFunc{
+		PreCommitFuncs: []storage.PreCommitFunc{
 			validate.BeforeCommit(shortCodeCapability{}),
 		},
 	})
@@ -277,7 +277,7 @@ func NewService(config Config, store *storage.Storage,
 }
 
 func (s *Service) IssueCapability(ctx context.Context, tx storage.WriteTx, user *User, scopes Scopes,
-	validForMinutes uint) (CapabilityID, Capability, error) {
+	validFor time.Duration) (CapabilityID, Capability, error) {
 	capCtx, err := FromContext(ctx)
 	if err != nil {
 		return CapabilityID{}, Capability{}, err
@@ -289,7 +289,7 @@ func (s *Service) IssueCapability(ctx context.Context, tx storage.WriteTx, user 
 			fmt.Errorf("issue capability: %w", err)
 	}
 
-	id, capability, err := generateCapability(creator, user, scopes, validForMinutes)
+	id, capability, err := generateCapability(creator, user, scopes, validFor)
 	if err != nil {
 		return CapabilityID{}, Capability{}, err
 	}
