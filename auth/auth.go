@@ -359,7 +359,7 @@ func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email m
 	scopes := Scopes{}
 	scopes.Add(PermissionWrite, "user", email.Address, "login")
 
-	id, cap, err := s.IssueCapability(ctx, tx, nil, scopes, 5)
+	id, cap, err := s.IssueCapability(ctx, tx, nil, scopes, 5*time.Minute)
 	if err != nil {
 		return fmt.Errorf("magic link: %w", err)
 	}
