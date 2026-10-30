@@ -11,12 +11,18 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"testing"
 
 	web "github.com/eldelto/core/internal/legacyweb"
 )
 
-func SkipIntegrationTest(t testing.TB) {
+type TI interface {
+	Helper()
+	Skip(args ...any)
+	Errorf(msg string, args ...any)
+	Fatalf(msg string, args ...any)
+}
+
+func SkipIntegrationTest(t TI) {
 	t.Helper()
 
 	value, _ := os.LookupEnv("INTEGRATION_TESTS")
@@ -25,7 +31,7 @@ func SkipIntegrationTest(t testing.TB) {
 	}
 }
 
-func AssertEquals(t testing.TB, expected, actual any, title string) {
+func AssertEquals(t TI, expected, actual any, title string) {
 	t.Helper()
 
 	if !reflect.DeepEqual(expected, actual) {
@@ -33,7 +39,7 @@ func AssertEquals(t testing.TB, expected, actual any, title string) {
 	}
 }
 
-func AssertNotEquals(t testing.TB, expected, actual any, title string) {
+func AssertNotEquals(t TI, expected, actual any, title string) {
 	t.Helper()
 
 	if reflect.DeepEqual(expected, actual) {
@@ -41,7 +47,7 @@ func AssertNotEquals(t testing.TB, expected, actual any, title string) {
 	}
 }
 
-func AssertContains[T comparable](t testing.TB, expected T, testee []T, title string) {
+func AssertContains[T comparable](t TI, expected T, testee []T, title string) {
 	t.Helper()
 
 	for _, actual := range testee {
@@ -53,7 +59,7 @@ func AssertContains[T comparable](t testing.TB, expected T, testee []T, title st
 	t.Errorf("%s did not contain a value '%#v': %#v", title, expected, testee)
 }
 
-func AssertContainsAll[T comparable](t testing.TB, expected []T, testee []T, title string) {
+func AssertContainsAll[T comparable](t TI, expected []T, testee []T, title string) {
 	t.Helper()
 
 	// TODO: Think about if this is a good idea or not.
@@ -64,7 +70,7 @@ func AssertContainsAll[T comparable](t testing.TB, expected []T, testee []T, tit
 	}
 }
 
-func AssertStringContains(t testing.TB, expected, testee, title string) {
+func AssertStringContains(t TI, expected, testee, title string) {
 	t.Helper()
 
 	if !strings.Contains(testee, expected) {
@@ -72,7 +78,7 @@ func AssertStringContains(t testing.TB, expected, testee, title string) {
 	}
 }
 
-func AssertNoError(t testing.TB, err error, title string) {
+func AssertNoError(t TI, err error, title string) {
 	t.Helper()
 
 	if err != nil {
@@ -80,7 +86,7 @@ func AssertNoError(t testing.TB, err error, title string) {
 	}
 }
 
-func AssertError(t testing.TB, err error, title string) {
+func AssertError(t TI, err error, title string) {
 	t.Helper()
 
 	if err == nil {
@@ -88,7 +94,7 @@ func AssertError(t testing.TB, err error, title string) {
 	}
 }
 
-func AssertNotNil(t testing.TB, actual any, title string) {
+func AssertNotNil(t TI, actual any, title string) {
 	t.Helper()
 
 	if actual == nil {
@@ -98,12 +104,12 @@ func AssertNotNil(t testing.TB, actual any, title string) {
 
 type Response struct {
 	response   *http.Response
-	T          testing.TB
+	T          TI
 	StatusCode int
 	mapBody    map[string]any
 }
 
-func NewResponse(t testing.TB, response *http.Response) Response {
+func NewResponse(t TI, response *http.Response) Response {
 	return Response{
 		response:   response,
 		T:          t,
@@ -133,11 +139,11 @@ func (r *Response) Decode(value any) error {
 
 type TestServer struct {
 	*httptest.Server
-	T      testing.TB
+	T      TI
 	Client *http.Client
 }
 
-func NewTestServer(t testing.TB, handler http.Handler) *TestServer {
+func NewTestServer(t TI, handler http.Handler) *TestServer {
 	ts := httptest.NewServer(handler)
 	return &TestServer{
 		Server: ts,

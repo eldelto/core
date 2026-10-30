@@ -19,6 +19,7 @@ var (
 func NewAuthController(service *Service) chi.Router {
 	r := chi.NewRouter()
 	r.Get("/login", errorHandlers.Handle(showLogin(service)))
+	// TODO: Swap routes?
 	r.Post("/login", errorHandlers.Handle(triggerLogin(service)))
 	r.Post("/verify", errorHandlers.Handle(verify(service)))
 

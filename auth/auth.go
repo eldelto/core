@@ -31,7 +31,7 @@ const (
 	PermissionWrite
 	PermissionOwner
 
-	authCtxKey = contextKey("auth")
+	AuthCtxKey = contextKey("auth")
 
 	userBucket       = "auth.user"
 	capabilityBucket = "auth.capability"
@@ -47,6 +47,8 @@ var (
 
 	serviceUserID = storage.UserID(uuid.Nil)
 	ServiceUser   = User{ID: serviceUserID}
+
+	year = time.Hour * 24 * 365
 )
 
 type User struct {
@@ -213,7 +215,7 @@ func generateCapability(creator User, user *User, scopes Scopes,
 }
 
 func FromContext(ctx context.Context) (CapabilityCtx, error) {
-	value := ctx.Value(authCtxKey)
+	value := ctx.Value(AuthCtxKey)
 	if value == nil {
 		return CapabilityCtx{}, ErrUnauthenticated
 	}
@@ -227,6 +229,22 @@ func FromContext(ctx context.Context) (CapabilityCtx, error) {
 	return capability, nil
 }
 
+type shortCodeCapability struct {
+	Code string
+	Hash CapabilityHash
+}
+
+func (s shortCodeCapability) BucketKey() []byte {
+	return []byte(s.Code)
+}
+
+func (s shortCodeCapability) Validate() error {
+	return errors.Join(
+		validate.NotEmpty("code", s.Code),
+		validate.NotEmpty("hash", s.Hash),
+	)
+}
+
 type Config struct {
 	Host          *url.URL
 	DefaultSender *mail.Address
@@ -238,8 +256,6 @@ type Service struct {
 	mailer            web.Mailer
 	magicLinkTemplate *template.Template
 }
-
-var year = time.Hour * 24 * 365
 
 func NewService(config Config, store *storage.Storage,
 	mailer web.Mailer, magicLinkTemplate *template.Template) *Service {
@@ -299,22 +315,6 @@ func (s *Service) IssueCapability(ctx context.Context, tx storage.WriteTx, user 
 	}
 
 	return id, capability, nil
-}
-
-type shortCodeCapability struct {
-	Code string
-	Hash CapabilityHash
-}
-
-func (s shortCodeCapability) BucketKey() []byte {
-	return []byte(s.Code)
-}
-
-func (s shortCodeCapability) Validate() error {
-	return errors.Join(
-		validate.NotEmpty("code", s.Code),
-		validate.NotEmpty("hash", s.Hash),
-	)
 }
 
 func (s *Service) storeWithShortCode(tx storage.WriteTx, code string,
@@ -424,10 +424,10 @@ func (s *Service) Set(ctx context.Context, tx storage.ReadTx,
 		User:   user,
 		Scopes: capability.Scopes,
 	}
-	return context.WithValue(ctx, authCtxKey, capCtx), nil
+	return context.WithValue(ctx, AuthCtxKey, capCtx), nil
 }
 
-func (s *Service) FindUserByEmail(ctx context.Context, tx storage.ReadTx,
+func (s *Service) findUserByEmail(ctx context.Context, tx storage.ReadTx,
 	email mail.Address) (*User, error) {
 	cap, err := FromContext(ctx)
 	if err != nil {
@@ -496,7 +496,7 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 	scopes.Add(PermissionWrite, "user", email.Address)
 	ctx = fakeCapability(ctx, scopes)
 
-	user, err := s.FindUserByEmail(ctx, tx, email)
+	user, err := s.findUserByEmail(ctx, tx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			user, err = s.createUser(ctx, tx, email)
@@ -524,34 +524,7 @@ func fakeCapability(ctx context.Context, scopes Scopes) context.Context {
 		Scopes: scopes,
 	}
 
-	return context.WithValue(ctx, authCtxKey, capCtx)
-}
-
-type loginData struct {
-	Host  *url.URL
-	Token CapabilityID
-}
-
-func (s *Service) SendLoginEmail(ctx context.Context, email mail.Address,
-	id CapabilityID) error {
-	cap, err := FromContext(ctx)
-	if err != nil {
-		return fmt.Errorf("send login E-mail: err=%w", err)
-	}
-
-	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
-		return err
-	}
-
-	data := loginData{
-		Host:  s.config.Host,
-		Token: id,
-	}
-
-	if err := s.mailer.Send(*s.config.DefaultSender, email, s.magicLinkTemplate, data); err != nil {
-		return fmt.Errorf("send login E-mail: err=%w", err)
-	}
-	return nil
+	return context.WithValue(ctx, AuthCtxKey, capCtx)
 }
 
 func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID,
@@ -568,6 +541,7 @@ func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID,
 	http.SetCookie(w, &cookie)
 }
 
+// TODO: Move to user service
 func (s *Service) ListUsers(ctx context.Context, tx storage.ReadTx) ([]*User, error) {
 	cap, err := FromContext(ctx)
 	if err != nil {
