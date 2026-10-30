@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"testing"
 	"time"
 
@@ -20,20 +22,19 @@ import (
 // TODO: Tests to implement
 //
 // Capability
-// - Valid
 // - RequireUser
 // - RequireRead
 // - RequireWrite
 //
 // Service
-// - IssueCapability
+// - Login
 // - SendMagicLink
 
-func setup(t *testing.T) (*storage.Storage, *auth.Service) {
+func setup(t *testing.T) (*storage.Storage, *auth.Service, *web.StubMailer) {
 	path := filepath.Join(os.TempDir(), "auth.db")
 	store := storage.Require(t.Context(), path)
 	t.Cleanup(func() { store.Close() })
-	
+
 	host, err := url.Parse("localhost:9999")
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +52,7 @@ func setup(t *testing.T) (*storage.Storage, *auth.Service) {
 	}
 	service := auth.NewService(config, store, mailer, auth.MagicLinkTemplate)
 
-	return store, service
+	return store, service, mailer
 }
 
 func generateUUID() *rapid.Generator[uuid.UUID] {
@@ -100,13 +101,13 @@ func generateScopes() *rapid.Generator[auth.Scopes] {
 		max := rapid.IntMin(1).Draw(t, "scope max")
 		resources := rapid.SliceOfN(rapid.StringMatching(`/[a-z/]\*?`), 1, max).
 			Draw(t, "resources")
-		
+
 		scopes := auth.Scopes{}
 		for _, r := range resources {
 			perm := generatePermission().Draw(t, "permission")
 			scopes.Add(perm, r)
 		}
-		
+
 		return scopes
 	})
 }
@@ -114,9 +115,9 @@ func generateScopes() *rapid.Generator[auth.Scopes] {
 func generateUser() *rapid.Generator[auth.User] {
 	return rapid.Custom(func(t *rapid.T) auth.User {
 		return auth.User{
-			ID: storage.UserID(generateUUID().Draw(t, "ID")),
+			ID:    storage.UserID(generateUUID().Draw(t, "ID")),
 			Email: generateEmail().Draw(t, "Email"),
-			Role: generateRole().Draw(t, "Role"),
+			Role:  generateRole().Draw(t, "Role"),
 		}
 	})
 }
@@ -131,32 +132,96 @@ func fakeCapability(ctx context.Context, scopes auth.Scopes) context.Context {
 }
 
 func TestIssueCapability(t *testing.T) {
-	store, service := setup(t)
+	store, service, _ := setup(t)
 	now := time.Now()
-	
+
 	rapid.Check(t, func(t *rapid.T) {
 		var (
-			err error
-			capID auth.CapabilityID
-			cap auth.Capability
-			user = generateUser().Draw(t, "user")
-			scopes = generateScopes().Draw(t, "scopes")
+			err      error
+			capID    auth.CapabilityID
+			cap      *auth.Capability
+			user     = generateUser().Draw(t, "user")
+			scopes   = generateScopes().Draw(t, "scopes")
 			validFor = generateDuration().Draw(t, "validFor")
 		)
 
 		ctx := fakeCapability(context.Background(), auth.Scopes{})
-		
+
 		err = store.Write(func(tx storage.WriteTx) error {
 			capID, cap, err = service.IssueCapability(ctx, tx, &user, scopes, validFor)
 			return err
 		})
-		
+
 		AssertNoError(t, err, "issue capability")
 		AssertNotEquals(t, uuid.UUID{}, capID, "capability ID is not empty")
 		AssertEquals(t, *cap.UserID, user.ID, "user IDs match")
 		AssertEquals(t, auth.ServiceUser.ID, cap.CreatedByID, "creator IDs match")
 		AssertEquals(t, scopes, cap.Scopes, "scopes match")
 		AssertEquals(t, true, now.Before(cap.ValidUntil), "valid until is in the future")
+		AssertEquals(t, true, cap.Valid(), "capability is valid")
+	})
+}
+
+func TestLogin(t *testing.T) {
+	store, service, mailer := setup(t)
+
+	rapid.Check(t, func(t *rapid.T) {
+		mailer.Reset()
+		
+		var (
+			err      error
+			capID    auth.CapabilityID
+			cap      *auth.Capability
+			email = generateEmail().Draw(t, "email")
+			redirectPath = rapid.String().Draw(t, "redirectPath")
+		)
+
+		ctx := fakeCapability(context.Background(), auth.Scopes{})
+
+		err = store.Write(func(tx storage.WriteTx) error {
+			return service.SendMagicLink(ctx, tx, email, redirectPath)
+		})
+		AssertNoError(t, err, "send magic link")
+
+		AssertEquals(t, 1, len(mailer.SentMails), "send one E-mail")
+		mail := mailer.SentMails[0]
+		AssertEquals(t, "no-reply@thy.computer", mail.From, "E-mail sender")
+		AssertEquals(t, email.Address, mail.To, "E-mail recipient")
+
+		r := regexp.MustCompile(`<h2>([^<]+)</h2>`)
+		matches := r.FindAllStringSubmatch(mail.Content, 1)
+		shortCode := matches[0][1]
+
+		err = store.Write(func(tx storage.WriteTx) error {
+			capID, cap, err = service.Login(ctx, tx, email, shortCode)
+			return err
+		})
+		AssertNoError(t, err, "login")
+
+		// Find user with E-mail
+		scopes := auth.Scopes{}
+		scopes.Add(auth.PermissionRead, "/user", "*")
+		ctx = fakeCapability(context.Background(), scopes)
+		
+		// TODO: This fails because we don't support wildcard permission checks yet
+		var users []*auth.User
+		err = store.Read(func(tx storage.ReadTx) error {
+			users , err = service.ListUsers(ctx, tx)
+			return err
+		})
+		AssertNoError(t, err, "list users")
+
+		i := slices.IndexFunc(users, func(u *auth.User) bool {
+			return u.Email.Address == email.Address
+		})
+		user := users[i]
+		AssertNotEquals(t, uuid.UUID{}, capID, "capability ID is not empty")
+		AssertEquals(t, *cap.UserID, user.ID, "user IDs match")
+		AssertEquals(t, auth.ServiceUser.ID, cap.CreatedByID, "creator IDs match")
+		
+		scopes = auth.Scopes{}
+		scopes.Add(auth.PermissionOwner, "/user", user.ID.String(), "*")
+		AssertEquals(t, scopes, cap.Scopes, "scopes match")
 		AssertEquals(t, true, cap.Valid(), "capability is valid")
 	})
 }

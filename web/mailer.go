@@ -14,7 +14,22 @@ type Mailer interface {
 		templater *template.Template, data any) error
 }
 
-type StubMailer struct{}
+type StubMail struct {
+	From string
+	To string
+	Content string
+}
+
+type StubMailer struct{
+	SentMails []StubMail
+}
+
+func (m *StubMail) String() string {
+	return fmt.Sprintf(`from: %q
+to: %q
+content:
+%s`, m.From, m.To, m.Content)
+}
 
 func (s *StubMailer) Send(sender, recipient mail.Address,
 	template *template.Template, data any) error {
@@ -30,10 +45,19 @@ func (s *StubMailer) Send(sender, recipient mail.Address,
 		return fmt.Errorf("send mail: %w", err)
 	}
 
-	log.Printf("from: %q", sender.String())
-	log.Printf("to: %q", recipient.String())
-	log.Printf("content: \n\n%s", content.String())
+	mail := StubMail{
+		From: sender.Address,
+		To: recipient.Address,
+		Content: content.String(),
+	}
+	s.SentMails = append(s.SentMails, mail)
+	log.Println(mail)
+	
 	return nil
+}
+
+func (s *StubMailer) Reset() {
+	s.SentMails = []StubMail{}
 }
 
 type SMTPMailer struct {
