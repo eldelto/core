@@ -18,6 +18,7 @@ func NewUserController(service *Service) chi.Router {
 	// r.Get("/{id}", errorHandlers.Handle(showUser(service)))
 	// r.Put("/{id}", errorHandlers.Handle(editUser(service)))
 	// r.Delete("/{id}", errorHandlers.Handle(deleteUser(service)))
+	r.Post("/{id}/logout", errorHandlers.Handle(logout(service)))
 
 	return r
 }
@@ -35,5 +36,12 @@ func listUsers(service *Service) web.Handler {
 		}
 
 		return usersTemplate.Execute(w, users)
+	}
+}
+
+func logout(service *Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		// TODO: Implement
+		return nil
 	}
 }

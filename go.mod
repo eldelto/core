@@ -32,4 +32,5 @@ require (
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/tools v0.51.0 // indirect
+	pgregory.net/rapid v1.3.0 // indirect
 )
