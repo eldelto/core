@@ -25,12 +25,16 @@ type contextKey string
 const (
 	RoleUser = Role(iota)
 	RoleAdmin
+)
 
+const (
 	PermissionNone = Permission(iota)
 	PermissionRead
 	PermissionWrite
 	PermissionOwner
+)
 
+const (
 	AuthCtxKey = contextKey("auth")
 
 	userBucket       = "auth.user"
@@ -293,28 +297,28 @@ func NewService(config Config, store *storage.Storage,
 }
 
 func (s *Service) IssueCapability(ctx context.Context, tx storage.WriteTx, user *User, scopes Scopes,
-	validFor time.Duration) (CapabilityID, Capability, error) {
+	validFor time.Duration) (CapabilityID, *Capability, error) {
 	capCtx, err := FromContext(ctx)
 	if err != nil {
-		return CapabilityID{}, Capability{}, err
+		return CapabilityID{}, nil, err
 	}
 
 	creator, err := capCtx.RequireUser()
 	if err != nil {
-		return CapabilityID{}, Capability{},
+		return CapabilityID{}, nil,
 			fmt.Errorf("issue capability: %w", err)
 	}
 
 	id, capability, err := generateCapability(creator, user, scopes, validFor)
 	if err != nil {
-		return CapabilityID{}, Capability{}, err
+		return CapabilityID{}, nil, err
 	}
 
 	if err := storage.Store(tx, capabilityBucket, &capability, creator.ID); err != nil {
-		return CapabilityID{}, Capability{}, err
+		return CapabilityID{}, nil, err
 	}
 
-	return id, capability, nil
+	return id, &capability, nil
 }
 
 func (s *Service) storeWithShortCode(tx storage.WriteTx, code string,
@@ -378,7 +382,7 @@ func (s *Service) SendMagicLink(ctx context.Context, tx storage.WriteTx, email m
 	loginURL.Fragment = uuid.UUID(id).String()
 
 	code := id.ShortCode()
-	if err := s.storeWithShortCode(tx, code, &cap); err != nil {
+	if err := s.storeWithShortCode(tx, code, cap); err != nil {
 		return err
 	}
 
@@ -482,14 +486,24 @@ func (s *Service) createUser(ctx context.Context, tx storage.WriteTx,
 }
 
 func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
-	email mail.Address) (CapabilityID, Capability, error) {
+	email mail.Address, shortCode string) (CapabilityID, *Capability, error) {
+	capability, err := s.findCapabilityByShortCode(tx, shortCode)
+	if err != nil {
+		return CapabilityID{}, nil, err
+	}
+
+	ctx, err = s.Set(ctx, tx, capability)
+	if err != nil {
+		return CapabilityID{}, nil, err
+	}
+
 	cap, err := FromContext(ctx)
 	if err != nil {
-		return CapabilityID{}, Capability{}, fmt.Errorf("login: err=%w", err)
+		return CapabilityID{}, nil, fmt.Errorf("login: err=%w", err)
 	}
 
 	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
-		return CapabilityID{}, Capability{}, err
+		return CapabilityID{}, nil, err
 	}
 
 	scopes := Scopes{}
@@ -503,7 +517,7 @@ func (s *Service) Login(ctx context.Context, tx storage.WriteTx,
 		}
 
 		if err != nil {
-			return CapabilityID{}, Capability{}, fmt.Errorf("login: err=%w", err)
+			return CapabilityID{}, nil, fmt.Errorf("login: err=%w", err)
 		}
 	}
 

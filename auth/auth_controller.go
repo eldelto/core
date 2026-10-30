@@ -75,30 +75,13 @@ func verify(service *Service) web.Handler {
 			return err
 		}
 
-		var cap *Capability
-		err := service.store.Read(func(tx storage.ReadTx) error {
-			c, err := service.findCapabilityByShortCode(tx, data.code)
-			cap = c
-			return err
-		})
-		if err != nil {
-			return err
-		}
-
-		ctx := r.Context()
-		err = service.store.Read(func(tx storage.ReadTx) error {
-			ctx, err = service.Set(ctx, tx, cap)
-			return err
-		})
-		if err != nil {
-			return err
-		}
-
-		var capID CapabilityID
+		var (
+			capID CapabilityID
+			cap *Capability
+			err error
+		)
 		err = service.store.Write(func(tx storage.WriteTx) error {
-			id, c, err := service.Login(ctx, tx, data.email)
-			capID = id
-			cap = &c
+			capID, cap, err = service.Login(r.Context(), tx, data.email, data.code)
 			return err
 		})
 		if err != nil {
