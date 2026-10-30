@@ -167,12 +167,12 @@ func TestLogin(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		mailer.Reset()
-		
+
 		var (
-			err      error
-			capID    auth.CapabilityID
-			cap      *auth.Capability
-			email = generateEmail().Draw(t, "email")
+			err          error
+			capID        auth.CapabilityID
+			cap          *auth.Capability
+			email        = generateEmail().Draw(t, "email")
 			redirectPath = rapid.String().Draw(t, "redirectPath")
 		)
 
@@ -202,11 +202,11 @@ func TestLogin(t *testing.T) {
 		scopes := auth.Scopes{}
 		scopes.Add(auth.PermissionRead, "/user", "*")
 		ctx = fakeCapability(context.Background(), scopes)
-		
-		// TODO: This fails because we don't support wildcard permission checks yet
+
+		// TODO: This fails because the
 		var users []*auth.User
 		err = store.Read(func(tx storage.ReadTx) error {
-			users , err = service.ListUsers(ctx, tx)
+			users, err = service.ListUsers(ctx, tx)
 			return err
 		})
 		AssertNoError(t, err, "list users")
@@ -218,7 +218,7 @@ func TestLogin(t *testing.T) {
 		AssertNotEquals(t, uuid.UUID{}, capID, "capability ID is not empty")
 		AssertEquals(t, *cap.UserID, user.ID, "user IDs match")
 		AssertEquals(t, auth.ServiceUser.ID, cap.CreatedByID, "creator IDs match")
-		
+
 		scopes = auth.Scopes{}
 		scopes.Add(auth.PermissionOwner, "/user", user.ID.String(), "*")
 		AssertEquals(t, scopes, cap.Scopes, "scopes match")

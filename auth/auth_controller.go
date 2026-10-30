@@ -77,8 +77,8 @@ func verify(service *Service) web.Handler {
 
 		var (
 			capID CapabilityID
-			cap *Capability
-			err error
+			cap   *Capability
+			err   error
 		)
 		err = service.store.Write(func(tx storage.WriteTx) error {
 			capID, cap, err = service.Login(r.Context(), tx, data.email, data.code)
