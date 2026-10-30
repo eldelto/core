@@ -36,7 +36,7 @@ func NotEmpty(field string, data any) error {
 
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
-	case reflect.String | reflect.Slice | reflect.Map | reflect.Chan:
+	case reflect.String, reflect.Slice, reflect.Map, reflect.Chan:
 		if v.Len() < 1 {
 			return newErr(field, "cannot be empty")
 		}

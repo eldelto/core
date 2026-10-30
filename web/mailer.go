@@ -15,12 +15,12 @@ type Mailer interface {
 }
 
 type StubMail struct {
-	From string
-	To string
+	From    string
+	To      string
 	Content string
 }
 
-type StubMailer struct{
+type StubMailer struct {
 	SentMails []StubMail
 }
 
@@ -46,13 +46,13 @@ func (s *StubMailer) Send(sender, recipient mail.Address,
 	}
 
 	mail := StubMail{
-		From: sender.Address,
-		To: recipient.Address,
+		From:    sender.Address,
+		To:      recipient.Address,
 		Content: content.String(),
 	}
 	s.SentMails = append(s.SentMails, mail)
 	log.Println(mail)
-	
+
 	return nil
 }
 

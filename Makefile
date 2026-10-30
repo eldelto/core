@@ -23,7 +23,7 @@ download:
 
 .PHONY: test
 test:
-	go test ./... -race
+	RAPID_CHECKS=10 go test ./... -race
 
 .PHONY: lint
 lint:

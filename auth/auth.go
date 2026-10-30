@@ -108,6 +108,30 @@ func (s Scopes) Add(perm Permission, parts ...string) {
 	s[resource] = perm
 }
 
+func prefixSearch(s Scopes, target Resource) *Permission {
+	for res, perm := range s {
+		str := strings.TrimSuffix(string(res), "/*")
+		// Nothing trimmed, so no wildcard resource.
+		if len(res) == len(str) {
+			continue
+		}
+
+		if strings.HasPrefix(string(target), str) {
+			return &perm
+		}
+	}
+
+	return nil
+}
+
+func (s Scopes) PermissionFor(res Resource) *Permission {
+	perm, ok := s[res]
+	if !ok {
+		return prefixSearch(s, res)
+	}
+	return &perm
+}
+
 type CapabilityID uuid.UUID
 
 func (id CapabilityID) String() string {
@@ -161,28 +185,29 @@ func (c *CapabilityCtx) RequireUser() (User, error) {
 }
 
 func (c *CapabilityCtx) RequireRead(res Resource) error {
-	switch c.Scopes[res] {
-	case PermissionRead:
-	case PermissionWrite:
-	case PermissionOwner:
-	default:
-		return fmt.Errorf("requires read scope: resource=%q capability=%q err=%w",
-			res, c.Hash, ErrUnautorized)
+	perm := c.Scopes.PermissionFor(res)
+	if perm != nil {
+		switch *perm {
+		case PermissionRead, PermissionWrite, PermissionOwner:
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("requires read scope: resource=%q capability=%q err=%w",
+		res, c.Hash, ErrUnautorized)
 }
 
 func (c *CapabilityCtx) RequireWrite(res Resource) error {
-	switch c.Scopes[res] {
-	case PermissionWrite:
-	case PermissionOwner:
-	default:
-		return fmt.Errorf("requires write scope: resource=%q capability=%q err=%w",
-			res, c.Hash, ErrUnautorized)
+	perm := c.Scopes.PermissionFor(res)
+	if perm != nil {
+		switch *perm {
+		case PermissionWrite, PermissionOwner:
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("requires write scope: resource=%q capability=%q err=%w",
+		res, c.Hash, ErrUnautorized)
 }
 
 func hash(id uuid.UUID) CapabilityHash {
