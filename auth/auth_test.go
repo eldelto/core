@@ -1,4 +1,4 @@
-package auth_test
+package auth
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldelto/core/auth"
 	. "github.com/eldelto/core/internal/testutils"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
@@ -30,8 +29,8 @@ import (
 // - Login
 // - SendMagicLink
 
-func setup(t *testing.T) (*storage.Storage, *auth.Service, *web.StubMailer) {
-	path := filepath.Join(os.TempDir(), "auth.db")
+func setup(t *testing.T) (*storage.Storage, *Service, *web.StubMailer) {
+	path := filepath.Join(os.TempDir(), "db")
 	store := storage.Require(t.Context(), path)
 	t.Cleanup(func() { store.Close() })
 
@@ -46,11 +45,11 @@ func setup(t *testing.T) (*storage.Storage, *auth.Service, *web.StubMailer) {
 		t.Fatal(err)
 	}
 
-	config := auth.Config{
+	config := Config{
 		Host:          host,
 		DefaultSender: defaultSender,
 	}
-	service := auth.NewService(config, store, mailer, auth.MagicLinkTemplate)
+	service := NewService(config, store, mailer, MagicLinkTemplate)
 
 	return store, service, mailer
 }
@@ -82,27 +81,27 @@ func generateDuration() *rapid.Generator[time.Duration] {
 	})
 }
 
-func generateRole() *rapid.Generator[auth.Role] {
-	return rapid.Custom(func(t *rapid.T) auth.Role {
-		raw := rapid.UintMax(uint(auth.RoleAdmin)).Draw(t, "raw role")
-		return auth.Role(raw)
+func generateRole() *rapid.Generator[Role] {
+	return rapid.Custom(func(t *rapid.T) Role {
+		raw := rapid.UintMax(uint(RoleAdmin)).Draw(t, "raw role")
+		return Role(raw)
 	})
 }
 
-func generatePermission() *rapid.Generator[auth.Permission] {
-	return rapid.Custom(func(t *rapid.T) auth.Permission {
-		raw := rapid.UintMax(uint(auth.PermissionOwner)).Draw(t, "raw permission")
-		return auth.Permission(raw)
+func generatePermission() *rapid.Generator[Permission] {
+	return rapid.Custom(func(t *rapid.T) Permission {
+		raw := rapid.UintMax(uint(PermissionOwner)).Draw(t, "raw permission")
+		return Permission(raw)
 	})
 }
 
-func generateScopes() *rapid.Generator[auth.Scopes] {
-	return rapid.Custom(func(t *rapid.T) auth.Scopes {
+func generateScopes() *rapid.Generator[Scopes] {
+	return rapid.Custom(func(t *rapid.T) Scopes {
 		max := rapid.IntMin(1).Draw(t, "scope max")
 		resources := rapid.SliceOfN(rapid.StringMatching(`/[a-z/]\*?`), 1, max).
 			Draw(t, "resources")
 
-		scopes := auth.Scopes{}
+		scopes := Scopes{}
 		for _, r := range resources {
 			perm := generatePermission().Draw(t, "permission")
 			scopes.Add(perm, r)
@@ -112,9 +111,9 @@ func generateScopes() *rapid.Generator[auth.Scopes] {
 	})
 }
 
-func generateUser() *rapid.Generator[auth.User] {
-	return rapid.Custom(func(t *rapid.T) auth.User {
-		return auth.User{
+func generateUser() *rapid.Generator[User] {
+	return rapid.Custom(func(t *rapid.T) User {
+		return User{
 			ID:    storage.UserID(generateUUID().Draw(t, "ID")),
 			Email: generateEmail().Draw(t, "Email"),
 			Role:  generateRole().Draw(t, "Role"),
@@ -122,40 +121,38 @@ func generateUser() *rapid.Generator[auth.User] {
 	})
 }
 
-func fakeCapability(ctx context.Context, scopes auth.Scopes) context.Context {
-	capCtx := auth.CapabilityCtx{
-		User:   &auth.ServiceUser,
+func fakeCapability(ctx context.Context, scopes Scopes) context.Context {
+	capCtx := CapabilityCtx{
+		User:   &serviceUser,
 		Scopes: scopes,
 	}
 
-	return context.WithValue(ctx, auth.AuthCtxKey, capCtx)
+	return context.WithValue(ctx, AuthCtxKey, capCtx)
 }
 
 func TestIssueCapability(t *testing.T) {
-	store, service, _ := setup(t)
+	store, _, _ := setup(t)
 	now := time.Now()
 
 	rapid.Check(t, func(t *rapid.T) {
 		var (
 			err      error
-			capID    auth.CapabilityID
-			cap      *auth.Capability
+			capID    CapabilityID
+			cap      *Capability
 			user     = generateUser().Draw(t, "user")
 			scopes   = generateScopes().Draw(t, "scopes")
 			validFor = generateDuration().Draw(t, "validFor")
 		)
 
-		ctx := fakeCapability(context.Background(), auth.Scopes{})
-
 		err = store.Write(func(tx storage.WriteTx) error {
-			capID, cap, err = service.IssueCapability(ctx, tx, &user, scopes, validFor)
+			capID, cap, err = IssueCapability(tx, serviceUser, &user, scopes, validFor)
 			return err
 		})
 
 		AssertNoError(t, err, "issue capability")
 		AssertNotEquals(t, uuid.UUID{}, capID, "capability ID is not empty")
 		AssertEquals(t, *cap.UserID, user.ID, "user IDs match")
-		AssertEquals(t, auth.ServiceUser.ID, cap.CreatedByID, "creator IDs match")
+		AssertEquals(t, serviceUser.ID, cap.CreatedByID, "creator IDs match")
 		AssertEquals(t, scopes, cap.Scopes, "scopes match")
 		AssertEquals(t, true, now.Before(cap.ValidUntil), "valid until is in the future")
 		AssertEquals(t, true, cap.Valid(), "capability is valid")
@@ -170,16 +167,16 @@ func TestLogin(t *testing.T) {
 
 		var (
 			err          error
-			capID        auth.CapabilityID
-			cap          *auth.Capability
+			capID        CapabilityID
+			cap          *Capability
 			email        = generateEmail().Draw(t, "email")
 			redirectPath = rapid.String().Draw(t, "redirectPath")
 		)
 
-		ctx := fakeCapability(context.Background(), auth.Scopes{})
+		ctx := fakeCapability(context.Background(), Scopes{})
 
 		err = store.Write(func(tx storage.WriteTx) error {
-			return service.SendMagicLink(ctx, tx, email, redirectPath)
+			return service.sendMagicLink(ctx, tx, email, redirectPath)
 		})
 		AssertNoError(t, err, "send magic link")
 
@@ -193,35 +190,40 @@ func TestLogin(t *testing.T) {
 		shortCode := matches[0][1]
 
 		err = store.Write(func(tx storage.WriteTx) error {
-			capID, cap, err = service.Login(ctx, tx, email, shortCode)
+			capID, cap, err = service.login(ctx, tx, email, shortCode)
 			return err
 		})
 		AssertNoError(t, err, "login")
 
 		// Find user with E-mail
-		scopes := auth.Scopes{}
-		scopes.Add(auth.PermissionRead, "/user", "*")
+		scopes := Scopes{}
+		scopes.Add(PermissionRead, "/user", "*")
 		ctx = fakeCapability(context.Background(), scopes)
 
-		// TODO: This fails because the
-		var users []*auth.User
+		var users []*User
 		err = store.Read(func(tx storage.ReadTx) error {
-			users, err = service.ListUsers(ctx, tx)
+			users, err = service.listUsers(ctx, tx)
 			return err
 		})
 		AssertNoError(t, err, "list users")
 
-		i := slices.IndexFunc(users, func(u *auth.User) bool {
+		i := slices.IndexFunc(users, func(u *User) bool {
 			return u.Email.Address == email.Address
 		})
 		user := users[i]
 		AssertNotEquals(t, uuid.UUID{}, capID, "capability ID is not empty")
 		AssertEquals(t, *cap.UserID, user.ID, "user IDs match")
-		AssertEquals(t, auth.ServiceUser.ID, cap.CreatedByID, "creator IDs match")
+		AssertEquals(t, serviceUser.ID, cap.CreatedByID, "creator IDs match")
 
-		scopes = auth.Scopes{}
-		scopes.Add(auth.PermissionOwner, "/user", user.ID.String(), "*")
+		scopes = Scopes{}
+		scopes.Add(PermissionOwner, "/user", user.ID.String(), "*")
 		AssertEquals(t, scopes, cap.Scopes, "scopes match")
 		AssertEquals(t, true, cap.Valid(), "capability is valid")
+
+		err = store.Read(func(tx storage.ReadTx) error {
+			cap, err = findCapabilityByShortCode(tx, shortCode)
+			return err
+		})
+		AssertError(t, err, "not find the revoked login token")
 	})
 }
