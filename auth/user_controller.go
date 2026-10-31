@@ -27,7 +27,7 @@ func listUsers(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var users []*User
 		err := service.store.Read(func(tx storage.ReadTx) error {
-			u, err := service.ListUsers(r.Context(), tx)
+			u, err := service.listUsers(r.Context(), tx)
 			users = u
 			return err
 		})
