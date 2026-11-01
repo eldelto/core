@@ -101,7 +101,7 @@ func (s Scopes) Add(perm Permission, parts ...string) {
 func prefixSearch(s Scopes, target Resource) *Permission {
 	for res, perm := range s {
 		str := strings.TrimSuffix(string(res), "/*")
-		// Nothing trimmed, so no wildcard resource.
+		// Nothing trimmed, so no wildcard scope.
 		if len(res) == len(str) {
 			continue
 		}
@@ -114,7 +114,7 @@ func prefixSearch(s Scopes, target Resource) *Permission {
 	return nil
 }
 
-func (s Scopes) PermissionFor(res Resource) *Permission {
+func (s Scopes) permissionFor(res Resource) *Permission {
 	perm, ok := s[res]
 	if !ok {
 		return prefixSearch(s, res)
@@ -175,7 +175,7 @@ func (c *CapabilityCtx) RequireUser() (User, error) {
 }
 
 func (c *CapabilityCtx) RequireRead(res Resource) error {
-	perm := c.Scopes.PermissionFor(res)
+	perm := c.Scopes.permissionFor(res)
 	if perm != nil {
 		switch *perm {
 		case PermissionRead, PermissionWrite, PermissionOwner:
@@ -188,7 +188,7 @@ func (c *CapabilityCtx) RequireRead(res Resource) error {
 }
 
 func (c *CapabilityCtx) RequireWrite(res Resource) error {
-	perm := c.Scopes.PermissionFor(res)
+	perm := c.Scopes.permissionFor(res)
 	if perm != nil {
 		switch *perm {
 		case PermissionWrite, PermissionOwner:
