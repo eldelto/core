@@ -95,16 +95,28 @@ func generatePermission() *rapid.Generator[Permission] {
 	})
 }
 
+func generateResource() *rapid.Generator[Resource] {
+	return rapid.Custom(func(t *rapid.T) Resource {
+		raw := rapid.StringMatching(`/[a-z/]\*?`).Draw(t, "resource")
+		resource, err := newResource(raw)
+		if err != nil {
+			t.Fatalf("Resource generator: raw=%q, err=%v", raw, err)
+		}
+
+		return resource
+	})
+}
+
 func generateScopes() *rapid.Generator[Scopes] {
 	return rapid.Custom(func(t *rapid.T) Scopes {
 		max := rapid.IntMin(1).Draw(t, "scope max")
-		resources := rapid.SliceOfN(rapid.StringMatching(`/[a-z/]\*?`), 1, max).
+		resources := rapid.SliceOfN(generateResource(), 1, max).
 			Draw(t, "resources")
 
 		scopes := Scopes{}
 		for _, r := range resources {
 			perm := generatePermission().Draw(t, "permission")
-			scopes.Add(perm, r)
+			scopes.Add(perm, string(r))
 		}
 
 		return scopes
