@@ -282,6 +282,10 @@ func IssueCapability(tx storage.WriteTx, creator User, user *User, scopes Scopes
 	return id, &capability, nil
 }
 
+func (s *Service) findCapability(tx storage.ReadTx, hash CapabilityHash) (*Capability, error) {
+	return storage.Load[*Capability](tx, capabilityBucket, hash)
+}
+
 type shortCodeCapability struct {
 	Code string
 	Hash CapabilityHash

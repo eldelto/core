@@ -62,6 +62,7 @@ func main() {
 	config := auth.Config{
 		Host:          host,
 		DefaultSender: defaultSender,
+		LoginPath:     "/auth/login",
 	}
 	authService := auth.NewService(config, store, mailer, auth.MagicLinkTemplate)
 
@@ -74,7 +75,7 @@ func main() {
 	r.Mount("/assets", web.NewAssetModule(auth.AssetsFS))
 
 	r.Mount("/auth", auth.NewAuthController(authService))
-	r.Mount("/user", auth.NewUserController(authService))
+	r.With(authService.Middleware()).Mount("/user", auth.NewUserController(authService))
 
 	http.Handle("/", r)
 

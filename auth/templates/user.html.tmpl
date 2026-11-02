@@ -1,0 +1,26 @@
+{{define "content"}}
+
+<h1>Welcome {{.Email.Address}}!</h1>
+
+<p>Details of your profile:</p>
+
+<table>
+  <thead>
+	<tr>
+	  <th>ID</th>
+	  <th>Email</th>
+	  <th>Role</th>
+	</tr>
+  </thead>
+  
+  <tbody>
+	<tr>
+	  <td>{{.ID}}</td>
+	  <td>{{.Email.Address}}</td>
+	  <td>{{.Role}}</td>
+	</tr>
+  </tbody>
+</table>
+
+</div>
+{{end}}
