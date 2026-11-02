@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"net/mail"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/eldelto/core/storage"
@@ -32,6 +32,7 @@ var (
 type Config struct {
 	Host          *url.URL
 	DefaultSender *mail.Address
+	LoginPath     string
 }
 
 type Service struct {
@@ -126,10 +127,6 @@ func userResource(email mail.Address, parts ...string) Resource {
 	return Resource(path)
 }
 
-// func (s *Service) findCapability(tx storage.ReadTx, id CapabilityID) (*Capability, error) {
-// 	return storage.Load[*Capability](tx, capabilityBucket, id[:])
-// }
-
 func findUserByEmail(ctx context.Context, tx storage.ReadTx,
 	email mail.Address) (*User, error) {
 	cap, err := FromContext(ctx)
@@ -189,7 +186,7 @@ func findOrCreateUser(ctx context.Context, tx storage.WriteTx,
 	user, err := findUserByEmail(ctx, tx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
-			user, err = createUser(ctx, tx, email)
+			return createUser(ctx, tx, email)
 		}
 
 		if err != nil {
@@ -245,16 +242,56 @@ func (s *Service) login(ctx context.Context, tx storage.WriteTx,
 
 func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID,
 	cap Capability) {
-	cookie := http.Cookie{
-		Name:     sessionCookieName,
-		Value:    capID.String(),
-		Path:     "/",
-		Secure:   !strings.Contains(s.config.Host.Hostname(), "localhost"),
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  cap.ValidUntil,
+	web.SetCookie(w, s.config.Host, sessionCookieName, capID.String(), cap.ValidUntil)
+}
+
+func redirectToLogin(w http.ResponseWriter, r *http.Request, path string) {
+	web.RemoveCookie(w, sessionCookieName)
+	http.Redirect(w, r, path, http.StatusSeeOther)
+}
+
+func (s *Service) Middleware() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie(sessionCookieName)
+			if err != nil {
+				log.Printf("no session cookie found: resource=%q, err=%v",
+					r.URL.String(), err)
+
+				redirectToLogin(w, r, s.config.LoginPath)
+				return
+			}
+			capID, err := uuid.Parse(cookie.Value)
+			if err != nil {
+				log.Printf("malformed capability ID: ID=%q, resource=%q, err=%v",
+					cookie.Value, r.URL.String(), err)
+
+				redirectToLogin(w, r, s.config.LoginPath)
+				return
+			}
+			hash := hash(capID)
+
+			ctx := r.Context()
+			err = s.store.Read(func(tx storage.ReadTx) error {
+				cap, err := s.findCapability(tx, hash)
+				if err != nil {
+					return err
+				}
+
+				ctx, err = Set(ctx, tx, cap)
+				return err
+			})
+			if err != nil {
+				log.Printf("set capability context: ID=%q, resource=%q, err=%v",
+					capID, r.URL.String(), err)
+				redirectToLogin(w, r, s.config.LoginPath)
+				return
+			}
+
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
 	}
-	http.SetCookie(w, &cookie)
 }
 
 // TODO: Move to user service

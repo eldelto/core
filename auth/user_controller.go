@@ -10,12 +10,13 @@ import (
 
 var (
 	usersTemplate = templater.GetP("users.html")
+	userTemplate  = templater.GetP("user.html")
 )
 
 func NewUserController(service *Service) chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", errorHandlers.Handle(listUsers(service)))
-	// r.Get("/{id}", errorHandlers.Handle(showUser(service)))
+	r.Get("/{id}", errorHandlers.Handle(showUser(service)))
 	// r.Put("/{id}", errorHandlers.Handle(editUser(service)))
 	// r.Delete("/{id}", errorHandlers.Handle(deleteUser(service)))
 	r.Post("/{id}/logout", errorHandlers.Handle(logout(service)))
@@ -36,6 +37,17 @@ func listUsers(service *Service) web.Handler {
 		}
 
 		return usersTemplate.Execute(w, users)
+	}
+}
+
+func showUser(service *Service) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		cap, err := FromContext(r.Context())
+		if err != nil {
+			return err
+		}
+
+		return userTemplate.Execute(w, cap.User)
 	}
 }
 
