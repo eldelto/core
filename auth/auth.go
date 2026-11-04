@@ -77,44 +77,21 @@ func NewService(config Config, store *storage.Storage,
 	}
 }
 
-type magicLinkData struct {
-	URL  *url.URL
-	Code string
-}
-
-func (s *Service) sendMagicLink(ctx context.Context, tx storage.WriteTx, email mail.Address, redirectPath string) error {
+func (s *Service) sendMagicLink(ctx context.Context, tx storage.WriteTx, email mail.Address) error {
 	scopes := Scopes{}
 	scopes.Add(PermissionWrite, "user", email.Address, "login")
 	scopes.Add(PermissionWrite, "user", email.Address, "signup")
 	scopes.Add(PermissionRead, "user", email.Address)
 
-	id, code, _, err := IssueShortLivedCapability(tx, serviceUser, nil, scopes)
+	_, code, _, err := IssueShortLivedCapability(tx, serviceUser, nil, scopes)
 	if err != nil {
 		return fmt.Errorf("magic link: %w", err)
-	}
-
-	loginURL, err := url.Parse(s.config.Host.String())
-	if err != nil {
-		return fmt.Errorf("login URL: %w", err)
-	}
-
-	redirectPath = url.PathEscape(redirectPath)
-
-	loginURL = loginURL.JoinPath("auth", email.Address, "verify")
-	query := loginURL.Query()
-	query.Set("redirect", redirectPath)
-	loginURL.RawQuery = query.Encode()
-	loginURL.Fragment = uuid.UUID(id).String()
-
-	data := magicLinkData{
-		URL:  loginURL,
-		Code: code,
 	}
 
 	return s.mailer.Send(*s.config.DefaultSender,
 		email,
 		s.magicLinkTemplate,
-		data)
+		code)
 }
 
 func userResource(email mail.Address, parts ...string) Resource {
@@ -283,6 +260,21 @@ func (s *Service) Middleware() func(next http.Handler) http.Handler {
 			})
 			if err != nil {
 				log.Printf("set capability context: ID=%q, resource=%q, err=%v",
+					capID, r.URL.String(), err)
+				redirectToLogin(w, r, s.config.LoginPath)
+				return
+			}
+
+			cap, err := FromContext(ctx)
+			if err != nil {
+				log.Printf("retrieve capability context: ID=%q, resource=%q, err=%v",
+					capID, r.URL.String(), err)
+				redirectToLogin(w, r, s.config.LoginPath)
+				return
+			}
+
+			if err := cap.RequireRead(Resource(r.URL.Path)); err != nil {
+				log.Printf("missing read permissions: ID=%q, resource=%q, err=%v",
 					capID, r.URL.String(), err)
 				redirectToLogin(w, r, s.config.LoginPath)
 				return

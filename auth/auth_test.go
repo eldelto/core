@@ -178,17 +178,16 @@ func TestLogin(t *testing.T) {
 		mailer.Reset()
 
 		var (
-			err          error
-			capID        CapabilityID
-			cap          *Capability
-			email        = generateEmail().Draw(t, "email")
-			redirectPath = rapid.String().Draw(t, "redirectPath")
+			err   error
+			capID CapabilityID
+			cap   *Capability
+			email = generateEmail().Draw(t, "email")
 		)
 
 		ctx := fakeCapability(context.Background(), Scopes{})
 
 		err = store.Write(func(tx storage.WriteTx) error {
-			return service.sendMagicLink(ctx, tx, email, redirectPath)
+			return service.sendMagicLink(ctx, tx, email)
 		})
 		AssertNoError(t, err, "send magic link")
 
