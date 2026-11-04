@@ -48,7 +48,7 @@ func triggerLogin(service *Service) web.Handler {
 		}
 
 		err := service.store.Write(func(tx storage.WriteTx) error {
-			return service.sendMagicLink(r.Context(), tx, data.email, "")
+			return service.sendMagicLink(r.Context(), tx, data.email)
 		})
 		if err != nil {
 			return err
