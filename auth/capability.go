@@ -107,7 +107,10 @@ func prefixSearch(s Scopes, target Resource) *Permission {
 		}
 
 		if strings.HasPrefix(string(target), str) {
-			return &perm
+			parts := strings.SplitAfterN(string(target), str, 2)
+			if len(parts) == 2 && (len(parts[1]) == 0 || parts[1][0] == '/') {
+				return &perm
+			}
 		}
 	}
 
