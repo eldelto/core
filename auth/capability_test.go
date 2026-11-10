@@ -42,11 +42,20 @@ func TestRequireRead_PrefixMatch(t *testing.T) {
 		cap := CapabilityCtx{Scopes: matchScopes}
 		AssertNoError(t, cap.RequireRead(resource), "match wildcard")
 
+		// Other resource base
 		failScopes := Scopes{}
 		failScopes.Add(PermissionRead, "/other",
 			string(generateResource().Draw(t, "fail prefix")))
 		cap = CapabilityCtx{Scopes: failScopes}
 		AssertError(t, cap.RequireRead(resource), "not match wildcard")
+
+		// Shorter resource base
+		len := rapid.IntRange(2, len(base)-1).Draw(t, "base slice")
+		shortBase := base[:len]
+		failScopes = Scopes{}
+		failScopes.Add(PermissionRead, shortBase, "*")
+		cap = CapabilityCtx{Scopes: failScopes}
+		AssertError(t, cap.RequireRead(resource), "not match partial base")
 	})
 }
 
