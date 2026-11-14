@@ -238,3 +238,19 @@ func TestLogin(t *testing.T) {
 		AssertError(t, err, "not find the revoked login token")
 	})
 }
+
+// func TestLogout(t *testing.T) {
+// 	store, service, _ := setup(t)
+
+// 	rapid.Check(t, func(t *rapid.T) {
+// 		user := generateUser().Draw(t, "user")
+// 		caps := rapid.SliceOf(
+// 			generateCapabilityFor(user)).Draw(t, "capabilities")
+
+// 		// TODO:
+// 		// - Store caps
+// 		// - Assert caps via listCapsForUser
+// 		// - Logout
+// 		// - Assert caps via listCapsForUser are all revoked
+// 	})
+// }

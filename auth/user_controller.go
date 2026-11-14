@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -54,6 +56,21 @@ func showUser(service *Service) web.Handler {
 func logout(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// TODO: Implement
+
+		// TODO: Implement helper
+		id := chi.URLParam(r, "id")
+		userID, err := uuid.Parse(id)
+		if err != nil {
+			return fmt.Errorf("parsing user ID: ID=%q, err=%w", id, err)
+		}
+
+		err = service.store.Write(func(tx storage.WriteTx) error {
+			return service.logout(r.Context(), tx, storage.UserID(userID))
+		})
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
 }

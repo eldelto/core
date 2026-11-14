@@ -94,8 +94,18 @@ func (s *Service) sendMagicLink(ctx context.Context, tx storage.WriteTx, email m
 		code)
 }
 
-func userResource(email mail.Address, parts ...string) Resource {
+func userEmailResource(email mail.Address, parts ...string) Resource {
 	parts = append([]string{email.Address}, parts...)
+	path, err := url.JoinPath("/user", parts...)
+	if err != nil {
+		panic(err)
+	}
+
+	return Resource(path)
+}
+
+func userResource(id storage.UserID, parts ...string) Resource {
+	parts = append([]string{id.String()}, parts...)
 	path, err := url.JoinPath("/user", parts...)
 	if err != nil {
 		panic(err)
@@ -111,7 +121,7 @@ func findUserByEmail(ctx context.Context, tx storage.ReadTx,
 		return nil, fmt.Errorf("find user by E-mail: err=%w", err)
 	}
 
-	if err := cap.RequireRead(userResource(email)); err != nil {
+	if err := cap.RequireRead(userEmailResource(email)); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +146,7 @@ func createUser(ctx context.Context, tx storage.WriteTx,
 		return nil, fmt.Errorf("create user: err=%w", err)
 	}
 
-	if err := cap.RequireWrite(userResource(email, "signup")); err != nil {
+	if err := cap.RequireWrite(userEmailResource(email, "signup")); err != nil {
 		return nil, err
 	}
 
@@ -195,7 +205,7 @@ func (s *Service) login(ctx context.Context, tx storage.WriteTx,
 		return CapabilityID{}, nil, fmt.Errorf("login: err=%w", err)
 	}
 
-	if err := cap.RequireWrite(userResource(email, "login")); err != nil {
+	if err := cap.RequireWrite(userEmailResource(email, "login")); err != nil {
 		return CapabilityID{}, nil, err
 	}
 
@@ -215,6 +225,56 @@ func (s *Service) login(ctx context.Context, tx storage.WriteTx,
 	}
 
 	return capabilityID, capability, nil
+}
+
+func listUserCapabilities(tx storage.ReadTx, id storage.UserID) ([]*Capability, error) {
+	caps, err := storage.ListAll[*Capability](tx, capabilityBucket)
+	if err != nil {
+		return nil, fmt.Errorf("list user capabilities: err=%w, userID=%q", err, id)
+	}
+
+	// TODO: This is highly inefficient
+	res := []*Capability{}
+	for _, c := range caps {
+		if c.UserID != nil && *c.UserID == id {
+			res = append(res, c)
+		}
+	}
+
+	return res, nil
+}
+
+func revokeAllUserCapabilities(tx storage.WriteTx, user User) error {
+	caps, err := listUserCapabilities(tx, user.ID)
+	if err != nil {
+		return fmt.Errorf("revoke user capabilities: err=%w", err)
+	}
+
+	for _, c := range caps {
+		if err := RevokeCapability(tx, c, user); err != nil {
+			return fmt.Errorf("revoke user capabilities: err=%w, userID=%q", err, user.ID)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) logout(ctx context.Context, tx storage.WriteTx,
+	id storage.UserID) error {
+	cap, err := FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("logout: err=%w", err)
+	}
+
+	if err := cap.RequireWrite(userResource(id, "logout")); err != nil {
+		return err
+	}
+	user, err := cap.RequireUser()
+	if err != nil {
+		return fmt.Errorf("logout: err=%w", err)
+	}
+
+	return revokeAllUserCapabilities(tx, user)
 }
 
 func (s *Service) setCapabilityCookie(w http.ResponseWriter, capID CapabilityID,
