@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+	<meta charset="utf-8">
+	<title>Auth-Service</title>
+	<meta http-equiv="Content-Type" charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Auth-Service - Centralized user management">
+
+	<link rel="stylesheet" href='{{asset "main.css"}}'>
+	<link rel="icon" type="image/svg" href='{{asset "favicon.ico"}}'>
+	
+	<script src='{{asset "main.js"}}'></script>
+	<script defer src='{{asset "datastar-1.0.4.js"}}'></script>
+  </head>
+
+  <body>
+    <header>
+      <div class="ListViewHeader header">
+		{{block "left-action" .}}{{end}}
+		<a href="/lists">
+		  <h1 class="HeaderTitle">Auth-Service</h1>
+		</a>
+		{{block "right-action" .}}{{end}}
+	  </div>
+	</header>
+
+	<div id="content">
+	  {{block "content" .}}
+	  <p>The correct content could not be rendered.</p>
+	  {{end}}
+	</div>
+  </body>
+
+</html>

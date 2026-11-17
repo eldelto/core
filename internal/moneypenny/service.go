@@ -1,90 +1,95 @@
 package moneypenny
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"strings"
+	"context"
+	"errors"
 	"time"
 
-	"github.com/eldelto/core/internal/util"
+	"github.com/eldelto/core/auth"
+	"github.com/eldelto/core/storage"
+	"github.com/eldelto/core/validate"
 )
 
-const georgeDateTimeLayout = "2006-01-02T15:04:05Z0700"
+const categoryBucket = "moneypenny.userCategories"
 
-type Amount int
+var year = time.Hour * 24 * 365
 
-func (a Amount) String() string {
-	return fmt.Sprintf("%d.%d", a/100, util.AbsI(a%100))
+type EuroCent int64
+
+type Category struct {
+	Name string
 }
 
-type Transaction struct {
-	PartnerName string
-	Details     string
-	Date        time.Time
-	Amount      Amount
-	Currency    string
+type UserCategories struct {
+	UserID     storage.UserID
+	Categories []Category
 }
 
-type jsonTransaction struct {
-	Booking     string `json:"booking"`
-	PartnerName string `json:"partnerName"`
-	Amount      struct {
-		Value     int    `json:"value"`
-		Precision int    `json:"precision"`
-		Currency  string `json:"currency"`
-	} `json:"amount"`
-	Reference string `json:"reference"`
+func (uc *UserCategories) BucketKey() []byte {
+	return uc.UserID[:]
 }
 
-func toTransaction(jt jsonTransaction) (Transaction, error) {
-	date, err := time.Parse(georgeDateTimeLayout, jt.Booking)
+func (uc *UserCategories) Validate() error {
+	for _, c := range uc.Categories {
+		if err := validate.NotEmpty("category", c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+type BudgetPot struct {
+	CategoryName string
+	Budget       EuroCent
+}
+
+type Transfer struct {
+	Amount       EuroCent
+	CategoryName string
+}
+
+type BillingPeriod struct {
+	BudgetPots []BudgetPot
+	Transfers  []Transfer
+}
+
+func Initialize(store *storage.Storage) {
+	store.RegisterBucket(storage.Bucket{
+		Name:          categoryBucket,
+		Retention:     1 * year,
+		KeepRevisions: 1,
+		PreCommitFuncs: []storage.PreCommitFunc{
+			validate.BeforeCommit(&UserCategories{}),
+		},
+	})
+}
+
+func userCategories(ctx context.Context, tx storage.ReadTx) ([]Category, error) {
+	cap, err := auth.FromContext(ctx)
 	if err != nil {
-		return Transaction{}, fmt.Errorf("parse booking date: %w", err)
+		return nil, err
 	}
 
-	return Transaction{
-		PartnerName: jt.PartnerName,
-		Details:     jt.Reference,
-		Date:        date,
-		Amount:      Amount(jt.Amount.Value),
-		Currency:    jt.Amount.Currency,
-	}, nil
-}
-
-func isRelevant(partnerName string) bool {
-	partnerName = strings.ToLower(partnerName)
-
-	return strings.Contains(partnerName, "spar") ||
-		strings.Contains(partnerName, "hofer") ||
-		strings.Contains(partnerName, "billa") ||
-		strings.Contains(partnerName, "praskac") ||
-		strings.Contains(partnerName, "starkl") ||
-		strings.Contains(partnerName, "obi") ||
-		strings.Contains(partnerName, "hornbach")
-}
-
-func ParseJSON(r io.Reader) ([]Transaction, error) {
-	var jsonTransactions []jsonTransaction
-
-	if err := json.NewDecoder(r).Decode(&jsonTransactions); err != nil {
-		return nil, fmt.Errorf("parse transactions from JSON: %w", err)
+	user, err := cap.RequireUser()
+	if err != nil {
+		return nil, err
 	}
 
-	result := []Transaction{}
-	for _, jt := range jsonTransactions {
-		if !isRelevant(jt.PartnerName) {
-			continue
-		}
-
-		t, err := toTransaction(jt)
-		if err != nil {
-			return nil, fmt.Errorf("convert to transaction %q: %w",
-				jt.Reference, err)
-		}
-
-		result = append(result, t)
+	userCategories, err := storage.Load[*UserCategories](tx, categoryBucket, user.ID[:])
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+		return []Category{}, nil
+	case err != nil:
+		return nil, err
 	}
 
-	return result, nil
+	return userCategories.Categories, nil
 }
+
+// Category
+// - deletedAt
+
+// BillingPeriod
+// - start
+// - end

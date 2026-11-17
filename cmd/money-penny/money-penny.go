@@ -1,43 +1,89 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"net/mail"
+	"net/url"
 	"os"
+	"os/signal"
+	"syscall"
+
 	"strconv"
 
-	web "github.com/eldelto/core/internal/legacyweb"
-	"github.com/eldelto/core/internal/moneypenny/server"
+	"github.com/eldelto/core/auth"
+	"github.com/eldelto/core/internal/conf"
+	"github.com/eldelto/core/internal/moneypenny"
+	"github.com/eldelto/core/storage"
+	"github.com/eldelto/core/web"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"go.etcd.io/bbolt"
 )
 
-const portEnv = "PORT"
+const dbPath = "money-penny.db"
 
 func main() {
-	port := 8080
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	rawPort, ok := os.LookupEnv(portEnv)
-	if !ok {
-		log.Printf("environment variable %q not found, using fallback %d instead", portEnv, port)
-	} else {
-		value, err := strconv.ParseInt(rawPort, 10, 64)
-		if err != nil {
-			log.Fatalf("failed to convert '%d' to valid port: %v", value, err)
-		}
-		port = int(value)
+	port := conf.IntEnvVarWithDefault("PORT", 8080)
+	rawHost := conf.EnvVarWithDefault("HOST",
+		"http://localhost:"+strconv.Itoa(int(port)))
+
+	host, err := url.Parse(rawHost)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Controllers
-	r := chi.NewRouter()
+	smtpUser := conf.EnvVarWithDefault("SMTP_USER", "")
+	smtpPassword := conf.EnvVarWithDefault("SMTP_PASSWORD", "")
+	smtpHost := conf.EnvVarWithDefault("SMTP_HOST", "localhost")
+	smtpPort := conf.IntEnvVarWithDefault("SMTP_PORT", 587)
 
-	sitemapContoller := web.NewSitemapController()
-	sitemapContoller.Register(r)
-	web.NewAssetController("", server.AssetsFS).Register(r)
-	web.NewTemplateModule(server.TemplatesFS, server.AssetsFS, nil).Controller().Register(r)
-	server.NewExpensesController().Register(r)
+	// Services
+	bolt, err := bbolt.Open(dbPath, 0600, nil)
+	if err != nil {
+		log.Fatalf("failed to open bbolt DB %q: %v", dbPath, err)
+	}
+	store := storage.New(ctx, bolt)
+	defer store.Close()
+
+	mailer := web.NewMailer(host.String(), smtpHost, int(smtpPort),
+		smtpUser, smtpPassword)
+
+	defaultSender, err := mail.ParseAddress("no-reply@thy.computer")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	config := auth.Config{
+		Host:          host,
+		DefaultSender: defaultSender,
+		LoginPath:     "/auth/login",
+	}
+	authService := auth.NewService(config, store, mailer, auth.MagicLinkTemplate)
+
+	moneypenny.Initialize(store)
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Compress(5))
+
+	// Controllers
+	r.Mount("/", web.NewTemplateModule(auth.TemplatesFS, auth.AssetsFS, nil))
+	r.Mount("/assets", web.NewAssetModule(auth.AssetsFS))
+
+	r.Mount("/auth", auth.NewAuthController(authService))
+	r.With(authService.Middleware()).Mount("/user", auth.NewUserController(authService))
+	r.With(authService.Middleware()).
+		Mount("/user/{userID}/category", moneypenny.NewCategoryController(store))
+
 	http.Handle("/", r)
 
-	log.Printf("Money-Penny listening on localhost:%d", port)
+	log.Printf("Money-Penny listening on localhost:%d with host %q", port, host)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
