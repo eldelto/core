@@ -203,7 +203,7 @@ func (c *CapabilityCtx) RequireWrite(res Resource) error {
 		res, c.Hash, ErrUnautorized)
 }
 
-func hash(id uuid.UUID) CapabilityHash {
+func hash(id CapabilityID) CapabilityHash {
 	return argon2.IDKey(id[:], []byte("j3ij?aSDi3jl1"),
 		3, 64*1024, 4, 32)
 }
@@ -214,10 +214,11 @@ func validUntil(validFor time.Duration) time.Time {
 
 func generateCapability(creator User, user *User, scopes Scopes,
 	validFor time.Duration) (CapabilityID, Capability, error) {
-	id, err := uuid.NewRandom()
+	rawID, err := uuid.NewRandom()
 	if err != nil {
 		return CapabilityID{}, Capability{}, fmt.Errorf("generate token: %w", err)
 	}
+	id := CapabilityID(rawID)
 
 	var userID *storage.UserID
 	if user != nil {
@@ -233,7 +234,7 @@ func generateCapability(creator User, user *User, scopes Scopes,
 	}
 
 	// TODO: Use hmac on the ID
-	return CapabilityID(id), capability, nil
+	return id, capability, nil
 }
 
 func Set(ctx context.Context, tx storage.ReadTx,

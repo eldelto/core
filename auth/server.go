@@ -27,7 +27,7 @@ func init() {
 	errorHandlers.AddHandler(func(e error, w http.ResponseWriter, r *http.Request) bool {
 		if errors.Is(e, ErrUnauthenticated) {
 			log.Printf("unauthenticated access to %q: %v", r.URL, e)
-			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			redirectToLogin(w, r, "/auth/login")
 			return true
 		}
 		return false

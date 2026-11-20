@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	categoriesTemplate  = templater.GetP("categories.html")
+	categoriesTemplate = templater.GetP("categories.html")
 )
 
 func NewCategoryController(store *storage.Storage) chi.Router {
@@ -26,7 +26,7 @@ func listCategories(store *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var categories []Category
 		err := store.Read(func(tx storage.ReadTx) error {
-			c, err := userCategories(r.Context(),tx) 
+			c, err := userCategories(r.Context(), tx)
 			categories = c
 			return err
 		})
@@ -37,4 +37,3 @@ func listCategories(store *storage.Storage) web.Handler {
 		return categoriesTemplate.Execute(w, categories)
 	}
 }
-

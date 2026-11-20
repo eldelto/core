@@ -213,7 +213,7 @@ func TestLogin(t *testing.T) {
 
 		var users []*User
 		err = store.Read(func(tx storage.ReadTx) error {
-			users, err = service.listUsers(ctx, tx)
+			users, err = ListUsers(ctx, tx)
 			return err
 		})
 		AssertNoError(t, err, "list users")

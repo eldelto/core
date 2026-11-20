@@ -104,16 +104,6 @@ func userEmailResource(email mail.Address, parts ...string) Resource {
 	return Resource(path)
 }
 
-func userResource(id storage.UserID, parts ...string) Resource {
-	parts = append([]string{id.String()}, parts...)
-	path, err := url.JoinPath("/user", parts...)
-	if err != nil {
-		panic(err)
-	}
-
-	return Resource(path)
-}
-
 func findUserByEmail(ctx context.Context, tx storage.ReadTx,
 	email mail.Address) (*User, error) {
 	cap, err := FromContext(ctx)
@@ -287,34 +277,49 @@ func redirectToLogin(w http.ResponseWriter, r *http.Request, path string) {
 	http.Redirect(w, r, path, http.StatusSeeOther)
 }
 
+func (s *Service) fromCookie(r *http.Request) (CapabilityID, *Capability, error) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return CapabilityID{}, nil, fmt.Errorf("no session cookie found: resource=%q, err=%w",
+			r.URL.String(), err)
+	}
+
+	rawID, err := uuid.Parse(cookie.Value)
+	if err != nil {
+		return CapabilityID{}, nil, fmt.Errorf("malformed capability ID: ID=%q, resource=%q, err=%w",
+			cookie.Value, r.URL.String(), err)
+	}
+	capID := CapabilityID(rawID)
+
+	hash := hash(capID)
+	var cap *Capability
+	err = s.store.Read(func(tx storage.ReadTx) error {
+		cap, err = s.findCapability(tx, hash)
+		if err != nil {
+			return err
+		}
+		return err
+	})
+	if err != nil {
+		return capID, cap, fmt.Errorf("set capability context: ID=%q, resource=%q, err=%w",
+			capID, r.URL.String(), err)
+	}
+
+	return capID, cap, nil
+}
+
 func (s *Service) Middleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(sessionCookieName)
+			capID, cap, err := s.fromCookie(r)
 			if err != nil {
-				log.Printf("no session cookie found: resource=%q, err=%v",
-					r.URL.String(), err)
-
+				log.Println(err)
 				redirectToLogin(w, r, s.config.LoginPath)
 				return
 			}
-			capID, err := uuid.Parse(cookie.Value)
-			if err != nil {
-				log.Printf("malformed capability ID: ID=%q, resource=%q, err=%v",
-					cookie.Value, r.URL.String(), err)
-
-				redirectToLogin(w, r, s.config.LoginPath)
-				return
-			}
-			hash := hash(capID)
 
 			ctx := r.Context()
 			err = s.store.Read(func(tx storage.ReadTx) error {
-				cap, err := s.findCapability(tx, hash)
-				if err != nil {
-					return err
-				}
-
 				ctx, err = Set(ctx, tx, cap)
 				return err
 			})
@@ -325,7 +330,7 @@ func (s *Service) Middleware() func(next http.Handler) http.Handler {
 				return
 			}
 
-			cap, err := FromContext(ctx)
+			capCtx, err := FromContext(ctx)
 			if err != nil {
 				log.Printf("retrieve capability context: ID=%q, resource=%q, err=%v",
 					capID, r.URL.String(), err)
@@ -333,10 +338,10 @@ func (s *Service) Middleware() func(next http.Handler) http.Handler {
 				return
 			}
 
-			if err := cap.RequireRead(Resource(r.URL.Path)); err != nil {
+			if err := capCtx.RequireRead(Resource(r.URL.Path)); err != nil {
 				log.Printf("missing read permissions: ID=%q, resource=%q, err=%v",
 					capID, r.URL.String(), err)
-				redirectToLogin(w, r, s.config.LoginPath)
+				http.Redirect(w, r, "/error/forbidden", http.StatusSeeOther)
 				return
 			}
 
@@ -344,25 +349,6 @@ func (s *Service) Middleware() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-// TODO: Move to user service
-func (s *Service) listUsers(ctx context.Context, tx storage.ReadTx) ([]*User, error) {
-	cap, err := FromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list users: err=%w", err)
-	}
-
-	if err := cap.RequireRead("/user"); err != nil {
-		return nil, err
-	}
-
-	users, err := storage.ListAll[*User](tx, userBucket)
-	if err != nil {
-		return nil, fmt.Errorf("list users: err=%w", err)
-	}
-
-	return users, nil
 }
 
 // - Create long-lived capability for /user/:id/*

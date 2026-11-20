@@ -71,8 +71,8 @@ func main() {
 	r.Use(middleware.Compress(5))
 
 	// Controllers
-	r.Mount("/", web.NewTemplateModule(auth.TemplatesFS, auth.AssetsFS, nil))
 	r.Mount("/assets", web.NewAssetModule(auth.AssetsFS))
+	r.Mount("/error", web.NewErrorController(auth.TemplatesFS, auth.AssetsFS))
 
 	r.Mount("/auth", auth.NewAuthController(authService))
 	r.With(authService.Middleware()).Mount("/user", auth.NewUserController(authService))

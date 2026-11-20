@@ -28,6 +28,11 @@ func NewAuthController(service *Service) chi.Router {
 
 func showLogin(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		_, cap, err := service.fromCookie(r)
+		if err == nil && cap.UserID != nil {
+			return redirectAfterLogin(w, r, *cap.UserID)
+		}
+
 		return magicLinkTemplate.Execute(w, nil)
 	}
 }
@@ -68,6 +73,16 @@ func (vf *verifyForm) Parse(r *http.Request) {
 	vf.code = form.String(r, "code")
 }
 
+func redirectAfterLogin(w http.ResponseWriter, r *http.Request, id storage.UserID) error {
+	referrer, err := url.JoinPath("/user", id.String())
+	if err != nil {
+		return err
+	}
+
+	http.Redirect(w, r, referrer, http.StatusSeeOther)
+	return nil
+}
+
 func verify(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var data verifyForm
@@ -89,13 +104,6 @@ func verify(service *Service) web.Handler {
 		}
 
 		service.setCapabilityCookie(w, capID, *cap)
-
-		referrer, err := url.JoinPath("/user", cap.UserID.String())
-		if err != nil {
-			return err
-		}
-
-		http.Redirect(w, r, referrer, http.StatusSeeOther)
-		return nil
+		return redirectAfterLogin(w, r, *cap.UserID)
 	}
 }

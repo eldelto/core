@@ -1,13 +1,11 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/web"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 var (
@@ -30,7 +28,7 @@ func listUsers(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var users []*User
 		err := service.store.Read(func(tx storage.ReadTx) error {
-			u, err := service.listUsers(r.Context(), tx)
+			u, err := ListUsers(r.Context(), tx)
 			users = u
 			return err
 		})
@@ -44,12 +42,21 @@ func listUsers(service *Service) web.Handler {
 
 func showUser(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		cap, err := FromContext(r.Context())
+		userID, err := web.URLParamAsUUID(r, "id")
 		if err != nil {
 			return err
 		}
 
-		return userTemplate.Execute(w, cap.User)
+		var user *User
+		err = service.store.Read(func(tx storage.ReadTx) error {
+			user, err = GetUser(r.Context(), tx, storage.UserID(userID))
+			return err
+		})
+		if err != nil {
+			return err
+		}
+
+		return userTemplate.Execute(w, user)
 	}
 }
 
@@ -57,11 +64,9 @@ func logout(service *Service) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		// TODO: Implement
 
-		// TODO: Implement helper
-		id := chi.URLParam(r, "id")
-		userID, err := uuid.Parse(id)
+		userID, err := web.URLParamAsUUID(r, "id")
 		if err != nil {
-			return fmt.Errorf("parsing user ID: ID=%q, err=%w", id, err)
+			return err
 		}
 
 		err = service.store.Write(func(tx storage.WriteTx) error {

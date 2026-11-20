@@ -15,8 +15,8 @@ var (
 	AssetsFS embed.FS
 
 	//go:embed templates
-	TemplatesFS       embed.FS
-	templater         = web.NewTemplater(TemplatesFS, AssetsFS, "templates")
+	TemplatesFS embed.FS
+	templater   = web.NewTemplater(TemplatesFS, AssetsFS, "templates")
 
 	errorHandlers web.ErrorHandlers
 )
