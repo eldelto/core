@@ -6,15 +6,17 @@
 	  <th>ID</th>
 	  <th>Email</th>
 	  <th>Role</th>
+	  <th>Action</th>
 	</tr>
   </thead>
   
   <tbody>
 	{{range . }}
 	<tr>
-	  <td><a href="/user/{{.ID}}">{{.ID}}</a></td>
-	  <td>{{.Email}}</td>
+	  <td><a href="user/{{.ID}}">{{.ID}}</a></td>
+	  <td>{{.Email.Address}}</td>
 	  <td>{{.Role}}</td>
+	  <td><a href="user/{{.ID}}/edit">Edit</a></td>
 	</tr>
 	{{end}}
   </tbody>

@@ -65,7 +65,7 @@ func (u *User) Validate() error {
 
 type Resource string
 
-func newResource(parts ...string) (Resource, error) {
+func NewResource(parts ...string) (Resource, error) {
 	res, err := url.JoinPath("/", parts...)
 	if err != nil {
 		return "", fmt.Errorf("invalid resource path: parts=%q, err=%w", parts, err)
@@ -90,7 +90,7 @@ func newResource(parts ...string) (Resource, error) {
 type Scopes map[Resource]Permission
 
 func (s Scopes) Add(perm Permission, parts ...string) {
-	resource, err := newResource(parts...)
+	resource, err := NewResource(parts...)
 	if err != nil {
 		panic(err)
 	}

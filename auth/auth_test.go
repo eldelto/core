@@ -98,7 +98,7 @@ func generatePermission() *rapid.Generator[Permission] {
 func generateResource() *rapid.Generator[Resource] {
 	return rapid.Custom(func(t *rapid.T) Resource {
 		raw := rapid.StringMatching(`/[a-z/]\*?`).Draw(t, "resource")
-		resource, err := newResource(raw)
+		resource, err := NewResource(raw)
 		if err != nil {
 			t.Fatalf("Resource generator: raw=%q, err=%v", raw, err)
 		}

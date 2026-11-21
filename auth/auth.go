@@ -129,6 +129,20 @@ func findUserByEmail(ctx context.Context, tx storage.ReadTx,
 	return nil, fmt.Errorf("no matching user found: err=%w", storage.ErrNotFound)
 }
 
+func determineUserRole(tx storage.ReadTx) (Role, error) {
+	count, err := storage.Count(tx, userBucket)
+	if err != nil {
+		return 0, err
+	}
+
+	fmt.Printf("count=%d\n", count)
+
+	if count == 0 {
+		return RoleAdmin, nil
+	}
+	return RoleUser, nil
+}
+
 func createUser(ctx context.Context, tx storage.WriteTx,
 	email mail.Address) (*User, error) {
 	cap, err := FromContext(ctx)
@@ -145,10 +159,15 @@ func createUser(ctx context.Context, tx storage.WriteTx,
 		return nil, fmt.Errorf("create user ID: err=%w", err)
 	}
 
+	role, err := determineUserRole(tx)
+	if err != nil {
+		return nil, fmt.Errorf("create user ID: err=%w", err)
+	}
+
 	user := &User{
 		ID:    storage.UserID(id),
 		Email: email,
-		Role:  RoleUser,
+		Role:  role,
 	}
 
 	if err := storage.Store(tx, userBucket, user, user.ID); err != nil {
@@ -172,6 +191,20 @@ func findOrCreateUser(ctx context.Context, tx storage.WriteTx,
 	}
 
 	return user, nil
+}
+
+func createUserScopes(u *User) Scopes {
+	scopes := Scopes{}
+	switch u.Role {
+	case RoleUser:
+		scopes.Add(PermissionOwner, "user", u.ID.String(), "*")
+
+	case RoleAdmin:
+		scopes.Add(PermissionOwner, "user", u.ID.String(), "*")
+		scopes.Add(PermissionWrite, "user")
+	}
+
+	return scopes
 }
 
 func (s *Service) login(ctx context.Context, tx storage.WriteTx,
@@ -206,8 +239,7 @@ func (s *Service) login(ctx context.Context, tx storage.WriteTx,
 		}
 	}
 
-	scopes := Scopes{}
-	scopes.Add(PermissionOwner, "user", user.ID.String(), "*")
+	scopes := createUserScopes(user)
 	capabilityID, capability, err := IssueCapability(tx, serviceUser, user, scopes,
 		loginTokenValidity)
 	if err != nil {

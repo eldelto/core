@@ -1,0 +1,19 @@
+{{define "content"}}
+
+<h1>Edit {{.Email.Address}}!</h1>
+
+<form data-on:submit="@put('../{{.ID}}')">
+  <label for="email">E-mail:</label>
+  <input type="email" name="email" id="email" required="true"
+		 value="{{.Email.Address}}" />
+  
+  <label for="role">Role:</label>
+  <select name="role" id="role">
+	<option value="0">Admin</option>
+	<option value="1">User</option>
+  </select>
+
+  <button class="primary">Save</button>
+</form>
+
+{{end}}

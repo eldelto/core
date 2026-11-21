@@ -14,13 +14,16 @@
 	{{range . }}
 	<tr>
 	  <td>{{.Name}}</td>
-	  <td><a href="/category/{{.ID}}">Edit</a></td>
+	  <td><button data-on:click="@delete('category/{{.Name}}')">Delete</button></td>
 	</tr>
 	{{end}}
 
 	<tr>
-	  <td><input type="text" /></td>
-	  <td><a href="/category">Create</a></td>
+	  <form method="POST">
+		<td><input type="text" id="name" name="name"
+				   required autofocus /></td>
+		<td><button>Create</button> </td>
+	  </form>
 	</tr>
   </tbody>
 </table>

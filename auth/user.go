@@ -10,7 +10,7 @@ import (
 func userResource(id storage.UserID, parts ...string) Resource {
 	parts = append([]string{"/user", id.String()}, parts...)
 
-	r, err := newResource(parts...)
+	r, err := NewResource(parts...)
 	if err != nil {
 		panic(err)
 	}
@@ -53,3 +53,27 @@ func GetUser(ctx context.Context, tx storage.ReadTx, id storage.UserID) (*User, 
 
 	return user, nil
 }
+
+func UpdateUser(ctx context.Context, tx storage.WriteTx, data User) error {
+	cap, err := FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("update user: err=%w", err)
+	}
+
+	if err := cap.RequireRead(userResource(data.ID)); err != nil {
+		return fmt.Errorf("update user: err=%w", err)
+	}
+	
+	user, err := cap.RequireUser()
+	if err != nil {
+		return fmt.Errorf("update user: err=%w", err)
+	}
+
+	err = storage.Store[*User](tx, userBucket, &data, user.ID)
+	if err != nil {
+		return fmt.Errorf("update user: err=%w", err)
+	}
+
+	return nil
+}
+

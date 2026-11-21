@@ -14,7 +14,7 @@
 
 <form method="POST" action="/auth/verify">
   <label for="code">Verification code:</label>
-  <input type="text" name="code" id="code" required="true" />
+  <input type="text" name="code" id="code" required="true" autofocus />
   <input type="hidden" name="email" id="email" required="true"
 		 value="{{.}}" />
 

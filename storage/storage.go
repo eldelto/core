@@ -334,6 +334,15 @@ func getBucketFor(tx *bbolt.Tx, bucket string, data Storable) (*bbolt.Bucket, er
 	return getBucket(tx, []byte(bucket), data.BucketKey())
 }
 
+func Count(tx ReadTx, bucketName string) (uint, error) {
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName))
+	if err != nil {
+		return 0, err 
+	}
+
+	return uint(bucket.Inspect().KeyN), nil
+}
+
 func Load[T Storable](tx ReadTx, bucketName string, key []byte) (T, error) {
 	var res T
 	bucket, err := getBucket(tx.Tx(), []byte(bucketName), key)
