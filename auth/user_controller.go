@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	usersTemplate = templater.GetP("users.html")
-	userTemplate  = templater.GetP("user.html")
-	userEditTemplate  = templater.GetP("user_edit.html")
+	usersTemplate    = templater.GetP("users.html")
+	userTemplate     = templater.GetP("user.html")
+	userEditTemplate = templater.GetP("user_edit.html")
 )
 
 func NewUserController(service *Service) chi.Router {
@@ -103,7 +103,7 @@ func updateUser(service *Service) web.Handler {
 			return err
 		}
 
-		http.Redirect(w, r, "user/" + userID.String(), http.StatusSeeOther)
+		http.Redirect(w, r, "user/"+userID.String(), http.StatusSeeOther)
 		return nil
 	}
 }

@@ -21,6 +21,6 @@ func ParseFromForm[T any](r *http.Request, data *T) error {
 		// case reflect.
 		// }
 	}
-	
+
 	return nil
 }

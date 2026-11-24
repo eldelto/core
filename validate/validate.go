@@ -25,13 +25,30 @@ type Validatable interface {
 	Validate() error
 }
 
-func newErr(field, message string) error {
+func newErr(field, message string, args ...any) error {
+	message = fmt.Sprintf(message, args)
 	return &ValidationError{Field: field, Message: message}
 }
 
 func NotEmpty(field string, data any) error {
 	if data == nil {
 		return newErr(field, "cannot be nil")
+	}
+
+	v := reflect.ValueOf(data)
+	switch v.Kind() {
+	case reflect.String, reflect.Slice, reflect.Map, reflect.Chan:
+		if v.Len() < 1 {
+			return newErr(field, "cannot be empty")
+		}
+	}
+
+	return nil
+}
+
+func NotEqual(field string, data, other any) error {
+	if data == other {
+		return newErr(field, "should not equal %v", other)
 	}
 
 	v := reflect.ValueOf(data)

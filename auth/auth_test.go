@@ -228,6 +228,7 @@ func TestLogin(t *testing.T) {
 
 		scopes = Scopes{}
 		scopes.Add(PermissionOwner, "/user", user.ID.String(), "*")
+		scopes.Add(PermissionWrite, "/user")
 		AssertEquals(t, scopes, cap.Scopes, "scopes match")
 		AssertEquals(t, true, cap.Valid(), "capability is valid")
 

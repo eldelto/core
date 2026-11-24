@@ -63,7 +63,7 @@ func UpdateUser(ctx context.Context, tx storage.WriteTx, data User) error {
 	if err := cap.RequireRead(userResource(data.ID)); err != nil {
 		return fmt.Errorf("update user: err=%w", err)
 	}
-	
+
 	user, err := cap.RequireUser()
 	if err != nil {
 		return fmt.Errorf("update user: err=%w", err)
@@ -76,4 +76,3 @@ func UpdateUser(ctx context.Context, tx storage.WriteTx, data User) error {
 
 	return nil
 }
-

@@ -337,7 +337,7 @@ func getBucketFor(tx *bbolt.Tx, bucket string, data Storable) (*bbolt.Bucket, er
 func Count(tx ReadTx, bucketName string) (uint, error) {
 	bucket, err := getBucket(tx.Tx(), []byte(bucketName))
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 
 	return uint(bucket.Inspect().KeyN), nil
@@ -363,6 +363,30 @@ func Load[T Storable](tx ReadTx, bucketName string, key []byte) (T, error) {
 	}
 
 	return rec.Data, nil
+}
+
+func LoadFunc[T Storable](tx ReadTx, bucketName string,
+	f func(t T) bool) (T, error) {
+	var res T
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName))
+	if err != nil {
+		return res, err
+	}
+
+	cursor := bucket.Cursor()
+	for k, _ := cursor.First(); k != nil; k, _ = cursor.Next() {
+		res, err = Load[T](tx, bucketName, k)
+		if err != nil {
+			return res, err
+		}
+
+		if f(res) {
+			return res, nil
+		}
+	}
+
+	return res, fmt.Errorf("load func: bucket=%q, err=%w",
+		bucketName, ErrNotFound)
 }
 
 // LoadAt returns the most recent version of the record that was inserted at or

@@ -1,76 +1,60 @@
 package moneypenny
 
-// import (
-// 	"fmt"
-// 	"net/http"
+import (
+	"net/http"
 
-// 	"github.com/eldelto/core/storage"
-// 	"github.com/eldelto/core/web"
-// 	"github.com/go-chi/chi/v5"
-// 	"github.com/google/uuid"
-// )
+	"github.com/eldelto/core/storage"
+	"github.com/eldelto/core/web"
+	"github.com/go-chi/chi/v5"
+)
 
-// var (
-// 	usersTemplate = templater.GetP("users.html")
-// 	userTemplate  = templater.GetP("user.html")
-// )
+var (
+	currentBillingPeriodTemplate = templater.GetP("currentBillingPeriod.html")
+)
 
-// func NewBillingPeriodController(service *Service) chi.Router {
-// 	r := chi.NewRouter()
-// 	r.Get("/", errorHandlers.Handle(listBillingPeriods(service)))
-// 	r.Get("/current", errorHandlers.Handle(currentBillingPeriod(service)))
-// 	r.Get("/{periodID}", errorHandlers.Handle(showBillingPeriod(service)))
-// 	r.Get("/{periodID}/transfer", errorHandlers.Handle(listTransfers(service)))
-// 	r.Post("/{periodID}/transfer", errorHandlers.Handle(createTransfer(service)))
+func NewBillingPeriodController(store *storage.Storage) chi.Router {
+	r := chi.NewRouter()
+	// r.Get("/", errorHandlers.Handle(listBillingPeriodsHandler(service)))
+	r.Get("/current", errorHandlers.Handle(currentBillingPeriodHandler(store)))
+	// r.Get("/{periodID}", errorHandlers.Handle(getBillingPeriodHandler(service)))
 
-// 	return r
-// }
+	// r.Get("/{periodID}/transfer", errorHandlers.Handle(listTransfersHandler(service)))
+	// r.Post("/{periodID}/transfer", errorHandlers.Handle(createTransferHandler(service)))
+	// r.Put("/{periodID}/transfer", errorHandlers.Handle(updateTransferHandler(service)))
+	// r.Delete("/{periodID}/transfer/{transferID}", errorHandlers.Handle(deleteTransferHandler(service)))
 
-// func listBillingPeriods(service *Service) web.Handler {
-// 	return func(w http.ResponseWriter, r *http.Request) error {
-// 		var users []*BillingPeriod
-// 		err := service.store.Read(func(tx storage.ReadTx) error {
-// 			u, err := service.listBillingPeriods(r.Context(), tx)
-// 			users = u
-// 			return err
-// 		})
-// 		if err != nil {
-// 			return err
-// 		}
+	// r.Get("/{periodID}/budgetPot",
+	// errorHandlers.Handle(listBudgetPotsHandler(service)))
+	// r.Post("/{periodID}/budgetPot/{budgetPotID}",
+	// errorHandlers.Handle(createBudgetPotHandler(service)))
+	// r.Put("/{periodID}/budgetPot/{budgetPotID}",
+	//errorHandlers.Handle(updateBudgetPotHandler(service)))
+	// r.Delete("/{periodID}/budgetPot/{budgetPotID}",
+	//errorHandlers.Handle(deleteBudgetPotHandler(service)))
 
-// 		return usersTemplate.Execute(w, users)
-// 	}
-// }
+	// web.CRUD[*BudgetPot](r, "/{periodID}", "budgetPot")
 
-// func showBillingPeriod(service *Service) web.Handler {
-// 	return func(w http.ResponseWriter, r *http.Request) error {
-// 		cap, err := FromContext(r.Context())
-// 		if err != nil {
-// 			return err
-// 		}
+	return r
+}
 
-// 		return userTemplate.Execute(w, cap.BillingPeriod)
-// 	}
-// }
+func currentBillingPeriodHandler(store *storage.Storage) web.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		var (
+			bp  *BillingPeriod
+			err error
+		)
+		err = store.Read(func(tx storage.ReadTx) error {
+			bp, err = currentBillingPeriod(r.Context(), tx)
+			return err
+		})
+		if err != nil {
+			return err
+		}
 
-// func logout(service *Service) web.Handler {
-// 	return func(w http.ResponseWriter, r *http.Request) error {
-// 		// TODO: Implement
+		if bp == nil {
+			// TODO: create billing period
+		}
 
-// 		// TODO: Implement helper
-// 		id := chi.URLParam(r, "id")
-// 		userID, err := uuid.Parse(id)
-// 		if err != nil {
-// 			return fmt.Errorf("parsing user ID: ID=%q, err=%w", id, err)
-// 		}
-
-// 		err = service.store.Write(func(tx storage.WriteTx) error {
-// 			return service.logout(r.Context(), tx, storage.BillingPeriodID(userID))
-// 		})
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		return nil
-// 	}
-// }
+		return currentBillingPeriodTemplate.Execute(w, bp)
+	}
+}

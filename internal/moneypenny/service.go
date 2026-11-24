@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/eldelto/core/auth"
 	"github.com/eldelto/core/internal/collections"
 	"github.com/eldelto/core/storage"
 	"github.com/eldelto/core/validate"
+	"github.com/google/uuid"
 )
 
 const categoryBucket = "moneypenny.userCategories"
@@ -53,8 +55,22 @@ type Transfer struct {
 }
 
 type BillingPeriod struct {
+	ID         uuid.UUID
 	BudgetPots []BudgetPot
 	Transfers  []Transfer
+	From       time.Time
+	Until      time.Time
+}
+
+func (bp *BillingPeriod) BucketKey() []byte {
+	return bp.ID[:]
+}
+
+func (bp *BillingPeriod) Validate() error {
+	return errors.Join(
+		validate.NotEqual("from", bp.From, time.Time{}),
+		validate.NotEqual("until", bp.Until, time.Time{}),
+	)
 }
 
 func Initialize(store *storage.Storage) {
@@ -102,6 +118,9 @@ func userCategories(ctx context.Context, tx storage.ReadTx, userID storage.UserI
 		return nil, err
 	}
 
+	slices.SortFunc(userCategories.Categories, func(a, b Category) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 	return userCategories.Categories, nil
 }
 
@@ -121,14 +140,14 @@ func createUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 	}
 
 	category := Category{name}
-	categories, err:= userCategories(ctx, tx, userID)
-	if err !=nil {
+	categories, err := userCategories(ctx, tx, userID)
+	if err != nil {
 		return err
 	}
-	
+
 	categories = append(categories, category)
 	userCategories := UserCategories{
-		UserID: user.ID,
+		UserID:     user.ID,
 		Categories: categories,
 	}
 
@@ -141,7 +160,7 @@ func deleteUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 	if err != nil {
 		return err
 	}
-	
+
 	if err := cap.RequireWrite(categoryResource(userID, name)); err != nil {
 		return err
 	}
@@ -151,20 +170,54 @@ func deleteUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 		return err
 	}
 
-	categories, err:= userCategories(ctx, tx, userID)
-	if err !=nil {
+	categories, err := userCategories(ctx, tx, userID)
+	if err != nil {
 		return err
 	}
 	categories = slices.DeleteFunc(categories, func(c Category) bool {
 		return c.Name == name
 	})
-	
+
 	userCategories := UserCategories{
-		UserID: user.ID,
+		UserID:     user.ID,
 		Categories: categories,
 	}
 
 	return storage.Store(tx, categoryBucket, &userCategories, user.ID)
+}
+
+func billingPeriodResource(userID storage.UserID, parts ...string) auth.Resource {
+	parts = append([]string{"/user", userID.String(), "billingPeriod"}, parts...)
+
+	r, err := auth.NewResource(parts...)
+	if err != nil {
+		panic(err)
+	}
+
+	return r
+}
+
+func currentBillingPeriod(ctx context.Context, tx storage.ReadTx) (*BillingPeriod, error) {
+	cap, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := cap.RequireUser()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cap.RequireRead(billingPeriodResource(user.ID)); err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	bp, err := storage.LoadFunc[*BillingPeriod](tx, categoryBucket, func(bp *BillingPeriod) bool {
+		return now.After(bp.From) && now.Before(bp.Until)
+	})
+
+	return bp, err
 }
 
 // Category
