@@ -1,0 +1,25 @@
+{{define "content"}}
+
+<h2>Billing Period</h2>
+
+<table>
+  <thead>
+	<tr>
+	  <th>From</th>
+	  <th>Until</th>
+	  <th>Budgets</th>
+	  <th>Transfers</th>
+	</tr>
+  </thead>
+  
+  <tbody>
+	<tr>
+	  <td>{{.From}}</td>
+	  <td>{{.Until}}</td>
+	  <td>{{.BudgetPots}}</td>
+	  <td>{{.Transfers}}</td>
+	</tr>
+  </tbody>
+</table>
+
+{{end}}

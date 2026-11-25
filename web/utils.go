@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eldelto/core/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -43,4 +44,16 @@ func URLParamAsUUID(r *http.Request, key string) (uuid.UUID, error) {
 			key, raw, err)
 	}
 	return id, nil
+}
+
+func UserIDFromURLParam(r *http.Request) (storage.UserID, error) {
+	key := "userID"
+	raw := chi.URLParam(r, key)
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return storage.UserID{}, fmt.Errorf("parsing URL param as UUID: key=%q, value=%q, err=%w",
+			key, raw, err)
+	}
+
+	return storage.UserID(id), nil
 }

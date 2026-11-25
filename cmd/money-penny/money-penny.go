@@ -81,6 +81,8 @@ func main() {
 	r.With(authService.Middleware()).Mount("/user", auth.NewUserController(authService))
 	r.With(authService.Middleware()).
 		Mount("/user/{userID}/category", moneypenny.NewCategoryController(store))
+	r.With(authService.Middleware()).
+		Mount("/user/{userID}/billingPeriod", moneypenny.NewBillingPeriodController(store))
 
 	http.Handle("/", r)
 

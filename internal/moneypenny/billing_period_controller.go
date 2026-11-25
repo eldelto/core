@@ -1,6 +1,7 @@
 package moneypenny
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/eldelto/core/storage"
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	currentBillingPeriodTemplate = templater.GetP("currentBillingPeriod.html")
+	billingPeriodTemplate = templater.GetP("billingPeriod.html")
 )
 
 func NewBillingPeriodController(store *storage.Storage) chi.Router {
@@ -39,22 +40,29 @@ func NewBillingPeriodController(store *storage.Storage) chi.Router {
 
 func currentBillingPeriodHandler(store *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		var (
-			bp  *BillingPeriod
-			err error
-		)
-		err = store.Read(func(tx storage.ReadTx) error {
-			bp, err = currentBillingPeriod(r.Context(), tx)
-			return err
-		})
+		userID, err := web.UserIDFromURLParam(r)
 		if err != nil {
 			return err
 		}
 
-		if bp == nil {
-			// TODO: create billing period
+		var bp *BillingPeriod
+		err = store.Read(func(tx storage.ReadTx) error {
+			bp, err = currentBillingPeriod(r.Context(), tx, userID)
+			return err
+		})
+		switch {
+		case errors.Is(err, storage.ErrNotFound):
+			err = store.Write(func(tx storage.WriteTx) error {
+				bp, err = createNextBillingPeriod(r.Context(), tx, userID)
+				return err
+			})
+			if err != nil {
+				return err
+			}
+		case err != nil:
+			return err
 		}
 
-		return currentBillingPeriodTemplate.Execute(w, bp)
+		return billingPeriodTemplate.Execute(w, bp)
 	}
 }

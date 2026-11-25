@@ -3,6 +3,7 @@ package moneypenny
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -14,7 +15,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const categoryBucket = "moneypenny.userCategories"
+const (
+	categoryBucket      = "moneypenny.userCategories"
+	billingPeriodBucket = "moneypenny.billingPeriod"
+)
 
 var year = time.Hour * 24 * 365
 
@@ -49,13 +53,20 @@ type BudgetPot struct {
 	Budget       EuroCent
 }
 
+type TransferID uuid.UUID
+
 type Transfer struct {
+	ID           TransferID
 	Amount       EuroCent
 	CategoryName string
+	DateTime     time.Time
 }
 
+type BillingPeriodID uuid.UUID
+
 type BillingPeriod struct {
-	ID         uuid.UUID
+	ID         BillingPeriodID
+	UserID     storage.UserID
 	BudgetPots []BudgetPot
 	Transfers  []Transfer
 	From       time.Time
@@ -70,6 +81,7 @@ func (bp *BillingPeriod) Validate() error {
 	return errors.Join(
 		validate.NotEqual("from", bp.From, time.Time{}),
 		validate.NotEqual("until", bp.Until, time.Time{}),
+		validate.True("from, until", bp.From.Before(bp.Until), "from must be before until"),
 	)
 }
 
@@ -80,6 +92,14 @@ func Initialize(store *storage.Storage) {
 		KeepRevisions: 1,
 		PreCommitFuncs: []storage.PreCommitFunc{
 			validate.BeforeCommit(&UserCategories{}),
+		},
+	})
+	store.RegisterBucket(storage.Bucket{
+		Name:          billingPeriodBucket,
+		Retention:     1 * year,
+		KeepRevisions: 1,
+		PreCommitFuncs: []storage.PreCommitFunc{
+			validate.BeforeCommit(&BillingPeriod{}),
 		},
 	})
 }
@@ -95,7 +115,7 @@ func categoryResource(userID storage.UserID, parts ...string) auth.Resource {
 	return r
 }
 
-func userCategories(ctx context.Context, tx storage.ReadTx, userID storage.UserID) ([]Category, error) {
+func listCategories(ctx context.Context, tx storage.ReadTx, userID storage.UserID) ([]Category, error) {
 	cap, err := auth.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -124,7 +144,7 @@ func userCategories(ctx context.Context, tx storage.ReadTx, userID storage.UserI
 	return userCategories.Categories, nil
 }
 
-func createUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.UserID, name string) error {
+func createCategory(ctx context.Context, tx storage.WriteTx, userID storage.UserID, name string) error {
 	cap, err := auth.FromContext(ctx)
 	if err != nil {
 		return err
@@ -140,7 +160,7 @@ func createUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 	}
 
 	category := Category{name}
-	categories, err := userCategories(ctx, tx, userID)
+	categories, err := listCategories(ctx, tx, userID)
 	if err != nil {
 		return err
 	}
@@ -154,7 +174,7 @@ func createUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 	return storage.Store(tx, categoryBucket, &userCategories, user.ID)
 }
 
-func deleteUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.UserID,
+func deleteCategory(ctx context.Context, tx storage.WriteTx, userID storage.UserID,
 	name string) error {
 	cap, err := auth.FromContext(ctx)
 	if err != nil {
@@ -170,7 +190,7 @@ func deleteUserCategory(ctx context.Context, tx storage.WriteTx, userID storage.
 		return err
 	}
 
-	categories, err := userCategories(ctx, tx, userID)
+	categories, err := listCategories(ctx, tx, userID)
 	if err != nil {
 		return err
 	}
@@ -197,9 +217,41 @@ func billingPeriodResource(userID storage.UserID, parts ...string) auth.Resource
 	return r
 }
 
-func currentBillingPeriod(ctx context.Context, tx storage.ReadTx) (*BillingPeriod, error) {
+func currentBillingPeriod(ctx context.Context, tx storage.ReadTx,
+	userID storage.UserID) (*BillingPeriod, error) {
 	cap, err := auth.FromContext(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := cap.RequireRead(billingPeriodResource(userID)); err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	bp, err := storage.LoadFunc[*BillingPeriod](tx, billingPeriodBucket, func(bp *BillingPeriod) bool {
+		return now.After(bp.From) && now.Before(bp.Until)
+	})
+
+	return bp, err
+}
+
+func firstOfMonth(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+func lastOfMonth(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month()+1, 1, 0, 0, 0, -1, time.UTC)
+}
+
+func createNextBillingPeriod(ctx context.Context, tx storage.WriteTx,
+	userID storage.UserID) (*BillingPeriod, error) {
+	cap, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cap.RequireWrite(billingPeriodResource(userID)); err != nil {
 		return nil, err
 	}
 
@@ -208,16 +260,43 @@ func currentBillingPeriod(ctx context.Context, tx storage.ReadTx) (*BillingPerio
 		return nil, err
 	}
 
-	if err := cap.RequireRead(billingPeriodResource(user.ID)); err != nil {
-		return nil, err
+	now := time.Now()
+	lastMonth := now.AddDate(0, -1, 0)
+	lastBP, err := storage.LoadFunc[*BillingPeriod](tx, billingPeriodBucket, func(bp *BillingPeriod) bool {
+		return lastMonth.After(bp.From) && lastMonth.Before(bp.Until)
+	})
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+	case err != nil:
+		return nil, fmt.Errorf("create next billing period: %w", err)
 	}
 
-	now := time.Now()
-	bp, err := storage.LoadFunc[*BillingPeriod](tx, categoryBucket, func(bp *BillingPeriod) bool {
-		return now.After(bp.From) && now.Before(bp.Until)
-	})
+	budgePots := []BudgetPot{}
+	if lastBP != nil {
+		budgePots = lastBP.BudgetPots
+	}
 
-	return bp, err
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("create next billing period: %w", err)
+	}
+
+	from := firstOfMonth(now)
+	until := lastOfMonth(now)
+	bp := BillingPeriod{
+		ID:         BillingPeriodID(id),
+		UserID:     userID,
+		From:       from,
+		Until:      until,
+		Transfers:  []Transfer{},
+		BudgetPots: budgePots,
+	}
+
+	if err := storage.Store(tx, billingPeriodBucket, &bp, user.ID); err != nil {
+		return nil, fmt.Errorf("create next billing period: %w", err)
+	}
+
+	return &bp, err
 }
 
 // Category

@@ -25,9 +25,16 @@ type Validatable interface {
 	Validate() error
 }
 
-func newErr(field, message string, args ...any) error {
-	message = fmt.Sprintf(message, args)
-	return &ValidationError{Field: field, Message: message}
+func newErr(field, msg string) error {
+	return &ValidationError{Field: field, Message: msg}
+}
+
+func True(field string, condition bool, msg string) error {
+	if !condition {
+		return newErr(field, msg)
+	}
+
+	return nil
 }
 
 func NotEmpty(field string, data any) error {
@@ -47,19 +54,7 @@ func NotEmpty(field string, data any) error {
 }
 
 func NotEqual(field string, data, other any) error {
-	if data == other {
-		return newErr(field, "should not equal %v", other)
-	}
-
-	v := reflect.ValueOf(data)
-	switch v.Kind() {
-	case reflect.String, reflect.Slice, reflect.Map, reflect.Chan:
-		if v.Len() < 1 {
-			return newErr(field, "cannot be empty")
-		}
-	}
-
-	return nil
+	return True(field, data != other, fmt.Sprintf("%v should not equal %v", data, other))
 }
 
 func BeforeCommit[T Validatable](data T) storage.PreCommitFunc {

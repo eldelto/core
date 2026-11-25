@@ -14,24 +14,24 @@ var (
 
 func NewCategoryController(store *storage.Storage) chi.Router {
 	r := chi.NewRouter()
-	r.Get("/", errorHandlers.Handle(listCategories(store)))
-	r.Post("/", errorHandlers.Handle(createCategory(store)))
+	r.Get("/", errorHandlers.Handle(listCategoriesHandler(store)))
+	r.Post("/", errorHandlers.Handle(createCategoryHandler(store)))
 	// r.Put("/{categoryID}", errorHandlers.Handle(updateCategory(service)))
-	r.Delete("/{categoryName}", errorHandlers.Handle(deleteCategory(store)))
+	r.Delete("/{categoryName}", errorHandlers.Handle(deleteCategoryHandler(store)))
 
 	return r
 }
 
-func listCategories(store *storage.Storage) web.Handler {
+func listCategoriesHandler(store *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		id, err := web.URLParamAsUUID(r, "userID")
+		userID, err := web.UserIDFromURLParam(r)
 		if err != nil {
 			return err
 		}
 
 		var categories []Category
 		err = store.Read(func(tx storage.ReadTx) error {
-			c, err := userCategories(r.Context(), tx, storage.UserID(id))
+			c, err := listCategories(r.Context(), tx, userID)
 			categories = c
 			return err
 		})
@@ -43,9 +43,9 @@ func listCategories(store *storage.Storage) web.Handler {
 	}
 }
 
-func createCategory(store *storage.Storage) web.Handler {
+func createCategoryHandler(store *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		id, err := web.URLParamAsUUID(r, "userID")
+		userID, err := web.UserIDFromURLParam(r)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func createCategory(store *storage.Storage) web.Handler {
 		name := r.FormValue("name")
 
 		err = store.Write(func(tx storage.WriteTx) error {
-			return createUserCategory(r.Context(), tx, storage.UserID(id), name)
+			return createCategory(r.Context(), tx, userID, name)
 		})
 		if err != nil {
 			return err
@@ -64,11 +64,9 @@ func createCategory(store *storage.Storage) web.Handler {
 	}
 }
 
-func deleteCategory(store *storage.Storage) web.Handler {
+func deleteCategoryHandler(store *storage.Storage) web.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		// TODO: Deducing the user ID from the URL vs. comparing
-		// the context user to the stored owner field.
-		id, err := web.URLParamAsUUID(r, "userID")
+		userID, err := web.UserIDFromURLParam(r)
 		if err != nil {
 			return err
 		}
@@ -76,7 +74,7 @@ func deleteCategory(store *storage.Storage) web.Handler {
 		name := chi.URLParam(r, "categoryName")
 
 		err = store.Write(func(tx storage.WriteTx) error {
-			return deleteUserCategory(r.Context(), tx, storage.UserID(id), name)
+			return deleteCategory(r.Context(), tx, userID, name)
 		})
 		if err != nil {
 			return err
