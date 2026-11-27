@@ -64,6 +64,10 @@ type Transfer struct {
 
 type BillingPeriodID uuid.UUID
 
+func (b BillingPeriodID) String() string {
+	return uuid.UUID(b).String()
+}
+
 type BillingPeriod struct {
 	ID         BillingPeriodID
 	UserID     storage.UserID
@@ -215,6 +219,38 @@ func billingPeriodResource(userID storage.UserID, parts ...string) auth.Resource
 	}
 
 	return r
+}
+
+func listBillingPeriods(ctx context.Context, tx storage.ReadTx,
+	userID storage.UserID) ([]*BillingPeriod, error) {
+	cap, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cap.RequireRead(billingPeriodResource(userID)); err != nil {
+		return nil, err
+	}
+
+	bps, err := storage.ListFunc[*BillingPeriod](tx, billingPeriodBucket, func(bp *BillingPeriod) bool {
+		return bp.UserID == userID
+	})
+
+	return bps, err
+}
+
+func getBillingPeriod(ctx context.Context, tx storage.ReadTx,
+	userID storage.UserID, id BillingPeriodID) (*BillingPeriod, error) {
+	cap, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cap.RequireRead(billingPeriodResource(userID)); err != nil {
+		return nil, err
+	}
+
+	return storage.Load[*BillingPeriod](tx, billingPeriodBucket, id[:])
 }
 
 func currentBillingPeriod(ctx context.Context, tx storage.ReadTx,

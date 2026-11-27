@@ -465,6 +465,33 @@ func ListAll[T Storable](tx ReadTx, bucketName string) ([]T, error) {
 	return results, nil
 }
 
+func ListFunc[T Storable](tx ReadTx, bucketName string,
+	f func(t T) bool) ([]T, error) {
+	results := make([]T, 0, 10)
+	bucket, err := getBucket(tx.Tx(), []byte(bucketName))
+	if err != nil {
+		return nil, err
+	}
+
+	err = bucket.ForEachBucket(func(id []byte) error {
+		data, err := Load[T](tx, bucketName, id)
+		if err != nil {
+			return err
+		}
+
+		if f(data) {
+			results = append(results, data)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list func: %w", err)
+	}
+
+	return results, nil
+}
+
 func Store[T Storable](tx WriteTx, bucketName string, data T, user UserID) error {
 	bucketConf, err := getBucketConf(tx.Buckets(), bucketName)
 	if err != nil {

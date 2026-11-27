@@ -1,0 +1,29 @@
+{{define "content"}}
+
+<h2>Billing Period</h2>
+
+<table>
+  <thead>
+	<tr>
+	  <th>ID</th>
+	  <th>From</th>
+	  <th>Until</th>
+	  <th>Budgets</th>
+	  <th>Transfers</th>
+	</tr>
+  </thead>
+  
+  <tbody>
+	{{range .}}
+	<tr>
+	  <td><a href="billingPeriod/{{.ID.String}}">{{.ID.String}}</a></td>
+	  <td>{{.From}}</td>
+	  <td>{{.Until}}</td>
+	  <td>{{.BudgetPots}}</td>
+	  <td>{{.Transfers}}</td>
+	</tr>
+	{{end}}
+  </tbody>
+</table>
+
+{{end}}
